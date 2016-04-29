@@ -7,16 +7,29 @@
     David Young
 
 :Date Created:
-    April  8, 2016
+    October 29, 2015
 """
 import os
 
 
 def getpackagepath():
     """
-     *Get the root path for this python package*
+    *getpackagepath*
 
-    *Used in unit testing code*
+    **Usage:**
+        .. todo::
+
+            - add usage info
+            - create a sublime snippet for usage
+
+        .. code-block:: python 
+
+            usage code 
+
+    .. todo::
+
+        - @review: when complete, clean methodName method
+        - @review: when complete add logging
     """
     moduleDirectory = os.path.dirname(__file__)
     packagePath = os.path.dirname(__file__) + "/../"

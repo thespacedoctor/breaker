@@ -65,7 +65,7 @@ copyright = u'%(now)s, Dave Young' % locals()
 # built documents.
 #
 # The short X.Y version.
-version = "v" + __version__
+version = "v" + str(__version__)
 # The full version, including alpha/beta/rc tags.
 release = __version__
 
@@ -275,7 +275,7 @@ trim_footnote_reference_space = True
 
 def updateUsageRST():
 
-    from panstamps import cl_utils
+    from breaker import cl_utils
     usage = cl_utils.__doc__
 
     if not "Usage:" in usage or "todo:" in usage:

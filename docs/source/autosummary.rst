@@ -1,0 +1,48 @@
+
+Subpackages
+-----------
+
+.. autosummary::
+   :toctree: _autosummary
+   :nosignatures:
+   :template: autosummary/subpackage.rst
+
+   breaker
+   breaker.commonutils
+   breaker.fakers
+   breaker.plots
+   breaker.stats 
+
+Modules
+-----------
+
+.. autosummary::
+   :toctree: _autosummary
+   :nosignatures:
+
+   breaker.cl_utils
+   breaker.utKit 
+
+Classes
+-----------
+
+.. autosummary::
+   :toctree: _autosummary
+   :nosignatures:
+
+   breaker.update_ps1_footprint_table
+   breaker.fakers.generate_faker_catalogue
+   breaker.plots.plot_multi_panel_alternate_map_comparison
+   breaker.plots.plot_wave_matched_source_maps
+   breaker.plots.plot_wave_observational_timelines
+   breaker.stats.survey_footprint
+   breaker.utKit.utKit 
+
+Functions
+-----------
+
+.. autosummary::
+   :toctree: _autosummary
+   :nosignatures:
+
+   breaker.cl_utils.tab_complete 

@@ -9,7 +9,6 @@ def readme():
     with open(moduleDirectory + '/README.rst') as f:
         return f.read()
 
-
 setup(name="breaker",
       version=__version__,
       description="Tools used by the PanSTARRS & ATLAS teams when surveying the likely sky-locations of LIGO-VIRGO discovered Gravitational Waves",
@@ -32,11 +31,19 @@ setup(name="breaker",
           'resources/*/*', 'resources/*.*']},
       install_requires=[
           'pyyaml',
-          'breaker'
+          'fundamentals',
+          'numpy',
+          'requests',
+          'astropy',
+          'healpy',
+          'adjustText',
+          'sherlock',
+          'neddy',
+          'wcsaxes'
       ],
       test_suite='nose.collector',
       tests_require=['nose', 'nose-cover3'],
-      # entry_points={
-      #     'console_scripts': ['breaker=breaker.cl_utils:main'],
-      # },
+      entry_points={
+          'console_scripts': ['breaker=breaker.cl_utils:main'],
+      },
       zip_safe=False)
