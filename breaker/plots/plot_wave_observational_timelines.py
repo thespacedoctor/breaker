@@ -27,10 +27,29 @@ import matplotlib.pyplot as plt
 from matplotlib.path import Path
 from matplotlib.pyplot import savefig
 import matplotlib.patches as patches
+import matplotlib.path as mpath
+from matplotlib.projections.geo import GeoAxes
+from astropy import wcs as awcs
+from astropy.io import fits
 from dryxPython import astrotools as dat
 from fundamentals import tools, times
 from dryxPython import mysql as dms
 from adjustText import adjust_text
+
+
+from matplotlib.projections.geo import GeoAxes
+
+
+class ThetaFormatterShiftPi(GeoAxes.ThetaFormatter):
+    """Shifts labelling by pi
+    Shifts labelling from -180,180 to 0-360"""
+
+    def __call__(self, x, pos=None):
+        if x != 0:
+            x *= -1
+        if x < 0:
+            x += 2 * np.pi
+        return GeoAxes.ThetaFormatter.__call__(self, x, pos)
 
 
 class plot_wave_observational_timelines():
@@ -44,37 +63,41 @@ class plot_wave_observational_timelines():
         - ``settings`` -- the settings dictionary
         - ``plotType`` -- history (looking back from now) or timeline (looking forward from date of GW detection)
         - ``gwid`` -- a given graviational wave ID. If given only maps for this wave shall be plotted. Default *False* (i.e. plot all waves)
+        - ``projection`` -- projection for the plot. Default *tan*
+        - ``probabilityCut`` -- remove footprints where probability assigned to the healpix pixel found at the center of the exposure is ~0.0. Default *False*
 
     **Usage:**
 
         To plot a the history of a specific wave:
 
-        .. code-block:: python 
+        .. code-block:: python
 
             from breaker.plots import plot_wave_observational_timelines
             plotter = plot_wave_observational_timelines(
                 log=log,
                    settings=settings,
                    plotType="history",
-                   gwid="G184098"
+                   gwid="G184098",
+                   projection="tan"
             )
             plotter.get()
 
-        or to plot all waves in the settings file:
+        or to plot all waves in the settings file with a mollweide projection:
 
-        .. code-block:: python 
+        .. code-block:: python
 
             from breaker.plots import plot_wave_observational_timelines
             plotter = plot_wave_observational_timelines(
                 log=log,
                    settings=settings,
-                   plotType="history"
+                   plotType="history",
+                   projection="mollweide"
             )
             plotter.get()
 
         To plot the timeline of the survey, change ``plotType="timeline"``:
 
-        .. code-block:: python 
+        .. code-block:: python
 
             from breaker.plots import plot_wave_observational_timelines
             plotter = plot_wave_observational_timelines(
@@ -83,6 +106,11 @@ class plot_wave_observational_timelines():
                    plotType="timeline"
             )
             plotter.get()
+
+        .. todo::
+
+            - add projection options to the command-line
+            - add probabilityCut options to the command-line?
     """
     # Initialisation
 
@@ -91,13 +119,19 @@ class plot_wave_observational_timelines():
             log,
             settings=False,
             plotType=False,
-            gwid=False
+            gwid=False,
+            projection="tan",
+            probabilityCut=False
     ):
         self.log = log
         log.debug("instansiating a new 'plot_wave_observational_timelines' object")
         self.settings = settings
         self.plotType = plotType
         self.gwid = gwid
+        self.projection = projection
+        self.probabilityCut = probabilityCut
+        probabilityCut,
+
         # xt-self-arg-tmpx
 
         # Initial Actions
@@ -145,7 +179,7 @@ class plot_wave_observational_timelines():
 
         **Usage:**
 
-            .. code-block:: python 
+            .. code-block:: python
 
                 from breaker.plots import plot_wave_observational_timelines
                 plotter = plot_wave_observational_timelines(
@@ -157,15 +191,34 @@ class plot_wave_observational_timelines():
                 )
                 print plotParameters
 
-                # OUT: {'raRange': 90.0, 'centralCoordinate': [55.0, 27.5], 'decRange': 85.0}
+                # OUT: {'raRange': 90.0, 'centralCoordinate': [55.0, 27.5],
+                # 'decRange': 85.0}
 
                 print ps1Transients
 
-                # OUT: ({'local_designation': u'5L3Gbaj', 'ra_psf': 39.29767123836419, 'ps1_designation': u'PS15don', 'dec_psf': 19.055638423458053}, {'local_designation': u'5L3Gcbu', 'ra_psf': 40.06271352712189, 'ps1_designation': u'PS15dox', 'dec_psf': 22.536709765810823}, {'local_designation': u'5L3Gcca', 'ra_psf': 41.97569854977185, 'ps1_designation': u'PS15doy', 'dec_psf': 21.773344501616435}, {'local_designation': u'5L3Gbla', 'ra_psf': 50.732664347994714, 'ps1_designation': u'PS15dcq', 'dec_psf': 34.98988923347591}, {'local_designation': u'6A3Gcvu', 'ra_psf': 34.77565307934415, 'ps1_designation': u'PS16ku', 'dec_psf': 10.629310832257824}, {'local_designation': u'5L3Gcel', 'ra_psf': 38.24898916543392, 'ps1_designation': u'PS15dpn', 'dec_psf': 18.63530332013424}, {'local_designation': u'5L3Gcvk', 'ra_psf': 40.13754684778398, 'ps1_designation': u'PS15dpz', 'dec_psf': 23.003023065333267}, ....
+                # OUT: ({'local_designation': u'5L3Gbaj', 'ra_psf':
+                # 39.29767123836419, 'ps1_designation': u'PS15don', 'dec_psf':
+                # 19.055638423458053}, {'local_designation': u'5L3Gcbu',
+                # 'ra_psf': 40.06271352712189, 'ps1_designation': u'PS15dox',
+                # 'dec_psf': 22.536709765810823}, {'local_designation':
+                # u'5L3Gcca', 'ra_psf': 41.97569854977185, 'ps1_designation':
+                # u'PS15doy', 'dec_psf': 21.773344501616435},
+                # {'local_designation': u'5L3Gbla', 'ra_psf':
+                # 50.732664347994714, 'ps1_designation': u'PS15dcq', 'dec_psf':
+                # 34.98988923347591}, {'local_designation': u'6A3Gcvu',
+                # 'ra_psf': 34.77565307934415, 'ps1_designation': u'PS16ku',
+                # 'dec_psf': 10.629310832257824}, {'local_designation':
+                # u'5L3Gcel', 'ra_psf': 38.24898916543392, 'ps1_designation':
+                # u'PS15dpn', 'dec_psf': 18.63530332013424},
+                # {'local_designation': u'5L3Gcvk', 'ra_psf':
+                # 40.13754684778398, 'ps1_designation': u'PS15dpz', 'dec_psf':
+                # 23.003023065333267}, ....
 
                 print ps1Pointings
 
-                # OUT: ({'raDeg': 37.1814041667, 'mjd': 57388.2124067, 'decDeg': 18.9258969444}, {'raDeg': 37.1813666667, 'mjd': 57388.2140101, 'decDeg': 18.9259066667}, ...
+                # OUT: ({'raDeg': 37.1814041667, 'mjd': 57388.2124067,
+                # 'decDeg': 18.9258969444}, {'raDeg': 37.1813666667, 'mjd':
+                # 57388.2140101, 'decDeg': 18.9259066667}, ...
 
             It can also be useful to give time-limits for the request to get the observations and discoveries from the past few days (``inPastDays``), or for the first few days after wave detection (``inFirstDays``). So for the past week:
 
@@ -359,7 +412,7 @@ class plot_wave_observational_timelines():
                 mjdEnd = 10000000000
 
         sqlQuery = u"""
-            SELECT raDeg, decDeg, mjd FROM atlas_pointings where gw_id = "%(gwid)s" and mjd between %(mjdStart)s and %(mjdEnd)s group by atlas_object_id;
+            SELECT atlas_object_id, raDeg, decDeg, mjd FROM atlas_pointings where gw_id = "%(gwid)s" and mjd between %(mjdStart)s and %(mjdEnd)s group by atlas_object_id;
         """ % locals()
 
         atlasPointings = dms.execute_mysql_read_query(
@@ -385,7 +438,9 @@ class plot_wave_observational_timelines():
             fileFormats,
             folderName,
             plotType,
-            raLimit=False):
+            projection="wcs",
+            raLimit=False,
+            probabilityCut=False):
         """
         *Generate a single probability map plot for a given gravitational wave and save it to file*
 
@@ -403,6 +458,8 @@ class plot_wave_observational_timelines():
             - ``fileFormats`` -- the format(s) to output the plots in (list of strings)
             - ``folderName`` -- the name of the folder to add the plots to
             - ``plotType`` -- history (looking back from now) or timeline (looking forward from date of GW detection)
+            - ``projection`` -- projection for the plot. Default *wcs*. [wcs|mollweide]
+            - ``probabilityCut`` -- remove footprints where probability assigned to the healpix pixel found at the center of the exposure is ~0.0. Default *False*
 
 
         **Return:**
@@ -416,7 +473,7 @@ class plot_wave_observational_timelines():
 
             First you neeed to collect your data and a few plot parameters:
 
-            .. code-block:: python 
+            .. code-block:: python
 
                 from breaker.plots import plot_wave_observational_timelines
                 plotter = plot_wave_observational_timelines(
@@ -435,68 +492,10 @@ class plot_wave_observational_timelines():
         """
         self.log.info('starting the ``generate_probability_plot`` method')
 
+        import matplotlib.pyplot as plt
+        import healpy as hp
         from matplotlib.font_manager import FontProperties
         font = FontProperties()
-        font.set_family("Arial")
-
-        pixelSizeDeg = 0.066667
-
-        # UNPACK THE PLOT PARAMETERS
-        centralCoordinate = plotParameters["centralCoordinate"]
-        raRange = plotParameters["raRange"]
-        decRange = plotParameters["decRange"]
-
-        raMax = centralCoordinate[0] + raRange / 2.
-        raMin = centralCoordinate[0] - raRange / 2.
-        decMax = centralCoordinate[1] + decRange / 2.
-        decMin = centralCoordinate[1] - decRange / 2.
-
-        # DETERMINE THE PIXEL GRID X,Y RANGES
-        xRange = int(raRange / pixelSizeDeg)
-        yRange = int(decRange / pixelSizeDeg)
-
-        # CREATE A NEW WCS OBJECT
-        import numpy
-        from astropy import wcs as awcs
-        from astropy.io import fits
-        w = awcs.WCS(naxis=2)
-
-        # SET THE REFERENCE PIXEL TO THE CENTRE PIXEL
-        w.wcs.crpix = [xRange / 2., yRange / 2.]
-        # SET THE REQUIRED PIXEL SIZE
-        w.wcs.cdelt = numpy.array([pixelSizeDeg, pixelSizeDeg])
-        # WORLD COORDINATES AT REFERENCE PIXEL
-        w.wcs.crval = centralCoordinate
-        # USE THE "GNOMONIC" PROJECTION ("COORDINATESYS---PROJECTION")
-        w.wcs.ctype = ["RA---TAN", "DEC--TAN"]
-
-        # CREATE THE FITS HEADER WITH WCS
-        header = w.to_header()
-
-        # CREATE A PIXEL GRID - 2 ARRAYS OF X, Y
-        columns = []
-        px = np.tile(np.arange(0, xRange), yRange)
-        py = np.repeat(np.arange(0, yRange), xRange)
-
-        # CONVERT THE PIXELS TO WORLD COORDINATES
-        wr, wd = w.wcs_pix2world(px, py, 1)
-
-        # MAKE SURE RA IS +VE
-        nr = []
-        nr[:] = [r if r > 0 else r + 360. for r in wr]
-        wr = np.array(nr)
-
-        # READ HEALPIX MAPS FROM FITS FILE
-        # THIS FILE IS A ONE COLUMN FITS BINARY, WITH EACH CELL CONTAINING AN
-        # ARRAY OF PROBABILITIES (3,072 ROWS)
-        import healpy as hp
-        aMap, mapHeader = hp.read_map(pathToProbMap, h=True)
-        nside = hp.pixelfunc.get_nside(aMap)
-
-        # import matplotlib.pyplot as plt
-        # hp.mollview(aMap, title="mollview image RING", cmap="YlOrRd")
-        # hp.graticule()
-        # plt.show()
 
         # HEALPY REQUIRES RA, DEC IN RADIANS AND AS TWO SEPERATE ARRAYS
         import math
@@ -504,119 +503,280 @@ class plot_wave_observational_timelines():
         DEG_TO_RAD_FACTOR = pi / 180.0
         RAD_TO_DEG_FACTOR = 180.0 / pi
 
-        # THETA: IS THE POLAR ANGLE, RANGING FROM 0 AT THE NORTH POLE TO PI AT THE SOUTH POLE.
-        # PHI: THE AZIMUTHAL ANGLE ON THE SPHERE FROM 0 TO 2PI
-        # CONVERT DEC TO THE REQUIRED HEALPIX FORMAT
-        nd = -wd + 90.
+        # VARIABLES
+        font.set_family("Arial")
+        pixelSizeDeg = 0.066667
+        unit = "likelihood"
+        cmap = "YlOrRd"
+        colorBar = False
 
-        # CONVERT WORLD TO HEALPIX INDICES
-        healpixIds = hp.ang2pix(nside, theta=nd * DEG_TO_RAD_FACTOR,
-                                phi=wr * DEG_TO_RAD_FACTOR)
+        # INITIALISE FIGURE
+        fig = plt.figure()
 
-        # NOW READ THE VALUES OF THE MAP AT THESE HEALPIX INDICES
-        uniqueHealpixIds = np.unique(healpixIds)
-        probs = []
-        probs[:] = [aMap[i] for i in healpixIds]
+        # READ HEALPIX MAPS FROM FITS FILE
+        # THIS FILE IS A ONE COLUMN FITS BINARY, WITH EACH CELL CONTAINING AN
+        # ARRAY OF PROBABILITIES (3,072 ROWS)
+        # READ IN THE HEALPIX FITS FILE
+        aMap, mapHeader = hp.read_map(pathToProbMap, 0, h=True)
+        # DETERMINE THE SIZE OF THE HEALPIXELS
+        nside = hp.npix2nside(len(aMap))
 
-        uniProb = []
-        uniProb[:] = [aMap[i] for i in uniqueHealpixIds]
+        # MIN-MAX PROB VALUES TO ADJUST MAP CONTRAST
+        vmin = min(aMap)
+        vmax = max(aMap) * 0.9
 
         totalProb = sum(aMap)
         print "Total Probability for the entire sky is %(totalProb)s" % locals()
-        stampProb = np.sum(uniProb)
-        print "Probability for the plot stamp is %(stampProb)s" % locals()
 
-        # RESHAPE THE ARRAY AS BITMAP
-        probs = np.reshape(np.array(probs), (yRange, xRange))
+        # UNPACK THE PLOT PARAMETERS
+        centralCoordinate = plotParameters["centralCoordinate"]
 
+        # CREATE A NEW WCS OBJECT
+        w = awcs.WCS(naxis=2)
+        # SET THE REQUIRED PIXEL SIZE
+        w.wcs.cdelt = np.array([pixelSizeDeg, pixelSizeDeg])
+        # WORLD COORDINATES AT REFERENCE PIXEL
+        w.wcs.crval = centralCoordinate
+
+        if projection in ["mollweide"]:
+            # MAP VISULISATION RATIO IS ALWAYS 1/2
+            xRange = 2000
+            yRange = xRange / 2.
+
+            # SET THE REFERENCE PIXEL TO THE CENTRE PIXEL
+            w.wcs.crpix = [xRange / 2., yRange / 2.]
+
+            # FULL-SKY MAP SO PLOT FULL RA AND DEC RANGES
+            # DEC FROM 180 to 0
+            theta = np.linspace(np.pi, 0, yRange)
+            latitude = np.radians(np.linspace(-90, 90, yRange))
+            # RA FROM -180 to +180
+            phi = np.linspace(-np.pi, np.pi, xRange)
+            longitude = np.radians(np.linspace(-180, 180, xRange))
+            X, Y = np.meshgrid(longitude, latitude)
+
+            # PROJECT THE MAP TO A RECTANGULAR MATRIX xRange X yRange
+            PHI, THETA = np.meshgrid(phi, theta)
+            healpixIds = hp.ang2pix(nside, THETA, PHI)
+            probs = aMap[healpixIds]
+
+            # healpixIds = np.reshape(healpixIds, (1, -1))[0]
+
+            # CTYPE FOR THE FITS HEADER
+            w.wcs.ctype = ["RA---MOL", "DEC--MOL"]
+
+            stampProb = np.sum(aMap)
+            print "Probability for the plot stamp is %(stampProb)s" % locals()
+
+            # MATPLOTLIB IS DOING THE MOLLVEIDE PROJECTION
+            ax = fig.add_subplot(111, projection='mollweide')
+
+            # RASTERIZED MAKES THE MAP BITMAP WHILE THE LABELS REMAIN VECTORIAL
+            # FLIP LONGITUDE TO THE ASTRO CONVENTION
+            image = plt.pcolormesh(longitude[
+                                   ::-1], latitude, probs, rasterized=True, cmap=cmap)
+
+            # GRATICULE
+            ax.set_longitude_grid(60)
+            ax.xaxis.set_major_formatter(ThetaFormatterShiftPi(60))
+            ax.set_latitude_grid(45)
+            ax.set_longitude_grid_ends(90)
+
+            # CONTOURS - NEED TO ADD THE CUMMULATIVE PROBABILITY
+            i = np.flipud(np.argsort(aMap))
+            cumsum = np.cumsum(aMap[i])
+            cls = np.empty_like(aMap)
+            cls[i] = cumsum * 99.99999999 * stampProb
+
+            # EXTRACT CONTOUR VALUES AT HEALPIX INDICES
+            contours = []
+            contours[:] = [cls[i] for i in healpixIds]
+            # contours = np.reshape(np.array(contours), (yRange, xRange))
+            CS = plt.contour(longitude[::-1], latitude,
+                             contours, linewidths=.5, alpha=0.4, zorder=2)
+
+            # CS = plt.contour(contours, linewidths=10, alpha=0.7, zorder=2)
+            plt.clabel(CS, fontsize=12, inline=1,
+                       fmt='%2.1f', fontproperties=font, alpha=0.4)
+
+            # COLORBAR
+            if colorBar:
+                cb = fig.colorbar(image, orientation='horizontal',
+                                  shrink=.6, pad=0.05, ticks=[0, 1])
+                cb.ax.xaxis.set_label_text("likelihood")
+                cb.ax.xaxis.labelpad = -8
+                # WORKAROUND FOR ISSUE WITH VIEWERS, SEE COLORBAR DOCSTRING
+                cb.solids.set_edgecolor("face")
+
+            ax.tick_params(axis='x', labelsize=10)
+            ax.tick_params(axis='y', labelsize=10)
+
+            # # REMOVE TICK LABELS
+            # ax.xaxis.set_ticklabels([])
+            # ax.yaxis.set_ticklabels([])
+            # # REMOVE GRID
+            # ax.xaxis.set_ticks([])
+            # ax.yaxis.set_ticks([])
+
+            # REMOVE WHITE SPACE AROUND FIGURE
+            spacing = 0.01
+            plt.subplots_adjust(bottom=spacing, top=1 - spacing,
+                                left=spacing, right=1 - spacing)
+
+            plt.grid(True)
+
+        elif projection in ["tan"]:
+
+            # UNPACK THE PLOT PARAMETERS
+            raRange = plotParameters["raRange"]
+            decRange = plotParameters["decRange"]
+
+            raMax = centralCoordinate[0] + raRange / 2.
+            raMin = centralCoordinate[0] - raRange / 2.
+            decMax = centralCoordinate[1] + decRange / 2.
+            decMin = centralCoordinate[1] - decRange / 2.
+
+            # DETERMINE THE PIXEL GRID X,Y RANGES
+            xRange = int(raRange / pixelSizeDeg)
+            yRange = int(decRange / pixelSizeDeg)
+
+            # SET THE REFERENCE PIXEL TO THE CENTRE PIXEL
+            w.wcs.crpix = [xRange / 2., yRange / 2.]
+
+            # USE THE "GNOMONIC" PROJECTION ("COORDINATESYS---PROJECTION")
+            w.wcs.ctype = ["RA---TAN", "DEC--TAN"]
+
+            # CREATE A PIXEL GRID - 2 ARRAYS OF X, Y
+            columns = []
+            px = np.tile(np.arange(0, xRange), yRange)
+            py = np.repeat(np.arange(0, yRange), xRange)
+
+            # CONVERT THE PIXELS TO WORLD COORDINATES
+            wr, wd = w.wcs_pix2world(px, py, 1)
+
+            # MAKE SURE RA IS +VE
+            nr = []
+            nr[:] = [r if r > 0 else r + 360. for r in wr]
+            wr = np.array(nr)
+
+            # THETA: IS THE POLAR ANGLE, RANGING FROM 0 AT THE NORTH POLE TO PI AT THE SOUTH POLE.
+            # PHI: THE AZIMUTHAL ANGLE ON THE SPHERE FROM 0 TO 2PI
+            # CONVERT DEC TO THE REQUIRED HEALPIX FORMAT
+            nd = -wd + 90.
+
+            # CONVERT WORLD TO HEALPIX INDICES
+            healpixIds = hp.ang2pix(nside, theta=nd * DEG_TO_RAD_FACTOR,
+                                    phi=wr * DEG_TO_RAD_FACTOR)
+
+            # NOW READ THE VALUES OF THE MAP AT THESE HEALPIX INDICES
+            uniqueHealpixIds = np.unique(healpixIds)
+            probs = []
+            probs[:] = [aMap[i] for i in healpixIds]
+
+            uniProb = []
+            uniProb[:] = [aMap[i] for i in uniqueHealpixIds]
+
+            stampProb = np.sum(uniProb)
+            print "Probability for the plot stamp is %(stampProb)s" % locals()
+
+            # RESHAPE THE ARRAY AS BITMAP
+            probs = np.reshape(np.array(probs), (yRange, xRange))
+
+            # CREATE THE FITS HEADER WITH WCS
+            header = w.to_header()
+            # CREATE THE FITS FILE
+            hdu = fits.PrimaryHDU(header=header, data=probs)
+
+            # GRAB THE WCS FROM HEADER GENERATED EARLIER
+            from wcsaxes import datasets, WCS
+            wcs = WCS(hdu.header)
+            # USE WCS AS THE PROJECTION
+            ax = fig.add_axes([0.15, 0.1, 0.8, 0.8], projection=wcs)
+            # PLOT MAP WITH PROJECTION IN HEADER
+            im = ax.imshow(probs,
+                           cmap=cmap, origin='lower', alpha=0.7, zorder=1, vmin=vmin, vmax=vmax)
+
+            # CONTOURS - NEED TO ADD THE CUMMULATIVE PROBABILITY
+            i = np.flipud(np.argsort(aMap))
+            cumsum = np.cumsum(aMap[i])
+            cls = np.empty_like(aMap)
+            cls[i] = cumsum * 100 * stampProb
+
+            # EXTRACT CONTOUR VALUES AT HEALPIX INDICES
+            contours = []
+            contours[:] = [cls[i] for i in healpixIds]
+            contours = np.reshape(np.array(contours), (yRange, xRange))
+
+            # PLOT THE CONTOURS ON THE SAME PLOT
+            CS = plt.contour(contours, linewidths=1,
+                             alpha=0.5, zorder=2)
+            plt.clabel(CS, fontsize=12, inline=1,
+                       fmt='%2.1f', fontproperties=font)
+
+            # RESET THE AXES TO THE FRAME OF THE FITS FILE
+            ax.set_xlim(-0.5, hdu.data.shape[1] - 0.5)
+            ax.set_ylim(-0.5, hdu.data.shape[0] - 0.5)
+
+            # THE COORDINATES USED IN THE PLOT CAN BE ACCESSED USING THE COORDS
+            # ATTRIBUTE (NOT X AND Y)
+            lon = ax.coords[0]
+            lat = ax.coords[1]
+
+            lon.set_axislabel('RA (deg)', minpad=0.87,
+                              size=20)
+            lat.set_axislabel('DEC (deg)', minpad=0.87,
+                              size=20)
+            lon.set_major_formatter('d')
+            lat.set_major_formatter('d')
+
+            # THE SEPARATORS FOR ANGULAR COORDINATE TICK LABELS CAN ALSO BE SET BY
+            # SPECIFYING A STRING
+            lat.set_separator(':-s')
+            # SET THE APPROXIMATE NUMBER OF TICKS, WITH COLOR & PREVENT OVERLAPPING
+            # TICK LABELS FROM BEING DISPLAYED.
+            lon.set_ticks(number=4, color='#657b83',
+                          exclude_overlapping=True, size=10)
+            lat.set_ticks(number=10, color='#657b83',
+                          exclude_overlapping=True, size=10)
+
+            # MINOR TICKS NOT SHOWN BY DEFAULT
+            lon.display_minor_ticks(True)
+            lat.display_minor_ticks(True)
+            lat.set_minor_frequency(2)
+
+            # CUSTOMISE TICK POSITIONS (l, b, r, t == left, bottom, right, or
+            # top)
+            lon.set_ticks_position('bt')
+            lon.set_ticklabel_position('b')
+            lon.set_ticklabel(size=20)
+            lat.set_ticklabel(size=20)
+            lon.set_axislabel_position('b')
+            lat.set_ticks_position('lr')
+            lat.set_ticklabel_position('l')
+            lat.set_axislabel_position('l')
+
+            # HIDE AXES
+            # lon.set_ticklabel_position('')
+            # lat.set_ticklabel_position('')
+            # lon.set_axislabel('', minpad=0.5, fontsize=12)
+            # lat.set_axislabel('', minpad=0.5, fontsize=12)
+
+            # ADD A GRID
+            ax.coords.grid(color='#657b83', alpha=0.5, linestyle='dashed')
+            plt.gca().invert_xaxis()
+
+        else:
+            self.log.error(
+                'please give a valid projection. The projection given was `%(projection)s`.' % locals())
+
+        header = w.to_header()
         # CREATE THE FITS FILE
         hdu = fits.PrimaryHDU(header=header, data=probs)
-
-        # CONTOURS - NEED TO ADD THE CUMMULATIVE PROBABILITY
-        i = np.flipud(np.argsort(aMap))
-        cumsum = np.cumsum(aMap[i])
-        cls = np.empty_like(aMap)
-        cls[i] = cumsum * 100 * stampProb
-
-        # EXTRACT CONTOUR VALUES AT HEALPIX INDICES
-        contours = []
-        contours[:] = [cls[i] for i in healpixIds]
-        contours = np.reshape(np.array(contours), (yRange, xRange))
-
-        # GRAB THE WCS FROM HEADER GENERATED EARLIER
-        from wcsaxes import datasets, WCS
-        wcs = WCS(hdu.header)
-
-        # PLOT MAP WITH PROJECTION IN HEADER
-        import matplotlib.pyplot as plt
-        fig = plt.figure()
-        ax = fig.add_axes([0.15, 0.1, 0.8, 0.8], projection=wcs)
-        im = ax.imshow(probs,
-                       cmap="YlOrRd", origin='lower', alpha=0.7, zorder=1)
-
-        # PLOT THE CONTOURS ON THE SAME PLOT
-        CS = plt.contour(contours, linewidths=1, alpha=0.5, zorder=2)
-        plt.clabel(CS, fontsize=12, inline=1, fmt='%2.1f', fontproperties=font)
-
-        # RESET THE AXES TO THE FRAME OF THE FITS FILE
-        ax.set_xlim(-0.5, hdu.data.shape[1] - 0.5)
-        ax.set_ylim(-0.5, hdu.data.shape[0] - 0.5)
-
-        # CLIP THE IMAGE TO THE FRAME
-        # im.set_clip_path(ax.coords.frame.patch)
-
-        # THE COORDINATES USED IN THE PLOT CAN BE ACCESSED USING THE COORDS
-        # ATTRIBUTE (NOT X AND Y)
-        lon = ax.coords[0]
-        lat = ax.coords[1]
-        lon.set_axislabel('RA (deg)', minpad=0.87,
-                          size=20)
-        lat.set_axislabel('DEC (deg)', minpad=0.87,
-                          size=20)
-        lon.set_major_formatter('d')
-        lat.set_major_formatter('d')
-
-        # THE SEPARATORS FOR ANGULAR COORDINATE TICK LABELS CAN ALSO BE SET BY
-        # SPECIFYING A STRING
-        lat.set_separator(':-s')
-        # SET THE APPROXIMATE NUMBER OF TICKS, WITH COLOR & PREVENT OVERLAPPING
-        # TICK LABELS FROM BEING DISPLAYED.
-        lon.set_ticks(number=4, color='#657b83',
-                      exclude_overlapping=True, size=10)
-        lat.set_ticks(number=10, color='#657b83',
-                      exclude_overlapping=True, size=10)
-
-        # MINOR TICKS NOT SHOWN BY DEFAULT
-        lon.display_minor_ticks(True)
-        lat.display_minor_ticks(True)
-        lat.set_minor_frequency(2)
-
-        # CUSTOMISE TICK POSITIONS (l, b, r, t == left, bottom, right, or top)
-        lon.set_ticks_position('bt')
-        lon.set_ticklabel_position('b')
-        lon.set_ticklabel(size=20)
-        lat.set_ticklabel(size=20)
-        lon.set_axislabel_position('b')
-        lat.set_ticks_position('lr')
-        lat.set_ticklabel_position('l')
-        lat.set_axislabel_position('l')
-
-        # HIDE AXES
-        # lon.set_ticklabel_position('')
-        # lat.set_ticklabel_position('')
-        # lon.set_axislabel('', minpad=0.5, fontsize=12)
-        # lat.set_axislabel('', minpad=0.5, fontsize=12)
-
-        # ADD A GRID
-        ax.coords.grid(color='#657b83', alpha=0.5, linestyle='dashed')
-        plt.gca().invert_xaxis()
 
         # ADD RA LIMIT
         if raLimit:
             x = np.ones(100) * raLimit
-            print x
             y = np.linspace(decMin, decMax, 100)
-            print y
             ax.plot(x, y, 'b--', transform=ax.get_transform('fk5'))
 
         # SETUP TITLE OF PLOT
@@ -651,39 +811,132 @@ class plot_wave_observational_timelines():
             subTitle = ""
 
         # ax.set_title(plotTitle + "\n", fontsize=10)
-
         # GRAB PS1 POINTINGS
         pointingArray = []
 
+        from matplotlib.patches import Ellipse
         from matplotlib.patches import Circle
+        from matplotlib.patches import Rectangle
 
         for psp in ps1Pointings:
             raDeg = psp["raDeg"]
             decDeg = psp["decDeg"]
 
+            # REMOVE LOWER PROBABILITY FOOTPRINTS
+            phi = raDeg
+            if phi > 180.:
+                phi = phi - 360.
+            theta = -decDeg + 90.
+            healpixId = hp.ang2pix(
+                nside, theta * DEG_TO_RAD_FACTOR, phi * DEG_TO_RAD_FACTOR)
+            probs = aMap[healpixId]
+            probs = float("%0.*f" % (7, probs))
+            if probabilityCut and probs == 0.:
+                continue
+
+            height = 2.8
+            width = height / math.cos(decDeg * DEG_TO_RAD_FACTOR)
+
             # MULTIPLE CIRCLES
-            circ = Circle(
-                (raDeg, decDeg), radius=1.4, alpha=0.2, color='#859900', fill=True, transform=ax.get_transform('fk5'), zorder=3)
+            if projection in ["tan"]:
+                circ = Ellipse(
+                    (raDeg, decDeg), width=width, height=height, alpha=0.2, color='#859900', fill=True, transform=ax.get_transform('fk5'), zorder=3)
+            else:
+                circ = Ellipse(
+                    (-raDeg * DEG_TO_RAD_FACTOR, decDeg * DEG_TO_RAD_FACTOR), width=width * DEG_TO_RAD_FACTOR, height=height * DEG_TO_RAD_FACTOR, alpha=0.2, color='#859900', fill=True, zorder=3)
+
             ax.add_patch(circ)
 
         # ADD ATLAS POINTINGS
+        atlasPointingSide = 5.46
         for atp in atlasPointings:
+            # add a path patch
+            atlasExpId = atp["atlas_object_id"]
             raDeg = atp["raDeg"]
             decDeg = atp["decDeg"]
 
+            # REMOVE LOWER PROBABILITY FOOTPRINTS
+            phi = raDeg
+            if phi > 180.:
+                phi = phi - 360.
+            theta = -decDeg + 90.
+            healpixId = hp.ang2pix(
+                nside, theta * DEG_TO_RAD_FACTOR, phi * DEG_TO_RAD_FACTOR)
+            probs = aMap[healpixId]
+            probs = float("%0.*f" % (7, probs))
+            if probabilityCut and probs == 0.:
+                continue
+            elif probabilityCut:
+                print atlasExpId
+
+            deltaDeg = atlasPointingSide / 2
+            if decDeg < 0:
+                deltaDeg = -deltaDeg
+
             # MULTIPLE CIRCLES
-            circ = Circle(
-                (raDeg, decDeg), radius=1.4, alpha=0.2, color='#6c71c4', fill=True, transform=ax.get_transform('fk5'), zorder=3)
-            ax.add_patch(circ)
+            if projection in ["tan"]:
+                widthDegTop = atlasPointingSide / \
+                    math.cos((decDeg + deltaDeg) * DEG_TO_RAD_FACTOR)
+                widthDegBottom = atlasPointingSide / \
+                    math.cos((decDeg - deltaDeg) * DEG_TO_RAD_FACTOR)
+                heightDeg = atlasPointingSide
+                llx = (raDeg - widthDegBottom / 2)
+                lly = decDeg - (heightDeg / 2)
+                ulx = (raDeg - widthDegTop / 2)
+                uly = decDeg + (heightDeg / 2)
+                urx = (raDeg + widthDegTop / 2)
+                ury = uly
+                lrx = (raDeg + widthDegBottom / 2)
+                lry = lly
+                Path = mpath.Path
+                path_data = [
+                    (Path.MOVETO, [llx, lly]),
+                    (Path.LINETO, [ulx, uly]),
+                    (Path.LINETO, [urx, ury]),
+                    (Path.LINETO, [lrx, lry]),
+                    (Path.CLOSEPOLY, [llx, lly])
+                ]
+                codes, verts = zip(*path_data)
+                path = mpath.Path(verts, codes)
+                patch = patches.PathPatch(path, alpha=0.2,
+                                          color='#6c71c4', fill=True, zorder=3, transform=ax.get_transform('fk5'))
+            else:
+                widthRadTop = atlasPointingSide * DEG_TO_RAD_FACTOR / \
+                    math.cos((decDeg + deltaDeg) * DEG_TO_RAD_FACTOR)
+                widthRadBottom = atlasPointingSide * DEG_TO_RAD_FACTOR / \
+                    math.cos((decDeg - deltaDeg) * DEG_TO_RAD_FACTOR)
+                heightRad = atlasPointingSide * DEG_TO_RAD_FACTOR
+                llx = -(raDeg * DEG_TO_RAD_FACTOR - widthRadBottom / 2)
+                lly = decDeg * DEG_TO_RAD_FACTOR - (heightRad / 2)
+                ulx = -(raDeg * DEG_TO_RAD_FACTOR - widthRadTop / 2)
+                uly = decDeg * DEG_TO_RAD_FACTOR + (heightRad / 2)
+                urx = -(raDeg * DEG_TO_RAD_FACTOR + widthRadTop / 2)
+                ury = uly
+                lrx = -(raDeg * DEG_TO_RAD_FACTOR + widthRadBottom / 2)
+                lry = lly
+                Path = mpath.Path
+                path_data = [
+                    (Path.MOVETO, [llx, lly]),
+                    (Path.LINETO, [ulx, uly]),
+                    (Path.LINETO, [urx, ury]),
+                    (Path.LINETO, [lrx, lry]),
+                    (Path.CLOSEPOLY, [llx, lly])
+                ]
+                codes, verts = zip(*path_data)
+                path = mpath.Path(verts, codes)
+                patch = patches.PathPatch(path, alpha=0.2,
+                                          color='#6c71c4', fill=True, zorder=3,)
+
+            ax.add_patch(patch)
 
         # ADD DATA POINTS FOR TRANSIENTS
         names = []
         ra = []
         dec = []
-        xLabelShift = []
-        yLabelShift = []
+        raRad = []
+        decRad = []
+        texts = []
 
-        movedSourcesX = []
         for trans in ps1Transients:
             # if trans["ps1_designation"] in ["PS15dpg", "PS15dpp", "PS15dpq", "PS15don", "PS15dpa", "PS15dom"]:
             #     continue
@@ -696,110 +949,98 @@ class plot_wave_observational_timelines():
             decDeg = trans["dec_psf"]
             ra.append(raDeg)
             dec.append(decDeg)
-
-            #########
-            import math
-            pi = (4 * math.atan(1.0))
-            DEG_TO_RAD_FACTOR = pi / 180.0
-            raDecFactor = math.cos(centralCoordinate[1] * DEG_TO_RAD_FACTOR)
-            shiftX = -0.01 * raRange * raDecFactor
-            shiftY = -0.005 * decRange
-
-            movedx = False
-            movedy = False
-
-            for otherTrans in ps1Transients:
-                otherName = otherTrans["ps1_designation"]
-                if otherName is None:
-                    otherName = otherTrans["local_designation"]
-                if name == otherName:
-                    continue
-                otherTranRa, otherTranDec = (
-                    otherTrans["ra_psf"], otherTrans["dec_psf"])
-                raDiff = (raDeg - otherTranRa) * raDecFactor
-                decDiff = decDeg - otherTranDec
-
-                if abs(raDiff) < 0.07 * raRange * raDecFactor and abs(decDiff) < 0.025 * decRange and otherName not in movedSourcesX:
-                    if raDiff > 0 and movedx == False:
-                        shiftX = shiftX + 0.09 * raRange * raDecFactor
-                        movedx = True
-                        movedSourcesX.append(name)
-                    if decDiff > 0 and movedy == False:
-                        shiftY = shiftY + 0.01 * decRange
-                        movedy = True
-                    elif decDiff < 0 and movedy == False:
-                        shiftY = shiftY - 0.005 * decRange
-                        movedy = True
-
-            xLabelShift.append(shiftX)
-            yLabelShift.append(shiftY)
+            raRad.append(-raDeg * DEG_TO_RAD_FACTOR)
+            decRad.append(decDeg * DEG_TO_RAD_FACTOR)
 
         if len(ra) > 0:
-            ax.scatter(
-                x=np.array(ra),
-                y=np.array(dec),
-                transform=ax.get_transform('fk5'),
-                s=6,
-                c='#dc322f',
-                edgecolor='#dc322f',
-                alpha=1,
-                zorder=4
-            )
+            # MULTIPLE CIRCLES
+            if projection in ["tan"]:
+                ax.scatter(
+                    x=np.array(ra),
+                    y=np.array(dec),
+                    transform=ax.get_transform('fk5'),
+                    s=6,
+                    c='#dc322f',
+                    edgecolor='#dc322f',
+                    alpha=1,
+                    zorder=4
+                )
+                xx, yy = w.wcs_world2pix(np.array(ra), np.array(dec), 1)
+                # ADD TRANSIENT LABELS
+                for r, d, n in zip(xx, yy, names):
+                    texts.append(ax.text(
+                        r,
+                        d,
+                        n,
+                        fontsize=8,
+                        zorder=4,
+                        family='monospace'
+                    ))
 
-        texts = []
-        if len(ra):
-            xx, yy = w.wcs_world2pix(np.array(ra), np.array(dec), 1)
-
-            # ADD TRANSIENT LABELS
-            for r, d, n in zip(xx, yy, names):
-                texts.append(ax.text(
-                    r,
-                    d,
-                    n,
-                    fontsize=10,
-                    zorder=4,
-                    family='monospace'
-                ))
-
-            if len(texts):
-                adjust_text(
-                    xx,
-                    yy,
-                    texts,
-                    expand_text=(1.2, 1.6),
-                    expand_points=(1.2, 1.2),
-                    va='center',
-                    ha='center',
-                    force_text=2.0,
-                    force_points=0.5,
-                    lim=1000,
-                    precision=0,
-                    only_move={},
-                    text_from_text=True,
-                    text_from_points=True,
-                    save_steps=False,
-                    save_prefix='',
-                    save_format='png',
-                    add_step_numbers=True,
-                    min_arrow_sep=50.0,
-                    draggable=True,
-                    arrowprops=dict(arrowstyle="-", color='#dc322f', lw=0.6,
-                                    patchB=None, shrinkB=0, connectionstyle="arc3,rad=0.1", zorder=3, alpha=0.5),
-                    fontsize=10,
-                    family='monospace'
+                if len(texts):
+                    adjust_text(
+                        xx,
+                        yy,
+                        texts,
+                        expand_text=(1.2, 1.6),
+                        expand_points=(1.2, 1.2),
+                        va='center',
+                        ha='center',
+                        force_text=2.0,
+                        force_points=0.5,
+                        lim=1000,
+                        precision=0,
+                        only_move={},
+                        text_from_text=True,
+                        text_from_points=True,
+                        save_steps=False,
+                        save_prefix='',
+                        save_format='png',
+                        add_step_numbers=True,
+                        min_arrow_sep=50.0,
+                        draggable=True,
+                        arrowprops=dict(arrowstyle="-", color='#dc322f', lw=0.6,
+                                        patchB=None, shrinkB=0, connectionstyle="arc3,rad=0.1", zorder=3, alpha=0.5),
+                        fontsize=8,
+                        family='monospace'
+                    )
+            else:
+                ax.scatter(
+                    x=np.array(raRad),
+                    y=np.array(decRad),
+                    s=6,
+                    c='#dc322f',
+                    edgecolor='#dc322f',
+                    alpha=1,
+                    zorder=4
                 )
 
-        # # TIME-RANGE LABEL
-        ax.text(
-            xRange * 0.2,
-            # xRange * 0.95,
-            yRange * 0.93,
-            timeRangeLabel,
-            fontsize=16,
-            zorder=4,
-            color="#dc322f",
-            fontproperties=font
-        )
+        # TIME-RANGE LABEL
+        fig = plt.gcf()
+        fWidth, fHeight = fig.get_size_inches()
+        print fWidth, fHeight
+        if projection == "tan":
+            plt.text(
+                xRange * 0.25,
+                # xRange * 0.95,
+                yRange * 0.93,
+                timeRangeLabel,
+                fontsize=16,
+                zorder=4,
+                color="#dc322f",
+                fontproperties=font
+            )
+        else:
+            plt.text(
+                fWidth * 0.7,
+                # xRange * 0.95,
+                fHeight * 0.3,
+                timeRangeLabel,
+                fontsize=16,
+                zorder=4,
+                color="#dc322f",
+                fontproperties=font
+            )
 
         # Recursively create missing directories
         plotDir = self.settings["output directory"] + "/" + gwid
@@ -816,12 +1057,12 @@ class plot_wave_observational_timelines():
         for f in fileFormats:
             if not os.path.exists("%(plotDir)s/%(folderName)s/%(f)s" % locals()):
                 os.makedirs("%(plotDir)s/%(folderName)s/%(f)s" % locals())
-            figurePath = "%(plotDir)s/%(folderName)s/%(f)s/%(figureName)s.%(f)s" % locals()
+            figurePath = "%(plotDir)s/%(folderName)s/%(f)s/%(figureName)s_%(projection)s.%(f)s" % locals()
             savefig(figurePath, bbox_inches='tight', dpi=300)
 
         if not os.path.exists("%(plotDir)s/%(folderName)s/fits" % locals()):
             os.makedirs("%(plotDir)s/%(folderName)s/fits" % locals())
-        pathToExportFits = "%(plotDir)s/%(folderName)s/fits/%(gwid)s_stamp.fits" % locals()
+        pathToExportFits = "%(plotDir)s/%(folderName)s/fits/%(gwid)s_stamp_%(projection)s.fits" % locals()
         try:
             os.remove(pathToExportFits)
         except:
@@ -898,7 +1139,9 @@ class plot_wave_observational_timelines():
                     timeLimitDay=tday,
                     fileFormats=["png"],
                     folderName="survey_history_plots",
-                    plotType=self.plotType)
+                    plotType=self.plotType,
+                    projection=self.projection,
+                    probabilityCut=self.probabilityCut)
 
         self.log.info('completed the ``get_history_plots`` method')
         return None
@@ -974,9 +1217,11 @@ class plot_wave_observational_timelines():
                     timeLimitLabel=tlabel,
                     timeLimitDay=tday,
                     raLimit=raLimit,
-                    fileFormats=["png", "pdf"],
+                    fileFormats=["png"],
                     folderName="survey_timeline_plots",
-                    plotType=self.plotType)
+                    plotType=self.plotType,
+                    projection=self.projection,
+                    probabilityCut=self.probabilityCut)
 
         self.log.info('completed the ``get_timeline_plots`` method')
         return None
