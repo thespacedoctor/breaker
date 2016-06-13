@@ -597,7 +597,7 @@ class plot_wave_observational_timelines():
 
             # CS = plt.contour(contours, linewidths=10, alpha=0.7, zorder=2)
             plt.clabel(CS, fontsize=12, inline=1,
-                       fmt='%2.1f', fontproperties=font, alpha=0.4)
+                       fmt='%2.1f', fontproperties=font, alpha=0.7)
 
             # COLORBAR
             if colorBar:
@@ -608,8 +608,16 @@ class plot_wave_observational_timelines():
                 # WORKAROUND FOR ISSUE WITH VIEWERS, SEE COLORBAR DOCSTRING
                 cb.solids.set_edgecolor("face")
 
-            ax.tick_params(axis='x', labelsize=10)
-            ax.tick_params(axis='y', labelsize=10)
+            ax.tick_params(axis='x', labelsize=16)
+            ax.tick_params(axis='y', labelsize=16)
+            # lon.set_ticks_position('bt')
+            # lon.set_ticklabel_position('b')
+            # lon.set_ticklabel(size=20)
+            # lat.set_ticklabel(size=20)
+            # lon.set_axislabel_position('b')
+            # lat.set_ticks_position('lr')
+            # lat.set_ticklabel_position('l')
+            # lat.set_axislabel_position('l')
 
             # # REMOVE TICK LABELS
             # ax.xaxis.set_ticklabels([])
@@ -709,7 +717,7 @@ class plot_wave_observational_timelines():
 
             # PLOT THE CONTOURS ON THE SAME PLOT
             CS = plt.contour(contours, linewidths=1,
-                             alpha=0.5, zorder=2)
+                             alpha=0.3, zorder=3)
             plt.clabel(CS, fontsize=12, inline=1,
                        fmt='%2.1f', fontproperties=font)
 
@@ -842,9 +850,49 @@ class plot_wave_observational_timelines():
                 circ = Ellipse(
                     (raDeg, decDeg), width=width, height=height, alpha=0.2, color='#859900', fill=True, transform=ax.get_transform('fk5'), zorder=3)
             else:
+                if raDeg > 180.:
+                    raDeg = raDeg - 360.
                 circ = Ellipse(
                     (-raDeg * DEG_TO_RAD_FACTOR, decDeg * DEG_TO_RAD_FACTOR), width=width * DEG_TO_RAD_FACTOR, height=height * DEG_TO_RAD_FACTOR, alpha=0.2, color='#859900', fill=True, zorder=3)
 
+            ax.add_patch(circ)
+
+        # LEGEND FOR PS1
+        if len(ps1Pointings):
+            raDeg = 90.
+            decDeg = 10.
+            height = 3.5
+
+            width = height / math.cos(decDeg * DEG_TO_RAD_FACTOR)
+            if projection in ["tan"]:
+                circ = Ellipse(
+                    (raDeg, decDeg), width=width, height=height, alpha=0.2, color='#859900', fill=True, transform=ax.get_transform('fk5'), zorder=3)
+                ax.text(
+                    raDeg - 3,
+                    decDeg - 1.,
+                    "PS1",
+                    fontsize=14,
+                    zorder=4,
+                    family='monospace',
+                    transform=ax.get_transform('fk5')
+                )
+            else:
+                height = 6.
+                width = height / math.cos(decDeg * DEG_TO_RAD_FACTOR)
+                raDeg = 285.
+                decDeg = 38.
+                if raDeg > 180.:
+                    raDeg = raDeg - 360.
+                circ = Ellipse(
+                    (-raDeg * DEG_TO_RAD_FACTOR, decDeg * DEG_TO_RAD_FACTOR), width=width * DEG_TO_RAD_FACTOR, height=height * DEG_TO_RAD_FACTOR, alpha=0.2, color='#859900', fill=True, zorder=3)
+                ax.text(
+                    (-raDeg + 8.) * DEG_TO_RAD_FACTOR,
+                    (decDeg - 3.) * DEG_TO_RAD_FACTOR,
+                    "PS1",
+                    fontsize=14,
+                    zorder=4,
+                    family='monospace'
+                )
             ax.add_patch(circ)
 
         # ADD ATLAS POINTINGS
@@ -873,7 +921,6 @@ class plot_wave_observational_timelines():
             if decDeg < 0:
                 deltaDeg = -deltaDeg
 
-            # MULTIPLE CIRCLES
             if projection in ["tan"]:
                 widthDegTop = atlasPointingSide / \
                     math.cos((decDeg + deltaDeg) * DEG_TO_RAD_FACTOR)
@@ -901,6 +948,9 @@ class plot_wave_observational_timelines():
                 patch = patches.PathPatch(path, alpha=0.2,
                                           color='#6c71c4', fill=True, zorder=3, transform=ax.get_transform('fk5'))
             else:
+                if raDeg > 180.:
+                    raDeg = raDeg - 360.
+
                 widthRadTop = atlasPointingSide * DEG_TO_RAD_FACTOR / \
                     math.cos((decDeg + deltaDeg) * DEG_TO_RAD_FACTOR)
                 widthRadBottom = atlasPointingSide * DEG_TO_RAD_FACTOR / \
@@ -926,6 +976,91 @@ class plot_wave_observational_timelines():
                 path = mpath.Path(verts, codes)
                 patch = patches.PathPatch(path, alpha=0.2,
                                           color='#6c71c4', fill=True, zorder=3,)
+
+            ax.add_patch(patch)
+
+        # LEGEND FOR ATLAS
+        if len(atlasPointings):
+            if projection in ["tan"]:
+                raDeg = 88.
+                decDeg = 4.
+                atlasPointingSide = 4.5
+
+                widthDegTop = atlasPointingSide / \
+                    math.cos((decDeg + deltaDeg) * DEG_TO_RAD_FACTOR)
+                widthDegBottom = atlasPointingSide / \
+                    math.cos((decDeg - deltaDeg) * DEG_TO_RAD_FACTOR)
+                heightDeg = atlasPointingSide
+                llx = (raDeg - widthDegBottom / 2)
+                lly = decDeg - (heightDeg / 2)
+                ulx = (raDeg - widthDegTop / 2)
+                uly = decDeg + (heightDeg / 2)
+                urx = (raDeg + widthDegTop / 2)
+                ury = uly
+                lrx = (raDeg + widthDegBottom / 2)
+                lry = lly
+                Path = mpath.Path
+                path_data = [
+                    (Path.MOVETO, [llx, lly]),
+                    (Path.LINETO, [ulx, uly]),
+                    (Path.LINETO, [urx, ury]),
+                    (Path.LINETO, [lrx, lry]),
+                    (Path.CLOSEPOLY, [llx, lly])
+                ]
+                codes, verts = zip(*path_data)
+                path = mpath.Path(verts, codes)
+                patch = patches.PathPatch(path, alpha=0.2,
+                                          color='#6c71c4', fill=True, zorder=3, transform=ax.get_transform('fk5'))
+                ax.text(
+                    raDeg - 4,
+                    decDeg - 1,
+                    "ATLAS",
+                    fontsize=14,
+                    zorder=4,
+                    family='monospace',
+                    transform=ax.get_transform('fk5')
+                )
+            else:
+                atlasPointingSide = 8.
+                raDeg = 285.
+                decDeg = 28.
+
+                if raDeg > 180.:
+                    raDeg = raDeg - 360.
+
+                widthRadTop = atlasPointingSide * DEG_TO_RAD_FACTOR / \
+                    math.cos((decDeg + deltaDeg) * DEG_TO_RAD_FACTOR)
+                widthRadBottom = atlasPointingSide * DEG_TO_RAD_FACTOR / \
+                    math.cos((decDeg - deltaDeg) * DEG_TO_RAD_FACTOR)
+                heightRad = atlasPointingSide * DEG_TO_RAD_FACTOR
+                llx = -(raDeg * DEG_TO_RAD_FACTOR - widthRadBottom / 2)
+                lly = decDeg * DEG_TO_RAD_FACTOR - (heightRad / 2)
+                ulx = -(raDeg * DEG_TO_RAD_FACTOR - widthRadTop / 2)
+                uly = decDeg * DEG_TO_RAD_FACTOR + (heightRad / 2)
+                urx = -(raDeg * DEG_TO_RAD_FACTOR + widthRadTop / 2)
+                ury = uly
+                lrx = -(raDeg * DEG_TO_RAD_FACTOR + widthRadBottom / 2)
+                lry = lly
+                Path = mpath.Path
+                path_data = [
+                    (Path.MOVETO, [llx, lly]),
+                    (Path.LINETO, [ulx, uly]),
+                    (Path.LINETO, [urx, ury]),
+                    (Path.LINETO, [lrx, lry]),
+                    (Path.CLOSEPOLY, [llx, lly])
+                ]
+                codes, verts = zip(*path_data)
+                path = mpath.Path(verts, codes)
+                patch = patches.PathPatch(path, alpha=0.2,
+                                          color='#6c71c4', fill=True, zorder=3,)
+                ax.text(
+                    (-raDeg + 8.) * DEG_TO_RAD_FACTOR,
+                    (decDeg - 3.) * DEG_TO_RAD_FACTOR,
+                    "ATLAS",
+                    fontsize=14,
+                    zorder=4,
+                    family='monospace'
+                )
 
             ax.add_patch(patch)
 
@@ -960,30 +1095,31 @@ class plot_wave_observational_timelines():
                     y=np.array(dec),
                     transform=ax.get_transform('fk5'),
                     s=6,
-                    c='#dc322f',
-                    edgecolor='#dc322f',
+                    c='black',
+                    edgecolor='black',
                     alpha=1,
                     zorder=4
                 )
                 xx, yy = w.wcs_world2pix(np.array(ra), np.array(dec), 1)
                 # ADD TRANSIENT LABELS
                 for r, d, n in zip(xx, yy, names):
-                    texts.append(ax.text(
-                        r,
-                        d,
-                        n,
-                        fontsize=8,
-                        zorder=4,
-                        family='monospace'
-                    ))
+                    if "dpn" in n:
+                        texts.append(ax.text(
+                            r,
+                            d,
+                            n,
+                            fontsize=18,
+                            zorder=4,
+                            family='monospace'
+                        ))
 
                 if len(texts):
                     adjust_text(
                         xx,
                         yy,
                         texts,
-                        expand_text=(1.2, 1.6),
-                        expand_points=(1.2, 1.2),
+                        expand_text=(7.2, 7.6),
+                        expand_points=(1.2, 3.2),
                         va='center',
                         ha='center',
                         force_text=2.0,
@@ -999,9 +1135,9 @@ class plot_wave_observational_timelines():
                         add_step_numbers=True,
                         min_arrow_sep=50.0,
                         draggable=True,
-                        arrowprops=dict(arrowstyle="-", color='#dc322f', lw=0.6,
+                        arrowprops=dict(arrowstyle="-", color='black', lw=1.2,
                                         patchB=None, shrinkB=0, connectionstyle="arc3,rad=0.1", zorder=3, alpha=0.5),
-                        fontsize=8,
+                        fontsize=18,
                         family='monospace'
                     )
             else:
@@ -1025,20 +1161,40 @@ class plot_wave_observational_timelines():
                 # xRange * 0.95,
                 yRange * 0.93,
                 timeRangeLabel,
-                fontsize=16,
+                fontsize=20,
                 zorder=4,
                 color="#dc322f",
+                fontproperties=font
+            )
+            plt.text(
+                xRange * 0.1,
+                # xRange * 0.95,
+                yRange * 0.93,
+                "",
+                fontsize=20,
+                zorder=4,
+                color="black",
                 fontproperties=font
             )
         else:
             plt.text(
                 fWidth * 0.7,
                 # xRange * 0.95,
-                fHeight * 0.3,
+                fHeight * 0.95,
                 timeRangeLabel,
-                fontsize=16,
+                fontsize=20,
                 zorder=4,
                 color="#dc322f",
+                fontproperties=font
+            )
+            plt.text(
+                fWidth * 0.87,
+                # xRange * 0.95,
+                fHeight * 0.315,
+                "",
+                fontsize=20,
+                zorder=4,
+                color="black",
                 fontproperties=font
             )
 
