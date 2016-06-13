@@ -198,50 +198,92 @@ class survey_footprint():
         # CREATE THE FITS FILE
         hdu = fits.PrimaryHDU(header=header, data=probs)
 
+        # SORT ALL POINTINGS VIA MJD
         from operator import itemgetter
         ps1Pointings = list(ps1Pointings)
-        ps1Pointings = sorted(
-            ps1Pointings, key=itemgetter('mjd'), reverse=False)
+        for pt in ps1Pointings:
+            pt["survey"] = "ps1"
 
-        exposureRadius = 1.4
+        altasPointings = list(altasPointings)
+        for at in altasPointings:
+            at["survey"] = "atlas"
+
+        allPointings = ps1Pointings + altasPointings
+        allPointings = sorted(
+            allPointings, key=itemgetter('mjd'), reverse=False)
+
+        # ONLY KEEP NON-ZERO PROB FOTTPRINTS
+        tmpPointings = []
+        for pt in allPointings:
+            pra = pt["raDeg"]
+            pdec = pt["decDeg"]
+            # REMOVE LOWER PROBABILITY FOOTPRINTS
+            phi = pra
+            if phi > 180.:
+                phi = phi - 360.
+            theta = -pdec + 90.
+            # CONVERT WORLD TO HEALPIX INDICES (NON-UNIQUE IDS!)
+            healpixId = hp.ang2pix(nside, theta=theta * DEG_TO_RAD_FACTOR,
+                                   phi=phi * DEG_TO_RAD_FACTOR)
+            thisProb = aMap[healpixId]
+            thisProb = float("%0.*f" % (7, thisProb))
+            if thisProb != 0.:
+                tmpPointings.append(pt)
+        allPointings = tmpPointings
+
+        ps1exposureRadius = 1.4
+        atlasPointingSide = 5.46
         healpixDictionary = {}
-        totalPointings = len(ps1Pointings)
+        totalPointings = len(allPointings)
         cumCoveredArray = np.ones(healpixIds.size)
         finalMJDs = []
         finalAreas = []
         finalProbs = []
 
-        for pti, pt in enumerate(ps1Pointings):
+        for pti, pt in enumerate(allPointings):
 
             pra = pt["raDeg"]
             pdec = pt["decDeg"]
             pmjd = pt["mjd"]
-            # print pmjd
+            psurvey = pt["survey"]
 
             decFactor = math.cos(pdec * DEG_TO_RAD_FACTOR)
             coveredPixels = []
 
             covered = -1
             for r, d, c in zip(wr, wd, cumCoveredArray):
-                if c == 0:
-                    # WE HAVE COVERED THIS PIXEL BEFORE -- MOVE ON
-                    covered = 0
-                elif (((pra - r) * decFactor)**2)**0.5 > exposureRadius:
-                    covered = 0
-                elif ((pdec - d)**2)**0.5 > exposureRadius:
-                    covered = 0
-                else:
-                    angularSeparation, northSep, eastSep = dat.get_angular_separation(
-                        log=self.log,
-                        ra1=pra,
-                        dec1=pdec,
-                        ra2=r,
-                        dec2=d
-                    )
-                    if angularSeparation < exposureRadius * 60 * 60:
-                        covered = 1
-                    else:
+                if psurvey == "ps1":
+                    if c == 0:
+                        # WE HAVE COVERED THIS PIXEL BEFORE -- MOVE ON
                         covered = 0
+                    elif (((pra - r) * decFactor)**2)**0.5 > ps1exposureRadius:
+                        covered = 0
+                    elif ((pdec - d)**2)**0.5 > ps1exposureRadius:
+                        covered = 0
+                    else:
+                        angularSeparation, northSep, eastSep = dat.get_angular_separation(
+                            log=self.log,
+                            ra1=pra,
+                            dec1=pdec,
+                            ra2=r,
+                            dec2=d
+                        )
+                        if angularSeparation < ps1exposureRadius * 60 * 60:
+                            covered = 1
+                        else:
+                            covered = 0
+
+                elif psurvey == "atlas":
+                    atDecFactor = math.cos(d * DEG_TO_RAD_FACTOR)
+                    if c == 0:
+                        # WE HAVE COVERED THIS PIXEL BEFORE -- MOVE ON
+                        covered = 0
+                    elif ((pdec - d)**2)**0.5 > atlasPointingSide / 2:
+                        covered = 0
+                    elif (((pra - r) * atDecFactor)**2)**0.5 > atlasPointingSide / 2:
+                        covered = 0
+                    else:
+                        covered = 1
                 coveredPixels.append(covered)
 
             # APPEND TO CUMMULATIVE COVERED ARRAY - SPEED THINGS UP!
@@ -276,7 +318,7 @@ class survey_footprint():
             finalAreas.append(cumArea)
             finalProbs.append(cumProb)
 
-            print "%(pti)s/%(totalPointings)s.  MJD: %(pmjd)s. AREA: %(cumArea)0.2f. PROB: %(cumProb)0.5f" % locals()
+            print "%(pti)s/%(totalPointings)s.  MJD: %(pmjd)s. AREA: %(cumArea)0.2f. PROB: %(cumProb)0.5f. SURVEY: %(psurvey)s" % locals()
 
         gwid = self.gwid
         import codecs

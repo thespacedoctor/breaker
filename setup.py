@@ -29,6 +29,7 @@ setup(name="breaker",
       packages=find_packages(),
       package_data={'breaker': [
           'resources/*/*', 'resources/*.*']},
+      include_package_data=True,
       install_requires=[
           'pyyaml',
           'fundamentals',
