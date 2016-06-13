@@ -23,7 +23,6 @@ build
 /*.egg-info
 /*.egg
 
-README.rst
 
 ## Apache logs
 logs/*.log
