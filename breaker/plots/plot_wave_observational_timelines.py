@@ -1170,7 +1170,7 @@ class plot_wave_observational_timelines():
                 xRange * 0.1,
                 # xRange * 0.95,
                 yRange * 0.93,
-                "",
+                "C",
                 fontsize=20,
                 zorder=4,
                 color="black",

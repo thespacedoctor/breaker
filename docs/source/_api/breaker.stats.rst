@@ -6,13 +6,6 @@ breaker.stats package
     :undoc-members:
     :show-inheritance:
 
-Subpackages
------------
-
-.. toctree::
-
-    breaker.stats.tests
-
 Submodules
 ----------
 

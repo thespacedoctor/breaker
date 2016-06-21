@@ -40,7 +40,8 @@ setup(name="breaker",
           'adjustText',
           'sherlock',
           'neddy',
-          'wcsaxes'
+          'wcsaxes',
+          'docopt'
       ],
       test_suite='nose.collector',
       tests_require=['nose', 'nose-cover3'],

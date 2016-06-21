@@ -34,15 +34,17 @@ If you're having trouble with the installation here are a few things to try:
 
 **Astropy and Clang**. On Mac OS you may have to set your C-compiler to clang before astropy will install. So before the breaker installation, try:
 
-```bash
-setenv CC clang
-```
+.. code:: bash
+
+    setenv CC clang
+
 
 or, for bash:
 
-```bash
-export CC=clang
-```
+.. code:: bash
+
+    export CC=clang
+
 
 Then try and install breaker again.
 
@@ -50,12 +52,12 @@ Then try and install breaker again.
 
 Untar, set your ``MACOSX_DEPLOYMENT_TARGET`` environment variable and install:
 
-```
-tar -xvf healpy-1.9.0.tar.gz
-cd healpy-1.9.0
-setenv MACOSX_DEPLOYMENT_TARGET 10.11
-python setup.py install
-```
+.. code:: bash
+
+    tar -xvf healpy-1.9.0.tar.gz
+    cd healpy-1.9.0
+    setenv MACOSX_DEPLOYMENT_TARGET 10.11
+    python setup.py install
 
 
 
