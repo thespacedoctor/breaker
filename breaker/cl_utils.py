@@ -15,10 +15,14 @@ Usage:
     breaker plot comparison <gwid> <pathToMapDirectory> [-s <pathToSettingsFile>]
     breaker faker <ps1ExpId> [-s <pathToSettingsFile>]
     breaker stats <gwid> [-s <pathToSettingsFile>]
+    breaker listen <far> (<mjdStart> <mjdEnd> | <inLastNMins>) [-s <pathToSettingsFile>]
+    breaker listen -d <far> [-s <pathToSettingsFile>]
 
     -h, --help            show this help message
     -s, --settings        the settings file
     -n, --updateNed       update the NED database steam
+    -d, --daemon          listen in daemon mode
+    far                   false alarm rate limit in Hz (1e-7 Hz ~= 3.2 per year)
     plot                  update the gravitational wave plots
     timeline              observations looking forward from date of GW detection
     history               observations from the past x days
@@ -40,6 +44,8 @@ from breaker.plots.plot_wave_matched_source_maps import plot_wave_matched_source
 from breaker.fakers.generate_faker_catalogue import generate_faker_catalogue
 from breaker.stats.survey_footprint import survey_footprint
 from breaker.plots.plot_multi_panel_alternate_map_comparison import plot_multi_panel_alternate_map_comparison
+from breaker.gracedb.listen import listen as mlisten
+from astrocalc.times import now as mjdNow
 # from ..__init__ import *
 
 
@@ -155,6 +161,39 @@ def main(arguments=None):
             gwid=gwid
         )
         s.get()
+    if listen and inLastNMins:
+        timeNowMjd = mjdNow(
+            log=log
+        ).get_mjd()
+        startMJD = float(timeNowMjd) - float(inLastNMins) / (60 * 60 * 24.)
+        this = mlisten(
+            log=log,
+            settings=settings,
+            label="EM_READY",
+            farThreshold=far,
+            startMJD=float(startMJD),
+            endMJD=float(timeNowMjd) + 1.
+        )
+        this.get_maps()
+    if listen and mjdStart:
+        this = mlisten(
+            log=log,
+            settings=settings,
+            label="EM_READY",
+            farThreshold=far,
+            startMJD=float(mjdStart),
+            endMJD=float(mjdEnd)
+        )
+        this.get_maps()
+    if listen and daemonFlag:
+        this = mlisten(
+            log=log,
+            settings=settings,
+            label="EM_READY",
+            farThreshold=far,
+            daemon=True
+        )
+        this.get_maps()
 
     if "dbConn" in locals() and dbConn:
         dbConn.commit()

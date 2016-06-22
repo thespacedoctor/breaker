@@ -33,7 +33,7 @@ from astropy import wcs as awcs
 from astropy.io import fits
 from fundamentals import tools, times
 from fundamentals.mysql import readquery
-from adjustText import adjust_text
+from crowdedText import adjust_text
 from astrocalc.times import now
 
 
@@ -186,7 +186,7 @@ class plot_wave_observational_timelines():
                     log=log,
                        settings=settings
                 )
-                plotParameters, ps1Transients, ps1Pointings, altasPointings = plotter.get_gw_parameters_from_settings(
+                plotParameters, ps1Transients, ps1Pointings, atlasPointings = plotter.get_gw_parameters_from_settings(
                     gwid="G211117"
                 )
                 print plotParameters
@@ -227,7 +227,7 @@ class plot_wave_observational_timelines():
                     log=log,
                     settings=settings
                 )
-                plotParameters, ps1Transients, ps1Pointings, altasPointings = plotter.get_gw_parameters_from_settings(
+                plotParameters, ps1Transients, ps1Pointings, atlasPointings = plotter.get_gw_parameters_from_settings(
                     gwid="G211117",
                     inPastDays=7
                 )
@@ -239,7 +239,7 @@ class plot_wave_observational_timelines():
                     log=log,
                     settings=settings
                 )
-                plotParameters, ps1Transients, ps1Pointings, altasPointings = plotter.get_gw_parameters_from_settings(
+                plotParameters, ps1Transients, ps1Pointings, atlasPointings = plotter.get_gw_parameters_from_settings(
                     gwid="G211117",
                     inFirstDays=(0,3)
                 )
@@ -263,12 +263,12 @@ class plot_wave_observational_timelines():
 
         # GRAB PS1 & ATLAS POINTINGS FROM THE DATABASE
         ps1Pointings = self._get_ps1_pointings(gwid, inPastDays, inFirstDays)
-        altasPointings = self._get_atlas_pointings(
+        atlasPointings = self._get_atlas_pointings(
             gwid, inPastDays, inFirstDays)
 
         self.log.info(
             'completed the ``get_gw_parameters_from_settings`` method')
-        return plotParameters, ps1Transients, ps1Pointings, altasPointings
+        return plotParameters, ps1Transients, ps1Pointings, atlasPointings
 
     def _get_ps1_transient_candidates(
             self,
@@ -485,7 +485,7 @@ class plot_wave_observational_timelines():
                     log=log,
                     settings=settings
                 )
-                plotParameters, ps1Transients, ps1Pointings, altasPointings = plotter.get_gw_parameters_from_settings(
+                plotParameters, ps1Transients, ps1Pointings, atlasPointings = plotter.get_gw_parameters_from_settings(
                     gwid="G211117",
                     inFirstDays=(0,7)
                 )
@@ -1108,15 +1108,14 @@ class plot_wave_observational_timelines():
                 xx, yy = w.wcs_world2pix(np.array(ra), np.array(dec), 1)
                 # ADD TRANSIENT LABELS
                 for r, d, n in zip(xx, yy, names):
-                    if "dpn" in n:
-                        texts.append(ax.text(
-                            r,
-                            d,
-                            n,
-                            fontsize=18,
-                            zorder=4,
-                            family='monospace'
-                        ))
+                    texts.append(ax.text(
+                        r,
+                        d,
+                        n,
+                        fontsize=18,
+                        zorder=4,
+                        family='monospace'
+                    ))
 
                 if len(texts):
                     adjust_text(
@@ -1273,7 +1272,7 @@ class plot_wave_observational_timelines():
         for gwid in theseIds:
             for tday, tlabel in zip(timeLimitDays, timeLimitLabels):
 
-                plotParameters, ps1Transients, ps1Pointings, altasPointings = self.get_gw_parameters_from_settings(
+                plotParameters, ps1Transients, ps1Pointings, atlasPointings = self.get_gw_parameters_from_settings(
                     gwid=gwid,
                     inPastDays=tday,
                     inFirstDays=False)
@@ -1294,11 +1293,12 @@ class plot_wave_observational_timelines():
                     plotParameters=plotParameters,
                     ps1Transients=ps1Transients,
                     ps1Pointings=ps1Pointings,
-                    atlasPointings=altasPointings,
+                    atlasPointings=atlasPointings,
                     pathToProbMap=pathToProbMap,
                     mjdStart=mjdStart,
                     timeLimitLabel=tlabel,
                     timeLimitDay=tday,
+                    raLimit=False,
                     fileFormats=["png"],
                     folderName="survey_history_plots",
                     plotType=self.plotType,
@@ -1353,7 +1353,7 @@ class plot_wave_observational_timelines():
         for gwid in theseIds:
             for tday, tlabel, raLimit in zip(timeLimitDays, timeLimitLabels, raLimits):
 
-                plotParameters, ps1Transients, ps1Pointings, altasPointings = self.get_gw_parameters_from_settings(
+                plotParameters, ps1Transients, ps1Pointings, atlasPointings = self.get_gw_parameters_from_settings(
                     gwid=gwid,
                     inPastDays=False,
                     inFirstDays=tday)
@@ -1374,6 +1374,7 @@ class plot_wave_observational_timelines():
                     plotParameters=plotParameters,
                     ps1Transients=ps1Transients,
                     ps1Pointings=ps1Pointings,
+                    atlasPointings=atlasPointings,
                     pathToProbMap=pathToProbMap,
                     mjdStart=mjdStart,
                     timeLimitLabel=tlabel,

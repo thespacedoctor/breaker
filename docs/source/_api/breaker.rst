@@ -13,6 +13,7 @@ Subpackages
 
     breaker.commonutils
     breaker.fakers
+    breaker.gracedb
     breaker.plots
     breaker.stats
 
