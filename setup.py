@@ -9,6 +9,13 @@ def readme():
     with open(moduleDirectory + '/README.rst') as f:
         return f.read()
 
+import sys
+if sys.version_info[0] >= 3:
+    import builtins
+else:
+    import __builtin__ as builtins
+builtins.__NUMPY_SETUP__ = True
+
 setup(name="breaker",
       version=__version__,
       description="Tools used by the PanSTARRS & ATLAS teams when surveying the likely sky-locations of LIGO-VIRGO discovered Gravitational Waves",
@@ -33,7 +40,6 @@ setup(name="breaker",
       install_requires=[
           'pyyaml',
           'fundamentals',
-          'numpy',
           'requests',
           'astropy',
           'healpy',
@@ -42,7 +48,8 @@ setup(name="breaker",
           'neddy',
           'wcsaxes',
           'docopt',
-          'ligo-gracedb'
+          'ligo-gracedb',
+          'numpy'
       ],
       test_suite='nose.collector',
       tests_require=['nose', 'nose-cover3'],
