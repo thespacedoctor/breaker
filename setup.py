@@ -41,7 +41,8 @@ setup(name="breaker",
           'sherlock',
           'neddy',
           'wcsaxes',
-          'docopt'
+          'docopt',
+          'ligo-gracedb'
       ],
       test_suite='nose.collector',
       tests_require=['nose', 'nose-cover3'],
