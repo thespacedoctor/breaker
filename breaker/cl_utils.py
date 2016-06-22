@@ -16,10 +16,12 @@ Usage:
     breaker faker <ps1ExpId> [-s <pathToSettingsFile>]
     breaker stats <gwid> [-s <pathToSettingsFile>]
     breaker listen <far> (<mjdStart> <mjdEnd> | <inLastNMins>) [-s <pathToSettingsFile>]
+    breaker listen -d <far> [-s <pathToSettingsFile>]
 
     -h, --help            show this help message
     -s, --settings        the settings file
     -n, --updateNed       update the NED database steam
+    -d, --daemon          listen in daemon mode
     far                   false alarm rate limit in Hz (1e-7 Hz ~= 3.2 per year)
     plot                  update the gravitational wave plots
     timeline              observations looking forward from date of GW detection
@@ -181,6 +183,15 @@ def main(arguments=None):
             farThreshold=far,
             startMJD=float(mjdStart),
             endMJD=float(mjdEnd)
+        )
+        this.get_maps()
+    if listen and daemonFlag:
+        this = mlisten(
+            log=log,
+            settings=settings,
+            label="EM_READY",
+            farThreshold=far,
+            daemon=True
         )
         this.get_maps()
 

@@ -18,6 +18,8 @@ import numpy as np
 from ligo.gracedb.rest import GraceDb, HTTPError
 from ligo.gracedb.rest import GraceDbBasic
 from astrocalc.times import conversions
+from astrocalc.times import now as mjdNow
+import time
 
 
 class listen():
@@ -31,6 +33,7 @@ class listen():
         - ``farThreshold`` -- the false alarm rate threshold. Default *1e-7*
         - ``startMJD`` -- startMJD. Default *56658.0 (2014-01-01)*
         - ``endMJD`` -- endMJD. Default *69807.0 (2050-01-01)*
+        - ``daemon`` -- run in daemon mode. Ignores MJD settings and pings GraceDB every 1 mins.
     """
     # Initialisation
 
@@ -41,7 +44,8 @@ class listen():
             label="EM_READY",
             farThreshold=1e-7,
             startMJD=56658.0,
-            endMJD=69807.0
+            endMJD=69807.0,
+            daemon=False
     ):
         self.log = log
         log.debug("instansiating a new 'listen' object")
@@ -49,8 +53,8 @@ class listen():
         self.label = label
         self.farThreshold = farThreshold
         self.startMJD = startMJD
-        self.endMJD = startMJD
-
+        self.endMJD = endMJD
+        self.daemon = daemon
         # xt-self-arg-tmpx
 
         # Initial Actions
@@ -59,27 +63,8 @@ class listen():
         if not os.path.exists(self.mapDirectory):
             os.makedirs(self.mapDirectory)
 
-        # CONVERT MJD TO GPS
-        converter = conversions(
-            log=self.log
-        )
-        gpsZeroMjd = converter.ut_datetime_to_mjd(
-            utDatetime="1980-01-06 00:00:00")
-        startGPS = (startMJD - float(gpsZeroMjd)) * 60 * 60 * 24.
-        endGPS = (endMJD - float(gpsZeroMjd)) * 60 * 60 * 24.
-
         # INSTANTIATE GRACEDB CLIENT WITH A QUERY STRING
         self.client = GraceDbBasic()
-        eventString = '%(label)s far <%(farThreshold)s %(startGPS)s  .. %(endGPS)s' % locals(
-        )
-
-        # REST API RETURNS AN ITERATOR
-        self.events = self.client.events(
-            query=eventString,
-            orderby=None,
-            count=None,
-            columns=None
-        )
 
         return None
 
@@ -89,7 +74,7 @@ class listen():
 
         **Usage:**
 
-            .. code-block:: python 
+            .. code-block:: python
 
                 from breaker.gracedb import listen
                 downloader = listen(
@@ -109,43 +94,90 @@ class listen():
         fileorder = ['LALInference_skymap.fits.gz',
                      'bayestar.fits.gz', 'LIB_skymap.fits.gz', 'skymap.fits.gz']
 
-        for event in self.events:
-            eventinfo = {}
-            for key in eventKeys:
-                if not key in event:
-                    self.log.warning(
-                        "`%(key)s` not in event %(event)s" % locals())
+        # CONVERT MJD TO GPS
+        converter = conversions(
+            log=self.log
+        )
+        gpsZeroMjd = converter.ut_datetime_to_mjd(
+            utDatetime="1980-01-06 00:00:00")
+
+        stop = False
+
+        while stop == False:
+
+            if self.daemon:
+                mjd = mjdNow(
+                    log=self.log
+                ).get_mjd()
+                # 20 MINS AGO
+                startGPS = (mjd - float(gpsZeroMjd)) * 60 * 60 * 24. - \
+                    31536000.
+                # 20 MINS FROM NOW
+                endGPS = (mjd - float(gpsZeroMjd)) * 60 * 60 * 24. + 1200.
+            else:
+                stop = True
+                startGPS = (self.startMJD - float(gpsZeroMjd)) * 60 * 60 * 24.
+                endGPS = (self.endMJD - float(gpsZeroMjd)) * 60 * 60 * 24.
+
+            label = self.label
+            farThreshold = self.farThreshold
+            self.eventString = '%(label)s far <%(farThreshold)s %(startGPS)s  .. %(endGPS)s' % locals(
+            )
+
+            # REST API RETURNS AN ITERATOR
+            self.events = self.client.events(
+                query=self.eventString,
+                orderby=None,
+                count=None,
+                columns=None
+            )
+
+            count = 0
+            for event in self.events:
+                count += 1
+                eventinfo = {}
+                for key in eventKeys:
+                    if not key in event:
+                        self.log.warning(
+                            "`%(key)s` not in event %(event)s" % locals())
+                        continue
+                    eventinfo[key] = event[key]
+                eventinfo['gpstime'] = float(eventinfo['gpstime'])
+
+                if eventinfo['far'] > self.farThreshold:
+                    far = eventinfo['far']
+                    farthres = self.farThreshold
+                    self.info.warning(
+                        "event %(event)s does not pass FAR threshold of %(farthres)s. (FAR = %(far)s)" % locals())
                     continue
-                eventinfo[key] = event[key]
-            eventinfo['gpstime'] = float(eventinfo['gpstime'])
 
-            if eventinfo['far'] > self.farThreshold:
-                far = eventinfo['far']
-                farthres = self.farThreshold
-                self.info.warning(
-                    "event %(event)s does not pass FAR threshold of %(farthres)s. (FAR = %(far)s)" % locals())
-                continue
+                allMaps = []
 
-            allMaps = []
+                for lvfile in fileorder:
+                    try:
+                        aMap = self.client.files(eventinfo['graceid'], lvfile)
+                        allMaps.append(aMap)
+                        self._write_map_to_disk(
+                            sMap=aMap,
+                            mapName=lvfile,
+                            waveId=eventinfo['graceid']
+                        )
+                    except:
+                        eventId = eventinfo['graceid']
+                        self.log.info(
+                            "The %(lvfile)s path for %(eventId)s does not seem to exist yet" % locals())
 
-            for lvfile in fileorder:
-                try:
-                    aMap = self.client.files(eventinfo['graceid'], lvfile)
-                    allMaps.append(aMap)
-                    self._write_map_to_disk(
-                        sMap=aMap,
-                        mapName=lvfile,
-                        waveId=eventinfo['graceid']
-                    )
-                except:
+                if len(allMaps) == 0:
                     eventId = eventinfo['graceid']
-                    self.log.info(
-                        "The %(lvfile)s path for %(eventId)s does not seem to exist yet" % locals())
+                    self.log.warning(
+                        'cound not download skymaps for event %(eventId)s' % locals())
 
-            if len(allMaps) == 0:
-                eventId = eventinfo['graceid']
-                self.log.warning(
-                    'cound not download skymaps for event %(eventId)s' % locals())
+            if count == 0:
+                print "No recent events, will try again in 60 secs"
+            else:
+                print "%(count)s recent events found, will try again in 60 secs" % locals()
+            # WAIT 1 MIN
+            time.sleep(60)
 
         self.log.info('completed the ``get_maps`` method')
         return None
@@ -179,6 +211,3 @@ class listen():
 
         self.log.info('completed the ``_write_map_to_disk`` method')
         return None
-
-    # use the tab-trigger below for new method
-    # xt-class-method

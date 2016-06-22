@@ -44,6 +44,18 @@ class test_listen():
         )
         this.get_maps()
 
+    def test_listen_daemon_function(self):
+
+        from breaker.gracedb import listen
+        this = listen(
+            log=log,
+            settings=settings,
+            label="EM_READY",
+            farThreshold=1e-7,
+            daemon=True
+        )
+        this.get_maps()
+
     # def test_listen_function_exception(self):
 
     #     from breaker import listen
