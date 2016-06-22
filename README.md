@@ -7,7 +7,7 @@ sky-locations of LIGO-VIRGO discovered Gravitational Waves*.
 Usage
 =====
 
-    breaker update [-s <pathToSettingsFile>]
+    breaker update [-n] [-s <pathToSettingsFile>]
     breaker plot (timeline|history|sources [<gwid>]) [-s <pathToSettingsFile>]
     breaker plot comparison <gwid> <pathToMapDirectory> [-s <pathToSettingsFile>]
     breaker faker <ps1ExpId> [-s <pathToSettingsFile>]
@@ -15,6 +15,7 @@ Usage
 
     -h, --help            show this help message
     -s, --settings        the settings file
+    -n, --updateNed       update the NED database steam
     plot                  update the gravitational wave plots
     timeline              observations looking forward from date of GW detection
     history               observations from the past x days
@@ -61,11 +62,11 @@ try:
 clang before astropy will install. So before the breaker installation,
 try:
 
-`` `bash setenv CC clang ``\`
+    setenv CC clang
 
 or, for bash:
 
-`` `bash export CC=clang ``\`
+    export CC=clang
 
 Then try and install breaker again.
 
@@ -77,7 +78,10 @@ the tarball.
 Untar, set your `MACOSX_DEPLOYMENT_TARGET` environment variable and
 install:
 
-`` ` tar -xvf healpy-1.9.0.tar.gz cd healpy-1.9.0 setenv MACOSX_DEPLOYMENT_TARGET 10.11 python setup.py install ``\`
+    tar -xvf healpy-1.9.0.tar.gz
+    cd healpy-1.9.0
+    setenv MACOSX_DEPLOYMENT_TARGET 10.11
+    python setup.py install
 
 ### Development
 

@@ -19,7 +19,6 @@ import pickle
 import time
 import MySQLdb as ms
 from docopt import docopt
-from dryxPython import mysql as dms
 from fundamentals import tools, times
 
 

@@ -26,9 +26,7 @@ from matplotlib.path import Path
 from matplotlib.pyplot import savefig
 from matplotlib.colors import LogNorm
 import matplotlib.patches as patches
-from dryxPython import astrotools as dat
 from fundamentals import tools, times
-from dryxPython import mysql as dms
 from adjustText import adjust_text
 from breaker.plots.plot_wave_observational_timelines import plot_wave_observational_timelines
 
@@ -116,7 +114,7 @@ class plot_multi_panel_alternate_map_comparison():
             settings=self.settings,
             plotType="history"
         )
-        plotParameters, ps1Transients, ps1Pointings, altasPointings = p._get_gw_parameters_from_settings(
+        plotParameters, ps1Transients, ps1Pointings, altasPointings = p.get_gw_parameters_from_settings(
             gwid=self.gwid,
             inPastDays=30000,
             inFirstDays=False

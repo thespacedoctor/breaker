@@ -15,7 +15,6 @@ Subpackages
     breaker.fakers
     breaker.plots
     breaker.stats
-    breaker.tests
 
 Submodules
 ----------

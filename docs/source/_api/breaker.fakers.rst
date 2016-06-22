@@ -6,13 +6,6 @@ breaker.fakers package
     :undoc-members:
     :show-inheritance:
 
-Subpackages
------------
-
-.. toctree::
-
-    breaker.fakers.tests
-
 Submodules
 ----------
 

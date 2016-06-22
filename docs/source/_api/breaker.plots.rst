@@ -6,13 +6,6 @@ breaker.plots package
     :undoc-members:
     :show-inheritance:
 
-Subpackages
------------
-
-.. toctree::
-
-    breaker.plots.tests
-
 Submodules
 ----------
 

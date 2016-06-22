@@ -19,9 +19,8 @@ import matplotlib.pyplot as plt
 from matplotlib.path import Path
 from matplotlib.pyplot import savefig
 import matplotlib.patches as patches
-from dryxPython import astrotools as dat
-from dryxPython import mysql as dms
 from fundamentals import tools, times
+from astrocalc.coords import separations
 
 
 class survey_footprint():
@@ -261,13 +260,16 @@ class survey_footprint():
                     elif ((pdec - d)**2)**0.5 > ps1exposureRadius:
                         covered = 0
                     else:
-                        angularSeparation, northSep, eastSep = dat.get_angular_separation(
+                        # CALCULATE SEPARATION IN ARCSEC
+
+                        calculator = separations(
                             log=self.log,
                             ra1=pra,
                             dec1=pdec,
                             ra2=r,
-                            dec2=d
+                            dec2=d,
                         )
+                        angularSeparation, northSep, eastSep = calculator.get()
                         if angularSeparation < ps1exposureRadius * 60 * 60:
                             covered = 1
                         else:

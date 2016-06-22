@@ -3,7 +3,7 @@ Usage
 
 .. code-block:: bash 
    
-    breaker update [-s <pathToSettingsFile>]
+    breaker update [-n] [-s <pathToSettingsFile>]
     breaker plot (timeline|history|sources [<gwid>]) [-s <pathToSettingsFile>]
     breaker plot comparison <gwid> <pathToMapDirectory> [-s <pathToSettingsFile>]
     breaker faker <ps1ExpId> [-s <pathToSettingsFile>]
@@ -11,6 +11,7 @@ Usage
 
     -h, --help            show this help message
     -s, --settings        the settings file
+    -n, --updateNed       update the NED database steam
     plot                  update the gravitational wave plots
     timeline              observations looking forward from date of GW detection
     history               observations from the past x days

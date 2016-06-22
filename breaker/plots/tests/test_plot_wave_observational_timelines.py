@@ -33,12 +33,14 @@ utKit.tearDownModule()
 class test_plot_wave_observational_timelines():
 
     def test_plot_wave_observational_timelines_function(self):
-        kwargs = {}
-        kwargs["log"] = log
-        kwargs["settings"] = settings
-        # xt-kwarg_key_and_value
 
-        testObject = plot_wave_observational_timelines(**kwargs)
+        testObject = plot_wave_observational_timelines(
+            log=log,
+            settings=settings,
+            plotType="history",
+            gwid="G184098",
+            projection="tan",
+            probabilityCut=False)
         testObject.get()
 
         # x-print-testpage-for-pessto-marshall-web-object
