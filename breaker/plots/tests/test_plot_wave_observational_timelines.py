@@ -37,7 +37,7 @@ class test_plot_wave_observational_timelines():
         testObject = plot_wave_observational_timelines(
             log=log,
             settings=settings,
-            plotType="history",
+            plotType="timeline",
             gwid="G184098",
             projection="tan",
             probabilityCut=False)
