@@ -114,7 +114,7 @@ class plot_multi_panel_alternate_map_comparison():
             settings=self.settings,
             plotType="history"
         )
-        plotParameters, ps1Transients, ps1Pointings, altasPointings = p._get_gw_parameters_from_settings(
+        plotParameters, ps1Transients, ps1Pointings, altasPointings = p.get_gw_parameters_from_settings(
             gwid=self.gwid,
             inPastDays=30000,
             inFirstDays=False
