@@ -15,8 +15,9 @@ import os
 os.environ['TERM'] = 'vt100'
 import numpy as np
 from fundamentals import tools, times
-from dryxPython import mysql as dms
-from dryxPython import astrotools as dat
+from fundamentals.mysql import readquery, insert_list_of_dictionaries_into_database_tables, writequery
+from astrocalc.coords import unit_conversion
+from HMpTy.mysql import add_htm_ids_to_mysql_database_table
 
 
 class update_ps1_footprint_table():
@@ -137,20 +138,27 @@ class update_ps1_footprint_table():
               where m.fpa_ra != "NaN" and m.fpa_dec != "NaN"
             group by exp_time, mjd, fpa_object, fpa_comment, fpa_ra, fpa_dec, fpa_filter;
         """ % locals()
-        rows = dms.execute_mysql_read_query(
+        rows = readquery(
+            log=self.log,
             sqlQuery=sqlQuery,
             dbConn=self.ps1gwDbConn,
-            log=self.log
+            quiet=False
         )
 
         # TIDY RESULTS BEFORE IMPORT
         entries = []
+
+        converter = unit_conversion(
+            log=self.log
+        )
         for row in rows:
             e = {}
-            e["raDeg"] = dat.ra_sexegesimal_to_decimal.ra_sexegesimal_to_decimal(row[
-                "ra"])
-            e["decDeg"] = dat.declination_sexegesimal_to_decimal.declination_sexegesimal_to_decimal(row[
-                "decl"])
+            e["raDeg"] = converter.ra_sexegesimal_to_decimal(
+                ra=row["ra"]
+            )
+            e["decDeg"] = converter.dec_sexegesimal_to_decimal(
+                dec=row["decl"]
+            )
             e["exp_time"] = row["exp_time"]
             e["mjd"] = row["mjd"]
             e["filter"] = row["fpa_filter"][0]
@@ -158,19 +166,18 @@ class update_ps1_footprint_table():
             entries.append(e)
 
         # ADD THE NEW RESULTS TO THE ps1_pointings TABLE
-        dms.insert_list_of_dictionaries_into_database(
+        insert_list_of_dictionaries_into_database_tables(
             dbConn=self.ligo_virgo_wavesDbConn,
             log=self.log,
             dictList=entries,
             dbTableName="ps1_pointings",
             uniqueKeyList=["raDeg", "decDeg", "mjd"],
-            createHelperTables=False,
             dateModified=False,
             batchSize=2500
         )
 
         # APPEND HTMIDs TO THE ps1_pointings TABLE
-        dms.add_HTMIds_to_mysql_tables.add_HTMIds_to_mysql_tables(
+        add_htm_ids_to_mysql_database_table(
             raColName="raDeg",
             declColName="decDeg",
             tableName="ps1_pointings",
@@ -249,19 +256,21 @@ class update_ps1_footprint_table():
             sqlQuery = u"""
                 update ps1_pointings set gw_id = "%(wave)s" where %(raWhere)s and %(decWhere)s and %(mjdWhere)s and gw_id is null
             """ % locals()
-            dms.execute_mysql_write_query(
+            writequery(
+                log=self.log,
                 sqlQuery=sqlQuery,
                 dbConn=self.ligo_virgo_wavesDbConn,
-                log=self.log
             )
 
         sqlQuery = u"""
             select count(*) as count from ps1_pointings where gw_id is null;
         """ % locals()
-        count = dms.execute_mysql_read_query(
+
+        count = readquery(
+            log=self.log,
             sqlQuery=sqlQuery,
             dbConn=self.ligo_virgo_wavesDbConn,
-            log=self.log
+            quiet=False
         )[0]["count"]
 
         print "PS1 pointings labelled with their associated GW id"
@@ -304,10 +313,12 @@ class update_ps1_footprint_table():
         sqlQuery = u"""
             select ps1_exp_id, raDeg, decDeg from ps1_pointings where subdisks_calculated = 0
         """ % locals()
-        rows = dms.execute_mysql_read_query(
+
+        rows = readquery(
+            log=self.log,
             sqlQuery=sqlQuery,
             dbConn=self.ligo_virgo_wavesDbConn,
-            log=self.log
+            quiet=False
         )
         ps1PointNum = len(rows)
 
@@ -330,13 +341,13 @@ class update_ps1_footprint_table():
 
         # ADD SUBDISKS TO DATABASE
         if len(inserts):
-            dms.insert_list_of_dictionaries_into_database(
+
+            insert_list_of_dictionaries_into_database_tables(
                 dbConn=self.ligo_virgo_wavesDbConn,
                 log=self.log,
                 dictList=inserts,
                 dbTableName="ps1_pointings_subdisks",
                 uniqueKeyList=["ps1_exp_id", "circleId"],
-                createHelperTables=False,
                 dateModified=False,
                 batchSize=2500
             )
@@ -346,10 +357,10 @@ class update_ps1_footprint_table():
             sqlQuery = u"""
                 update ps1_pointings set subdisks_calculated = 1 where ps1_exp_id in (%(theseIds)s)
             """ % locals()
-            dms.execute_mysql_write_query(
+            writequery(
+                log=self.log,
                 sqlQuery=sqlQuery,
                 dbConn=self.ligo_virgo_wavesDbConn,
-                log=self.log
             )
 
         if ps1PointNum == 0:
@@ -357,8 +368,8 @@ class update_ps1_footprint_table():
         else:
             print "%(ps1PointNum)s new PS1 pointings have been split into 49 sub-disks - parameters added to the `ps1_pointings_subdisks` database table" % locals()
 
-        # APPEND HTMIDs TO THE ps1_pointings TABLE
-        dms.add_HTMIds_to_mysql_tables.add_HTMIds_to_mysql_tables(
+        # APPEND HTMIDs TO THE ps1_pointings_subdisks TABLE
+        add_htm_ids_to_mysql_database_table(
             raColName="raDeg",
             declColName="decDeg",
             tableName="ps1_pointings_subdisks",
@@ -450,10 +461,11 @@ class update_ps1_footprint_table():
             sqlQuery = u"""
                 select primaryId, raDeg as "ra", decDeg as "dec", htm16ID from ps1_pointings_subdisks where nedQueried = 0 limit %(numDisksToConesearch)s
             """ % locals()
-            rows = dms.execute_mysql_read_query(
+            rows = readquery(
+                log=self.log,
                 sqlQuery=sqlQuery,
                 dbConn=self.ligo_virgo_wavesDbConn,
-                log=self.log
+                quiet=False
             )
             rowCount = len(rows)
             ids = []
@@ -476,19 +488,20 @@ class update_ps1_footprint_table():
                 sqlQuery = u"""
                     update ps1_pointings_subdisks set nedQueried = 1 where primaryId in (%(ids)s)
                 """ % locals()
-                dms.execute_mysql_write_query(
+                writequery(
+                    log=self.log,
                     sqlQuery=sqlQuery,
                     dbConn=self.ligo_virgo_wavesDbConn,
-                    log=self.log,
                 )
 
             sqlQuery = u"""
                 select count(*) as count from ps1_pointings_subdisks where nedQueried = 0
             """ % locals()
-            count = dms.execute_mysql_read_query(
+            count = readquery(
+                log=self.log,
                 sqlQuery=sqlQuery,
                 dbConn=self.ligo_virgo_wavesDbConn,
-                log=self.log
+                quiet=False
             )
             count = count[0]["count"]
 

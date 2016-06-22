@@ -31,10 +31,10 @@ import matplotlib.path as mpath
 from matplotlib.projections.geo import GeoAxes
 from astropy import wcs as awcs
 from astropy.io import fits
-from dryxPython import astrotools as dat
 from fundamentals import tools, times
-from dryxPython import mysql as dms
+from fundamentals.mysql import readquery
 from adjustText import adjust_text
+from astrocalc.times import now
 
 
 from matplotlib.projections.geo import GeoAxes
@@ -305,8 +305,10 @@ class plot_wave_observational_timelines():
         decMin = centralCoordinate[1] - decRange / 2.
 
         if inPastDays:
-            now = dat.getCurrentMJD()
-            mjdStart = now - inPastDays
+            nowMjd = now(
+                log=self.log
+            ).get_mjd()
+            mjdStart = nowMjd - inPastDays
             mjdEnd = 1000000000000000
 
         if inFirstDays:
@@ -320,11 +322,10 @@ class plot_wave_observational_timelines():
         sqlQuery = u"""
             SELECT ps1_designation, local_designation, ra_psf, dec_psf FROM tcs_transient_objects o, tcs_latest_object_stats s where o.detection_list_id = 2 and o.id=s.id and (s.earliest_mjd between %(mjdStart)s and %(mjdEnd)s) and (ra_psf between %(raMin)s and %(raMax)s) and (dec_psf between %(decMin)s and %(decMax)s) ;
         """ % locals()
-
-        ps1Transients = dms.execute_mysql_read_query(
+        ps1Transients = readquery(
+            log=self.log,
             sqlQuery=sqlQuery,
-            dbConn=self.ps1gwDbConn,
-            log=self.log
+            dbConn=self.ps1gwDbConn
         )
 
         self.log.info('completed the ``_get_ps1_transient_candidates`` method')
@@ -350,7 +351,9 @@ class plot_wave_observational_timelines():
 
         # DETERMINE THE TEMPORAL CONSTRAINTS FOR MYSQL QUERY
         if inPastDays != False or inPastDays == 0:
-            nowMjd = dat.getCurrentMJD()
+            nowMjd = now(
+                log=self.log
+            ).get_mjd()
             mjdStart = nowMjd - inPastDays
             mjdEnd = 10000000000
             if inPastDays == 0:
@@ -368,10 +371,10 @@ class plot_wave_observational_timelines():
             SELECT raDeg, decDeg, mjd FROM ps1_pointings where gw_id = "%(gwid)s" and mjd between %(mjdStart)s and %(mjdEnd)s
         """ % locals()
 
-        ps1Pointings = dms.execute_mysql_read_query(
+        ps1Pointings = readquery(
+            log=self.log,
             sqlQuery=sqlQuery,
-            dbConn=self.ligo_virgo_wavesDbConn,
-            log=self.log
+            dbConn=self.ligo_virgo_wavesDbConn
         )
 
         self.log.info('completed the ``_get_ps1_pointings`` method')
@@ -397,7 +400,9 @@ class plot_wave_observational_timelines():
 
         # DETERMINE THE TEMPORAL CONSTRAINTS FOR MYSQL QUERY
         if inPastDays != False or inPastDays == 0:
-            nowMjd = dat.getCurrentMJD()
+            nowMjd = now(
+                log=self.log
+            ).get_mjd()
             mjdStart = nowMjd - inPastDays
             mjdEnd = 10000000000
             if inPastDays == 0:
@@ -415,10 +420,10 @@ class plot_wave_observational_timelines():
             SELECT atlas_object_id, raDeg, decDeg, mjd FROM atlas_pointings where gw_id = "%(gwid)s" and mjd between %(mjdStart)s and %(mjdEnd)s group by atlas_object_id;
         """ % locals()
 
-        atlasPointings = dms.execute_mysql_read_query(
+        atlasPointings = readquery(
+            log=self.log,
             sqlQuery=sqlQuery,
-            dbConn=self.ligo_virgo_wavesDbConn,
-            log=self.log
+            dbConn=self.ligo_virgo_wavesDbConn
         )
 
         self.log.info('completed the ``_get_atlas_pointings`` method')
@@ -1289,6 +1294,7 @@ class plot_wave_observational_timelines():
                     plotParameters=plotParameters,
                     ps1Transients=ps1Transients,
                     ps1Pointings=ps1Pointings,
+                    atlasPointings=altasPointings,
                     pathToProbMap=pathToProbMap,
                     mjdStart=mjdStart,
                     timeLimitLabel=tlabel,

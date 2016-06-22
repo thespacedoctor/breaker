@@ -26,9 +26,7 @@ from matplotlib.path import Path
 from matplotlib.pyplot import savefig
 from matplotlib.colors import LogNorm
 import matplotlib.patches as patches
-from dryxPython import astrotools as dat
 from fundamentals import tools, times
-from dryxPython import mysql as dms
 from adjustText import adjust_text
 from breaker.plots.plot_wave_observational_timelines import plot_wave_observational_timelines
 

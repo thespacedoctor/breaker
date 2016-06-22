@@ -32,12 +32,10 @@ utKit.tearDownModule()
 class test_update_ps1_footprint_table():
 
     def test_update_ps1_footprint_table_function(self):
-        kwargs = {}
-        kwargs["log"] = log
-        kwargs["settings"] = settings
-        # xt-kwarg_key_and_value
-
-        testObject = update_ps1_footprint_table(**kwargs)
+        testObject = update_ps1_footprint_table(
+            log,
+            settings=settings,
+            updateNed=False)
         testObject.get()
 
         # x-print-testpage-for-pessto-marshall-web-object
