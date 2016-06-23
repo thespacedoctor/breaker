@@ -27,12 +27,15 @@ install_requires = [
 # READ THE DOCS SERVERS
 exists = os.path.exists("/home/docs/")
 if exists:
-    exclude_list = ['healpy', 'astropy', 'numpy']
+    exclude_list = ['healpy', 'astropy', 'numpy', 'sherlock', 'wcsaxes']
     for e in exclude_list:
         try:
             install_requires.remove(e)
         except:
             pass
+
+print install_requires
+
 
 setup(name="breaker",
       version=__version__,
