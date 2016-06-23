@@ -5,7 +5,7 @@ breaker
 sky-locations of LIGO-VIRGO discovered Gravitational Waves*.
 
 Usage
-=====
+-----
 
     breaker update [-n] [-s <pathToSettingsFile>]
     breaker plot (timeline|history|sources [<gwid>]) [-s <pathToSettingsFile>]
@@ -27,7 +27,7 @@ Usage
     stats                 output some stats for the GW surveys
 
 Documentation
-=============
+-------------
 
 Documentation for breaker is hosted by [Read the
 Docs](http://breaker.readthedocs.org/en/stable/) (last [stable
@@ -35,7 +35,7 @@ version](http://breaker.readthedocs.org/en/stable/) and [latest
 version](http://breaker.readthedocs.org/en/latest/)).
 
 Installation
-============
+------------
 
 Currently you need to manually install `dryxPython` and `HMpTy` packages
 before installing breaker.
@@ -56,8 +56,7 @@ To upgrade to the latest version of breaker use the command:
 
     pip install breaker --upgrade
 
-Troubleshooting
----------------
+### Troubleshooting
 
 If you're having trouble with the installation here are a few things to
 try:
@@ -87,7 +86,7 @@ install:
     setenv MACOSX_DEPLOYMENT_TARGET 10.11
     python setup.py install
 
-### Development
+#### Development
 
 If you want to tinker with the code, then install in development mode.
 This means you can modify the code from your cloned repo:
@@ -99,13 +98,13 @@ This means you can modify the code from your cloned repo:
 [Pull requests](https://github.com/thespacedoctor/breaker/pulls) are
 welcomed!
 
-### Issues
+#### Issues
 
 Please report any issues
 [here](https://github.com/thespacedoctor/breaker/issues).
 
 License
-=======
+-------
 
 Copyright (c) 2016 David Young
 
