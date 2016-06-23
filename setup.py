@@ -9,12 +9,30 @@ def readme():
     with open(moduleDirectory + '/README.rst') as f:
         return f.read()
 
-import sys
-if sys.version_info[0] >= 3:
-    import builtins
-else:
-    import __builtin__ as builtins
-builtins.__NUMPY_SETUP__ = True
+install_requires = [
+    'pyyaml',
+    'fundamentals',
+    'requests',
+    'astropy',
+    'healpy',
+    'crowdedText',
+    'sherlock',
+    'neddy',
+    'wcsaxes',
+    'docopt',
+    'ligo-gracedb',
+    'numpy'
+]
+
+# READ THE DOCS SERVERS
+exists = os.path.exists("/home/docs/")
+if exists:
+    exclude_list = ['healpy', 'astropy', 'numpy']
+    for e in exclude_list:
+        try:
+            install_requires.remove(e)
+        except:
+            pass
 
 setup(name="breaker",
       version=__version__,
@@ -37,20 +55,7 @@ setup(name="breaker",
       package_data={'breaker': [
           'resources/*/*', 'resources/*.*']},
       include_package_data=True,
-      install_requires=[
-          'pyyaml',
-          'fundamentals',
-          'requests',
-          'astropy',
-          'healpy',
-          'crowdedText',
-          'sherlock',
-          'neddy',
-          'wcsaxes',
-          'docopt',
-          'ligo-gracedb',
-          'numpy'
-      ],
+      install_requires=install_requires,
       test_suite='nose.collector',
       tests_require=['nose', 'nose-cover3'],
       entry_points={
