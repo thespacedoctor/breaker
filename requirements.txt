@@ -1,6 +1,2 @@
-fundamentals
-HMpTy
-ligo-gracedb
-matplotlib
-neddy
-PyYAML
+healpy==1.90
+
