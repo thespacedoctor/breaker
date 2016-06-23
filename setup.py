@@ -21,20 +21,20 @@ install_requires = [
     'wcsaxes',
     'docopt',
     'ligo-gracedb',
-    'numpy'
+    'numpy',
+    'HMpTy'
 ]
 
 # READ THE DOCS SERVERS
 exists = os.path.exists("/home/docs/")
 if exists:
-    exclude_list = ['healpy', 'astropy', 'numpy', 'sherlock', 'wcsaxes']
-    for e in exclude_list:
+    c_exclude_list = ['healpy', 'astropy',
+                      'numpy', 'sherlock', 'wcsaxes', 'HMpTy']
+    for e in c_exclude_list:
         try:
             install_requires.remove(e)
         except:
             pass
-
-print install_requires
 
 
 setup(name="breaker",
