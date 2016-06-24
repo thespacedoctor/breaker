@@ -1,6 +1,8 @@
 Tutorial
 ========
 
+This is a tutorial for using the CL ``breaker`` tools. To use ``breaker`` in your python scripts, see the full documentation.
+
 Example Maps
 ^^^^^^^^^^^^
 
@@ -11,7 +13,7 @@ Settings File
 
 Most settings for ``breaker`` are found and set in the ``breaker.yaml`` settings file. By default these are placed in ``~/.config/breaker/breaker.yaml`` and running breaker for the first time with generate a default settings file at this location.
 
-As well as some fundamental logging settings, the settings file needs to contain certain database info and ssh tunnel setups, which obvious need to remain private. If you need these settings, ask Dave Young.
+As well as some fundamental logging settings, the settings file needs to contain certain database info and ssh tunnel setups, which obviously need to remain private. If you need these settings, ask Dave Young.
 
 **General settings** include where ``breaker`` is to store maps and where to place the output files (plots, faker lists, FITS stamps etc).
 
@@ -21,7 +23,7 @@ As well as some fundamental logging settings, the settings file needs to contain
     gw maps directory: /Users/Dave/.config/breaker/maps
     output directory: "/Users/Dave/Desktop/breaker-output"
 
-There are also **wave specific settings**, indicting where to find the most accurate map for the wave for plots, timeline ranges and details of skyareas to show in the plots. Here's an exmaple for the first burst:
+There are also **wave specific settings**, indicting where to find the most accurate map for the wave for plots, timeline ranges and details of sky-areas to show in the plots. Here's an example for the first burst:
 
 .. code-block:: yaml
 
@@ -38,7 +40,7 @@ There are also **wave specific settings**, indicting where to find the most accu
 Refreshing the Database
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-To update the PS1 footprint table in breaker database and associate these footprints with the GWs run the following command:
+To update the PS1 footprint table in the breaker database and associate these footprints with the GWs run the following command:
 
 .. code-block:: bash  
 
@@ -53,14 +55,14 @@ and to also download all the overlapping NED sources and add them to the databas
 Plots
 ^^^^^
 
-Once you have the settings file organised and some skymaps maps downloaded from graceDB you can start plotting.
+Once you have the settings file organised and some sky-maps maps downloaded from graceDB you can start plotting.
 
 Timeline and History Plots
 --------------------------
 
-It's possible to plot a timeline of obsevations over the likelihood map for each wave. By choose the ``breaker plot timeline`` command, the code plots from the epoch of the wave detection (in settings file) forward in time. Alternatively by choosing the ``breaker plot history`` command, the code will plot from now back in time over the last days, weeks and months. 
+It's possible to plot a timeline of observations over the likelihood map for each wave. By choosing the ``breaker plot timeline`` command, the code plots from the epoch of the wave detection (in settings file) forward in time. Alternatively by choosing the ``breaker plot history`` command, the code will plot from now back in time over the last days, weeks and months. 
 
-For example the follow command will produce a set of plots for the wave G184098 = GW150914:
+For example the following command will produce a set of plots for the wave G184098 = GW150914:
 
 .. code-block:: bash 
      
@@ -101,8 +103,8 @@ Alongside the PNG plots, a FITS image is also generated showing the same cutout 
         :width: 1000px
         :alt: FITS image of Healpix map
 
-Overplotting NED Sources
-------------------------
+Over-plotting NED Sources
+------------------------=
 
 If the database tables are brought up-to-date using the ``breaker -n update`` command, it is possible to overplot NED sources found within the wave campaign footprint. More fine-grained control of these plots can be gained by scripting solutions by importing ``breaker`` into your own python code. But running the command:
 
@@ -118,10 +120,10 @@ produces this plot:
 
     
 
-Mutli-Panel Comparison Plots
+Multi-Panel Comparison Plots
 ----------------------------
 
-The localisation maps for each wave come in various flavours at different stages of processing and with varying degrees of accuracy. It can be useful to produce a multi-panel plot of these maps to compare them. The following command with generate this plot, with a normalise colour range so the probabilities on each map can be directly compared.
+The localisation maps for each wave come in various flavours at different stages of processing and with varying degrees of accuracy. It can be useful to produce a multi-panel plot of these maps to compare them. The following command will generate this plot, with a normalise colour range so the probabilities on each map can be directly compared.
 
 .. code-block:: bash 
 
@@ -142,7 +144,7 @@ produces the following plot in the output directory found in the settings file.
 Fake Source Catalogues
 ^^^^^^^^^^^^^^^^^^^^^^
 
-It might be useful at some point to determine the completeness of our campaigns. The ``faker`` command will take a PS1 exposure and extract out all NED galaxy sources with redshift and semi-major axis measurements in the FOV of that exposure. For each of those galaxies a fake transient is placed at a random loction within the galaxy semi-major axes. An extra 17.6% locations are then randomly distributed throughout the area of the exposure to give a overall total of 85% galaxy associations and 15% 'orphans'. Two versions of the fake source catalogue are output, *trimmed* and *complete*, which can then be used to test our pipelines end-to-end.
+It might be useful at some point to determine the completeness of our campaigns. The ``faker`` command will take a PS1 exposure and extract out all NED galaxy sources with redshift and semi-major axis measurements in the FOV of that exposure. For each of those galaxies a fake transient is placed at a random location within the galaxy semi-major axes. An extra 17.6% locations are then randomly distributed throughout the area of the exposure to give a overall total of 85% galaxy associations and 15% 'orphans'. Two versions of the fake source catalogue are output, *trimmed* and *complete*, which can then be used to test our pipelines end-to-end.
 
 **Trimmed** example:
 
@@ -184,7 +186,7 @@ The ``stats`` command can be run to generate some stats for a given wave survey 
     
     breaker stats G211117
 
-will rattle throught the ATLAS and PS1 footprints in cronological order and determine some cummulative stats, including the total sky-area covered (squ. deg.) and the total likelihood covered (in 2-dimensions only):
+will rattle through the ATLAS and PS1 footprints in chronological order and determine some cumulative stats, including the total sky-area covered (squ. deg.) and the total likelihood covered (in 2-dimensions only):
 
 .. code-block:: bash
 
@@ -197,7 +199,7 @@ will rattle throught the ATLAS and PS1 footprints in cronological order and dete
     ...
     ...
 
-Download Recentlt Detected Wave Maps
+Download Recently Detected Wave Maps
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The ``listen`` command is used to connect to `graceDB <https://gracedb.ligo.org>`_ and download the maps from recently detected waves. You can connect either once and download all maps within a time range, or connect in daemon mode to ping graceDB every 60 secs for new maps.

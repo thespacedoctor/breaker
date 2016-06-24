@@ -20,14 +20,14 @@ Usage:
 
     COMMANDS
     --------
-    update                update the PS1 footprint table in breaker database and associate with GWs. Optionally download overlapping NED source and also add to the database.
+    update                update the PS1 footprint table in breaker database and associate with GW-IDs. Optionally download overlapping NED source and also add to the database.
     plot                  enter plotting mode
     timeline              plot from the epoch of the wave detection forward in time
     history               plot from now back in time over the last days, weeks and months
     comparison            produce a multi-panel plot to compare wave maps
     stats                 generate some coverage stats for a given wave survey campaign
     sources               overplot map with NED sources found within the wave campaign footprint
-    faker                 generate a catalogue of simulated transient sources in PS1 FP
+    faker                 generate a catalogue of simulated transient sources in PS1 exposure ID footprint
     listen                connect to grace DB and download maps found within the given time range
 
     ARGUMENTS
