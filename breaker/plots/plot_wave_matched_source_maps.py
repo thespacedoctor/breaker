@@ -37,20 +37,16 @@ class plot_wave_matched_source_maps():
         - ``gwid`` - - the wave id
 
     **Usage: **
-        .. todo::
-
-            - add usage info
-            - create a sublime snippet for usage
 
         .. code-block: : python
 
-            usage code
-
-    .. todo::
-
-        - @review: when complete, clean _database class
-        - @review: when complete add logging
-        - @review: when complete, decide whether to abstract class to another module
+            from breaker import plot_wave_matched_source_maps
+            p = plot_wave_matched_source_maps(
+                log=log,
+                settings=settings,
+                gwid="G211117"
+            )
+            p.get_source_plots()
     """
     # Initialisation
 
@@ -80,24 +76,6 @@ class plot_wave_matched_source_maps():
     def get(self):
         """
         *get the plot_wave_matched_source_maps object - history or timeline*
-
-        **Return: **
-            - None
-
-        **Usage: **
-            .. todo::
-
-                - add usage info
-                - create a sublime snippet for usage
-
-            .. code-block: : python
-
-                usage code
-
-        .. todo::
-
-            - @review: when complete, clean methodName method
-            - @review: when complete add logging
         """
         self.log.info('starting the ``get`` method')
 
@@ -121,21 +99,6 @@ class plot_wave_matched_source_maps():
 
         **Return: **
             - ``ps1Pointings`` - - the pointings to place on the plot
-
-        **Usage: **
-            .. todo::
-
-                - add usage info
-                - create a sublime snippet for usage
-
-            .. code-block: : python
-
-                usage code
-
-        .. todo::
-
-            - @review: when complete, clean methodName method
-            - @review: when complete add logging
         """
         self.log.info('starting the ``_get_ps1_pointings`` method')
 
@@ -160,7 +123,7 @@ class plot_wave_matched_source_maps():
                 mjdEnd = 10000000000
 
         sqlQuery = u"""
-            SELECT raDeg, decDeg FROM ps1_pointings where gw_id = "%(gwid)s" and mjd between % (mjdStart)s and % (mjdEnd)s
+            SELECT raDeg, decDeg FROM ps1_pointings where gw_id = "%(gwid)s" and mjd between %(mjdStart)s and %(mjdEnd)s
         """ % locals()
         ps1Pointings = readquery(
             log=self.log,
@@ -200,21 +163,6 @@ class plot_wave_matched_source_maps():
 
         **Return: **
             - None
-
-        **Usage: **
-            .. todo::
-
-                - add usage info
-                - create a sublime snippet for usage
-
-            .. code-block: : python
-
-                usage code
-
-        .. todo::
-
-            - @review: when complete, clean methodName method
-            - @review: when complete add logging
         """
         self.log.info('starting the ``_generate_probability_plot`` method')
 
@@ -543,7 +491,7 @@ class plot_wave_matched_source_maps():
 
         plotTitle = plotTitle.replace(" ", "_").replace(
             "<", "lt").replace(">", "gt").replace(",", "").replace("\n", "_").replace("&", "").replace("__", "_")
-        figureName = """ % (plotTitle)s""" % locals(
+        figureName = """ %(plotTitle)s""" % locals(
         )
 
         for f in fileFormats:
@@ -559,27 +507,6 @@ class plot_wave_matched_source_maps():
             self):
         """
         *plot the history plots*
-
-        **Key Arguments: **
-            # -
-
-        **Return: **
-            - None
-
-        **Usage: **
-            .. todo::
-
-                - add usage info
-                - create a sublime snippet for usage
-
-            .. code-block: : python
-
-                usage code
-
-        .. todo::
-
-            - @review: when complete, clean methodName method
-            - @review: when complete add logging
         """
         self.log.info('starting the ``get_source_plots`` method')
 
@@ -741,30 +668,15 @@ class plot_wave_matched_source_maps():
         *get matched sources*
 
         **Key Arguments: **
-            # -
+            - ``gwid`` -- gravitational wave ID
+            - ``plotParameters`` -- plot parameters from settings
+            - ``redshiftLimit`` -- limit in redshift for returned sources
+            - ``allNed`` -- no limits on query
+            - ``match2mass`` -- NED sources need to be 2MASS sources with semi-major axis measurement
 
         **Return: **
-            - None
-
-        .. todo::
-
-            - @review: when complete, clean _get_matched_sources method
-            - @review: when complete add logging
-
-        **Usage: **
-            .. todo::
-
-                - add usage info
-                - create a sublime snippet for usage
-
-            .. code-block: : python
-
-                usage code
-
-        .. todo::
-
-            - @review: when complete, clean methodName method
-            - @review: when complete add logging
+            - ``ra`` -- array of match NED source RAs
+            - ``dec`` -- array of match NED source DECs
         """
         self.log.info('starting the ``_get_matched_sources`` method')
 
@@ -826,37 +738,10 @@ class plot_wave_matched_source_maps():
         self.log.info('completed the ``_get_matched_sources`` method')
         return ra, dec
 
-    # use the tab-trigger below for new method
     def _sampled_area_only_points(
             self):
         """
         *sampled area only points*
-
-        **Key Arguments:**
-            # -
-
-        **Return:**
-            - None
-
-        .. todo::
-
-            - @review: when complete, clean _sampled_area_only_points method
-            - @review: when complete add logging
-
-        **Usage:**
-            .. todo::
-
-                - add usage info
-                - create a sublime snippet for usage
-
-            .. code-block:: python 
-
-                usage code 
-
-        .. todo::
-
-            - @review: when complete, clean methodName method
-            - @review: when complete add logging
         """
         self.log.info('starting the ``_sampled_area_only_points`` method')
 
@@ -902,10 +787,6 @@ class plot_wave_matched_source_maps():
                 np.savetxt(s, thisArray, fmt='%d', newline=",")
                 thesHtmIds = s.getvalue()[:-1]
                 htmWhereClause = "where htm16ID in (%(thesHtmIds)s)" % locals()
-
-            # hmax = thisArray.max()
-            # hmin = thisArray.min()
-            #
 
             # FINALLY BUILD THE FULL QUERY
             sqlQuery = """select raDeg, decDeg, redshift, object_type from tcs_cat_ned_stream %(htmWhereClause)s and redshift is not null and redshift < 0.15 and (redshift_quality is null or redshift_quality not like 'PHOT%%') and (object_type is null or object_type not like "%%*%%") """ % locals(

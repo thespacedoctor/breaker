@@ -30,57 +30,8 @@ class database():
     **Key Arguments:**
         - ``log`` -- logger
         - ``settings`` -- the settings dictionary
-
-    **Usage:**
-        .. todo::
-
-            - add usage info
-            - create a sublime snippet for usage
-
-        .. code-block:: python 
-
-            usage code 
-
-    .. todo::
-
-        - @review: when complete, clean _database class
-        - @review: when complete add logging
-        - @review: when complete, decide whether to abstract class to another module
     """
     # INITIALISATION
-
-    def methodName(
-            self):
-        """*methodName*
-
-        **Key Arguments:**
-            # -
-
-        **Return:**
-            - None
-
-        **Usage:**
-        .. todo::
-
-            - add usage info
-            - create a sublime snippet for usage
-
-        .. code-block:: python 
-
-            usage code 
-
-        .. todo::
-
-            - @review: when complete, clean methodName method
-            - @review: when complete add logging
-        """
-        self.log.info('starting the ``methodName`` method')
-
-        self.log.info('completed the ``methodName`` method')
-        return None
-
-    # use the tab-trigger below for new method
-    # xt-class-method
 
     def __init__(
             self,
@@ -103,22 +54,7 @@ class database():
         *get the database object*
 
         **Return:**
-            - ``self.transientsDbConn, self.ps1gwDbConn`` -- two database connections
-
-        **Usage:**
-            .. todo::
-
-                - add usage info
-                - create a sublime snippet for usage
-
-            .. code-block:: python 
-
-                usage code 
-
-        .. todo::
-
-            - @review: when complete, clean methodName method
-            - @review: when complete add logging
+            - ``self.transientsDbConn, self.ps1gwDbConn, self.cataloguesDbConn`` -- three database connections
         """
         self.log.debug('starting the ``get`` method')
         self._setup_database_connections()
@@ -129,21 +65,6 @@ class database():
             self):
         """
         *setup database connections for transient and catalogue databases*
-
-         **Usage:**
-            .. todo::
-
-                - add usage info
-                - create a sublime snippet for usage
-
-            .. code-block:: python 
-
-                usage code 
-
-        .. todo::
-
-            - @review: when complete, clean methodName method
-            - @review: when complete add logging
         """
         self.log.debug('starting the ``_setup_database_connections`` method')
 
@@ -284,21 +205,6 @@ class database():
     def _checkServer(self, address, port):
         """
         *Check that the TCP Port we've decided to use for tunnelling is available*
-
-         **Usage:**
-            .. todo::
-
-                - add usage info
-                - create a sublime snippet for usage
-
-            .. code-block:: python 
-
-                usage code 
-
-        .. todo::
-
-            - @review: when complete, clean methodName method
-            - @review: when complete add logging
         """
         self.log.debug('starting the ``_checkServer`` method')
 

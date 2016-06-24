@@ -3,10 +3,6 @@ Installation
 
 Currently you need to manually install ``dryxPython`` and ``HMpTy`` packages before installing breaker.
 
-.. todo::
-
-    - remove dependencies on ``dryxPython`` and ``HMpTy``
-
 The easiest way to install breaker us to use ``pip``:
 
 .. code:: bash

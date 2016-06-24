@@ -387,7 +387,3 @@ class generate_faker_catalogue():
         self.log.info(
             'completed the ``generate_faker_locations_within_galaxies_found_in_survey_footprint`` method')
         return None
-
-    # 5. @flagged: what actions of the base class(es) need ammending? ammend them here
-    # Override Method Attributes
-    # method-override-tmpx

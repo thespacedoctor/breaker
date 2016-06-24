@@ -143,6 +143,9 @@ class plot_wave_observational_timelines():
         )
         self.ligo_virgo_wavesDbConn, self.ps1gwDbConn, self.cataloguesDbConn = db.get()
 
+        self.log.debug(
+            'connected to databases')
+
         return None
 
     def get(self):
@@ -260,6 +263,9 @@ class plot_wave_observational_timelines():
             inPastDays=inPastDays,
             inFirstDays=inFirstDays
         )
+
+        self.log.debug(
+            'finished getting the PS1 transients')
 
         # GRAB PS1 & ATLAS POINTINGS FROM THE DATABASE
         ps1Pointings = self._get_ps1_pointings(gwid, inPastDays, inFirstDays)
@@ -471,10 +477,6 @@ class plot_wave_observational_timelines():
             - None
 
         **Usage:**
-            .. todo::
-
-                - add usage info
-                - create a sublime snippet for usage
 
             First you neeed to collect your data and a few plot parameters:
 
@@ -490,10 +492,29 @@ class plot_wave_observational_timelines():
                     inFirstDays=(0,7)
                 )
 
-        .. todo::
+            Then you can pass in these parameter to generate a plot:
 
-            - @review: when complete, clean methodName method
-            - @review: when complete add logging
+            .. code-block:: python
+
+                plotter.generate_probability_plot(
+                    gwid="G211117",
+                    plotParameters=plotParameters,
+                    ps1Transients=ps1Transients,
+                    ps1Pointings=ps1Pointings,
+                    atlasPointings=altasPointings,
+                    pathToProbMap="/Users/Dave/config/breaker/maps/G211117/LALInference_skymap.fits",
+                    mjdStart=57382.,
+                    timeLimitLabel="",
+                    timeLimitDay=(0, 5),
+                    raLimit=False,
+                    fileFormats=["pdf"],
+                    folderName="survey_timeline_plots",
+                    projection="tan",
+                    # projection="mollweide",
+                    plotType="timeline",
+                    probabilityCut=True
+                )
+
         """
         self.log.info('starting the ``generate_probability_plot`` method')
 
@@ -1112,7 +1133,7 @@ class plot_wave_observational_timelines():
                         r,
                         d,
                         n,
-                        fontsize=18,
+                        fontsize=10,
                         zorder=4,
                         family='monospace'
                     ))
@@ -1122,7 +1143,7 @@ class plot_wave_observational_timelines():
                         xx,
                         yy,
                         texts,
-                        expand_text=(7.2, 7.6),
+                        expand_text=(1.2, 1.6),
                         expand_points=(1.2, 3.2),
                         va='center',
                         ha='center',
@@ -1141,7 +1162,7 @@ class plot_wave_observational_timelines():
                         draggable=True,
                         arrowprops=dict(arrowstyle="-", color='black', lw=1.2,
                                         patchB=None, shrinkB=0, connectionstyle="arc3,rad=0.1", zorder=3, alpha=0.5),
-                        fontsize=18,
+                        fontsize=10,
                         family='monospace'
                     )
             else:
@@ -1165,7 +1186,7 @@ class plot_wave_observational_timelines():
                 # xRange * 0.95,
                 yRange * 0.93,
                 timeRangeLabel,
-                fontsize=20,
+                fontsize=16,
                 zorder=4,
                 color="#dc322f",
                 fontproperties=font
@@ -1174,7 +1195,7 @@ class plot_wave_observational_timelines():
                 xRange * 0.1,
                 # xRange * 0.95,
                 yRange * 0.93,
-                "C",
+                "",
                 fontsize=20,
                 zorder=4,
                 color="black",
@@ -1186,7 +1207,7 @@ class plot_wave_observational_timelines():
                 # xRange * 0.95,
                 fHeight * 0.95,
                 timeRangeLabel,
-                fontsize=20,
+                fontsize=16,
                 zorder=4,
                 color="#dc322f",
                 fontproperties=font
@@ -1237,26 +1258,22 @@ class plot_wave_observational_timelines():
         """
         *plot the history plots*
 
-        **Key Arguments:**
-            # -
-
         **Return:**
             - None
 
         **Usage:**
-            .. todo::
-
-                - add usage info
-                - create a sublime snippet for usage
 
             .. code-block:: python 
 
-                usage code 
-
-        .. todo::
-
-            - @review: when complete, clean methodName method
-            - @review: when complete add logging
+                from breaker.plots import plot_wave_observational_timelines
+                plotter = plot_wave_observational_timelines(
+                    log=log,
+                       settings=settings,
+                       plotType="history",
+                       gwid="G184098",
+                       projection="tan"
+                )
+                plotter.get() 
         """
         self.log.info('starting the ``get_history_plots`` method')
 
@@ -1313,26 +1330,22 @@ class plot_wave_observational_timelines():
         """
         *plot the history plots*
 
-        **Key Arguments:**
-            # -
-
         **Return:**
             - None
 
         **Usage:**
-            .. todo::
-
-                - add usage info
-                - create a sublime snippet for usage
 
             .. code-block:: python 
 
-                usage code 
-
-        .. todo::
-
-            - @review: when complete, clean methodName method
-            - @review: when complete add logging
+                from breaker.plots import plot_wave_observational_timelines
+                plotter = plot_wave_observational_timelines(
+                    log=log,
+                       settings=settings,
+                       plotType="timeline",
+                       gwid="G184098",
+                       projection="tan"
+                )
+                plotter.get() 
         """
         self.log.info('starting the ``get_timeline_plots`` method')
 
