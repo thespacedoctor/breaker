@@ -17,14 +17,14 @@ Usage
 
     COMMANDS
     --------
-    update                update the PS1 footprint table in breaker database and associate with GWs. Optionally download overlapping NED source and also add to the database.
+    update                update the PS1 footprint table in breaker database and associate with GW-IDs. Optionally download overlapping NED source and also add to the database.
     plot                  enter plotting mode
     timeline              plot from the epoch of the wave detection forward in time
     history               plot from now back in time over the last days, weeks and months
     comparison            produce a multi-panel plot to compare wave maps
     stats                 generate some coverage stats for a given wave survey campaign
     sources               overplot map with NED sources found within the wave campaign footprint
-    faker                 generate a catalogue of simulated transient sources in PS1 FP
+    faker                 generate a catalogue of simulated transient sources in PS1 exposure ID footprint
     listen                connect to grace DB and download maps found within the given time range
 
     ARGUMENTS
@@ -56,9 +56,6 @@ version](http://breaker.readthedocs.org/en/latest/)).
 
 Installation
 ------------
-
-Currently you need to manually install `dryxPython` and `HMpTy` packages
-before installing breaker.
 
 The easiest way to install breaker us to use `pip`:
 
@@ -94,7 +91,7 @@ or, for bash:
 Then try and install breaker again.
 
 **healpy**. If you're having trouble installing healpy try installing
-the [lastest version from
+the [latest version from
 github](https://github.com/healpy/healpy/releases). Download and extract
 the tarball.
 
