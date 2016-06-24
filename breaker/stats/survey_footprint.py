@@ -34,20 +34,17 @@ class survey_footprint():
 
     **Usage:**
 
-        .. todo::
-
-            - add usage info
-            - create a sublime snippet for usage
+        To generate cummulative stats for the wave "G184098"
 
         .. code-block:: python 
 
-            usage code 
-
-    .. todo::
-
-        - @review: when complete, clean _database class
-        - @review: when complete add logging
-        - @review: when complete, decide whether to abstract class to another module
+            from breaker.stats import survey_footprint
+            stats = survey_footprint(
+                log=log,
+                settings=settings,
+                gwid="G184098"
+            )
+            stats.get()
     """
     # Initialisation
 
@@ -73,28 +70,12 @@ class survey_footprint():
 
         return None
 
-    # Method Attributes
     def get(self):
         """
-        *get the survey_footprint stats and print to screen/file*
+        *get the survey footprint stats and print to screen/file*
 
         **Return:**
-            - ``survey_footprint``
-
-        **Usage:**
-            .. todo::
-
-                - add usage info
-                - create a sublime snippet for usage
-
-            .. code-block:: python 
-
-                usage code 
-
-        .. todo::
-
-            - @review: when complete, clean methodName method
-            - @review: when complete add logging
+            - ``None``
         """
         self.log.info('starting the ``get`` method')
 
@@ -337,10 +318,6 @@ class survey_footprint():
         writeFile.close()
 
         self.log.info('completed the ``get`` method')
-        return survey_footprint
+        return None
 
     # xt-class-method
-
-    # 5. @flagged: what actions of the base class(es) need ammending? ammend them here
-    # Override Method Attributes
-    # method-override-tmpx

@@ -33,7 +33,11 @@ from breaker.plots.plot_wave_observational_timelines import plot_wave_observatio
 
 class plot_multi_panel_alternate_map_comparison():
     """
-    *The worker class for the plot_multi_panel_alternate_map_comparison module*
+    *Given a directory of maps, plot a multipanel plot with probabilities plotted on the same colorbar scale*
+
+    All files with the ``.fits`` extension in the map directory are assumed to be a healpix likelihood map.
+
+    Settings for the maps ratios etc are lifted from the setttings file.
 
     **Key Arguments:**
         - ``log`` -- logger
@@ -42,20 +46,26 @@ class plot_multi_panel_alternate_map_comparison():
         - ``pathToMapDirectory`` -- path to a directory containing the maps
 
     **Usage:**
-        .. todo::
-
-            - add usage info
-            - create a sublime snippet for usage
 
         .. code-block:: python 
 
-            usage code 
+            from breaker.plots import plot_multi_panel_alternate_map_comparison
+            p = plot_multi_panel_alternate_map_comparison(
+                log=log,
+                settings=settings,
+                gwid="G211117",
+                pathToMapDirectory="/path/to/my/maps"
+            ).get()
 
-    .. todo::
+    The resulting PNG will look something like this for 2 maps:
 
-        - @review: when complete, clean _database class
-        - @review: when complete add logging
-        - @review: when complete, decide whether to abstract class to another module
+     .. image:: https://i.imgur.com/y6WBrwa.png
+        :width: 800px
+        :alt: GW151226 Skymap Comparison
+
+    More panels are added depending on the number of maps in ``pathToMapDirectory``. Here's an example of a 4 map comparison:
+
+
     """
     # Initialisation
 
@@ -86,25 +96,9 @@ class plot_multi_panel_alternate_map_comparison():
 
         return None
 
-    # Method Attributes
     def get(self):
         """
         *Generate the plot*
-
-        **Usage:**
-            .. todo::
-
-                - add usage info
-                - create a sublime snippet for usage
-
-            .. code-block:: python 
-
-                usage code 
-
-        .. todo::
-
-            - @review: when complete, clean methodName method
-            - @review: when complete add logging
         """
         self.log.info('starting the ``get`` method')
 
@@ -114,6 +108,7 @@ class plot_multi_panel_alternate_map_comparison():
             settings=self.settings,
             plotType="history"
         )
+
         plotParameters, ps1Transients, ps1Pointings, altasPointings = p.get_gw_parameters_from_settings(
             gwid=self.gwid,
             inPastDays=30000,
@@ -157,21 +152,6 @@ class plot_multi_panel_alternate_map_comparison():
 
         **Return:**
             - None
-
-        **Usage:**
-            .. todo::
-
-                - add usage info
-                - create a sublime snippet for usage
-
-            .. code-block:: python 
-
-                usage code 
-
-        .. todo::
-
-            - @review: when complete, clean methodName method
-            - @review: when complete add logging
         """
         self.log.info('starting the ``_generate_map_comparison_plot`` method')
 
@@ -225,8 +205,9 @@ class plot_multi_panel_alternate_map_comparison():
         basePath = pathToMapDirectory
         mapPaths = []
         for d in os.listdir(basePath):
-            if os.path.isfile(os.path.join(basePath, d)) and ".fits" in d:
+            if os.path.isfile(os.path.join(basePath, d)) and ".fits" in d[-5:]:
                 mapPaths.append(os.path.join(basePath, d))
+                self.log.debug('found the map `%(d)s`' % locals())
 
         # HEALPY REQUIRES RA, DEC IN RADIANS AND AS TWO SEPERATE ARRAYS
         import math
@@ -248,9 +229,11 @@ class plot_multi_panel_alternate_map_comparison():
         for mapI in range(len(mapPaths)):
 
             pathToProbMap = mapPaths[mapI]
+            self.log.debug(
+                'starting to work on  `%(pathToProbMap)s`' % locals())
 
-            mapName = pathToProbMap.split(
-                "_")[-1].replace(".fits", "").replace("_", " ")
+            mapName = pathToProbMap.split("/")[-1]
+            mapName = mapName.replace(".fits", "").replace("_", " ")
 
             # READ HEALPIX MAPS FROM FITS FILE
             # THIS FILE IS A ONE COLUMN FITS BINARY, WITH EACH CELL CONTAINING AN
@@ -386,12 +369,18 @@ class plot_multi_panel_alternate_map_comparison():
                 ax.add_patch(circ)
 
             # # MAP NAME LABEL
+            if len(mapPaths) < 3:
+                textFontsize = 12
+            elif len(mapPaths) == 3:
+                textFontsize = 9
+            else:
+                textFontsize = 8
             ax.text(
                 xRange * 0.07,
                 # xRange * 0.95,
                 yRange * 0.93,
                 mapName,
-                fontsize=12,
+                fontsize=textFontsize,
                 zorder=4,
                 color="#dc322f",
                 horizontalalignment="right"

@@ -1,12 +1,6 @@
 Installation
 ============
 
-Currently you need to manually install ``dryxPython`` and ``HMpTy`` packages before installing breaker.
-
-.. todo::
-
-    - remove dependencies on ``dryxPython`` and ``HMpTy``
-
 The easiest way to install breaker us to use ``pip``:
 
 .. code:: bash
@@ -48,7 +42,7 @@ or, for bash:
 
 Then try and install breaker again.
 
-**healpy**. If you're having trouble installing healpy try installing the `lastest version from github <https://github.com/healpy/healpy/releases>`_. Download and extract the tarball.
+**healpy**. If you're having trouble installing healpy try installing the `latest version from github <https://github.com/healpy/healpy/releases>`_. Download and extract the tarball.
 
 Untar, set your ``MACOSX_DEPLOYMENT_TARGET`` environment variable and install:
 

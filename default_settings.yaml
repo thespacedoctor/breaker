@@ -1,20 +1,24 @@
 version: 1
-database settings:
-    db: dryx_unit_testing
-    host: localhost
-    user: unittesting
-    password: utpass
-    sshPort: False
 
-# SSH TUNNEL - if a tunnel is required to connect to the database(s) then add setup here
-# Note only one tunnel is setup - may need to change this to 2 tunnels in the future if 
-# code, static catalogue database and transient database are all on seperate machines.
-ssh tunnel:
-    use tunnel: True   # True | False
-    remote user: username
-    remote ip: mydomain.co.uk
-    remote datbase host: mydatabaseName
-    port: 9002
+## MISSING DATABASE INFO AND SSH TUNNEL DETAILS GO HERE - ASK DAVE!
+
+
+# I/O SETTINGS
+gw maps directory: /Users/Dave/.config/breaker/maps
+output directory: "/Users/Dave/Desktop/breaker-output"
+
+# EXAMPLE WAVE SETTINGS - ADD MORE WAVES AS THEY ARE DETECTED
+gravitational waves:
+    G184098:
+            time:
+                mjdStart: 57279.90
+                mjdEnd: 57369.90
+            plot:
+                raRange: 48.  # CENTRAL WIDTH IN DEGREES
+                decRange: 45.  # CENTRAL HEIGHT IN DEGREES
+                centralCoordinate: [141., 0.0]
+            mapPath: "/Users/Dave/.config/breaker/maps/G184098/LALInference_skymap.fits"
+
 
 logging settings:
     formatters:

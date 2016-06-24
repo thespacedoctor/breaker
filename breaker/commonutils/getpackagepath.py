@@ -14,22 +14,7 @@ import os
 
 def getpackagepath():
     """
-    *getpackagepath*
-
-    **Usage:**
-        .. todo::
-
-            - add usage info
-            - create a sublime snippet for usage
-
-        .. code-block:: python 
-
-            usage code 
-
-    .. todo::
-
-        - @review: when complete, clean methodName method
-        - @review: when complete add logging
+    *Get the local path to the pacakge*
     """
     moduleDirectory = os.path.dirname(__file__)
     packagePath = os.path.dirname(__file__) + "/../"

@@ -103,6 +103,7 @@ class listen():
 
         stop = False
 
+        beginningOfTime = 1e09
         while stop == False:
 
             if self.daemon:
@@ -111,7 +112,8 @@ class listen():
                 ).get_mjd()
                 # 20 MINS AGO
                 startGPS = (mjd - float(gpsZeroMjd)) * 60 * 60 * 24. - \
-                    31536000.
+                    beginningOfTime
+                beginningOfTime = 0.
                 # 20 MINS FROM NOW
                 endGPS = (mjd - float(gpsZeroMjd)) * 60 * 60 * 24. + 1200.
             else:
@@ -172,12 +174,13 @@ class listen():
                     self.log.warning(
                         'cound not download skymaps for event %(eventId)s' % locals())
 
-            if count == 0:
-                print "No recent events, will try again in 60 secs"
-            else:
-                print "%(count)s recent events found, will try again in 60 secs" % locals()
-            # WAIT 1 MIN
-            time.sleep(60)
+            if stop == False:
+                if count == 0:
+                    print "No recent events, will try again in 60 secs"
+                else:
+                    print "%(count)s recent events found, will try again in 60 secs" % locals()
+                # WAIT 1 MIN
+                time.sleep(60)
 
         self.log.info('completed the ``get_maps`` method')
         return None

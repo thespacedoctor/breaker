@@ -9,6 +9,34 @@ def readme():
     with open(moduleDirectory + '/README.rst') as f:
         return f.read()
 
+install_requires = [
+    'pyyaml',
+    'fundamentals',
+    'requests',
+    'astropy',
+    'healpy',
+    'crowdedText',
+    'sherlock',
+    'neddy',
+    'wcsaxes',
+    'docopt',
+    'ligo-gracedb',
+    'numpy',
+    'HMpTy'
+]
+
+# READ THE DOCS SERVERS
+exists = os.path.exists("/home/docs/")
+if exists:
+    c_exclude_list = ['healpy', 'astropy',
+                      'numpy', 'sherlock', 'wcsaxes', 'HMpTy', 'ligo-gracedb']
+    for e in c_exclude_list:
+        try:
+            install_requires.remove(e)
+        except:
+            pass
+
+
 setup(name="breaker",
       version=__version__,
       description="Tools used by the PanSTARRS & ATLAS teams when surveying the likely sky-locations of LIGO-VIRGO discovered Gravitational Waves",
@@ -30,20 +58,7 @@ setup(name="breaker",
       package_data={'breaker': [
           'resources/*/*', 'resources/*.*']},
       include_package_data=True,
-      install_requires=[
-          'pyyaml',
-          'fundamentals',
-          'numpy',
-          'requests',
-          'astropy',
-          'healpy',
-          'crowdedText',
-          'sherlock',
-          'neddy',
-          'wcsaxes',
-          'docopt',
-          'ligo-gracedb'
-      ],
+      install_requires=install_requires,
       test_suite='nose.collector',
       tests_require=['nose', 'nose-cover3'],
       entry_points={

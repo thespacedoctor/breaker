@@ -1,5 +1,6 @@
+=======
 breaker 
-=========================
+=======
 
 *Tools used by the PanSTARRS & ATLAS teams when surveying the likely sky-locations of LIGO-VIRGO discovered Gravitational Waves*.
 
@@ -9,23 +10,43 @@ Usage
 .. code-block:: bash 
    
     breaker update [-n] [-s <pathToSettingsFile>]
-    breaker plot (timeline|history|sources [<gwid>]) [-s <pathToSettingsFile>]
+    breaker plot (timeline|history|sources) [-w <gwid>] [-s <pathToSettingsFile>]
     breaker plot comparison <gwid> <pathToMapDirectory> [-s <pathToSettingsFile>]
     breaker faker <ps1ExpId> [-s <pathToSettingsFile>]
     breaker stats <gwid> [-s <pathToSettingsFile>]
     breaker listen <far> (<mjdStart> <mjdEnd> | <inLastNMins>) [-s <pathToSettingsFile>]
     breaker listen -d <far> [-s <pathToSettingsFile>]
 
+    COMMANDS
+    --------
+    update                update the PS1 footprint table in breaker database and associate with GW-IDs. Optionally download overlapping NED source and also add to the database.
+    plot                  enter plotting mode
+    timeline              plot from the epoch of the wave detection forward in time
+    history               plot from now back in time over the last days, weeks and months
+    comparison            produce a multi-panel plot to compare wave maps
+    stats                 generate some coverage stats for a given wave survey campaign
+    sources               overplot map with NED sources found within the wave campaign footprint
+    faker                 generate a catalogue of simulated transient sources in PS1 exposure ID footprint
+    listen                connect to grace DB and download maps found within the given time range
+
+    ARGUMENTS
+    ---------
+    far                   false alarm rate limit in Hz (1e-7 Hz ~= 3.2 per year)
+    gwid                  the gravitational wave ID
+    pathToSettingsFile    path to the yaml settings file
+    pathToMapDirectory    path to a directory containing localisation maps
+    ps1ExpId              a panstarrs exposure ID
+    mjdStart              start of an MJD range
+    mjdEnd                end of the MJD range
+    inLastNMins           in the last N number of minutes
+
+    FLAGS
+    -----
     -h, --help            show this help message
     -s, --settings        the settings file
     -n, --updateNed       update the NED database steam
     -d, --daemon          listen in daemon mode
-    far                   false alarm rate limit in Hz (1e-7 Hz ~= 3.2 per year)
-    plot                  update the gravitational wave plots
-    timeline              observations looking forward from date of GW detection
-    history               observations from the past x days
-    faker                 generate a catalogue of simulated transient source in ps1 FP
-    stats                 output some stats for the GW surveys
+    -w, --waveId          a gravitational wave ID
     
 Documentation
 =============
@@ -34,12 +55,6 @@ Documentation for breaker is hosted by `Read the Docs <http://breaker.readthedoc
 
 Installation
 ============
-
-Currently you need to manually install ``dryxPython`` and ``HMpTy`` packages before installing breaker.
-
-.. todo::
-
-    - remove dependencies on ``dryxPython`` and ``HMpTy``
 
 The easiest way to install breaker us to use ``pip``:
 
@@ -82,7 +97,7 @@ or, for bash:
 
 Then try and install breaker again.
 
-**healpy**. If you're having trouble installing healpy try installing the `lastest version from github <https://github.com/healpy/healpy/releases>`_. Download and extract the tarball.
+**healpy**. If you're having trouble installing healpy try installing the `latest version from github <https://github.com/healpy/healpy/releases>`_. Download and extract the tarball.
 
 Untar, set your ``MACOSX_DEPLOYMENT_TARGET`` environment variable and install:
 

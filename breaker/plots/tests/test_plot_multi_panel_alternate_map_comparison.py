@@ -36,7 +36,7 @@ class test_plot_multi_panel_alternate_map_comparison():
             log=log,
             settings=settings,
             gwid="G211117",
-            pathToMapDirectory=pathToOutputDir
+            pathToMapDirectory=pathToInputDir
         )
         p.get()
 
