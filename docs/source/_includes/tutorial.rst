@@ -202,6 +202,8 @@ will rattle through the ATLAS and PS1 footprints in chronological order and dete
 Download Recently Detected Wave Maps
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Before running the ``listen`` command you need to create a ``.netrc`` file with your GraceDb credentials (with 600 permissions). `See here for a tutorial <https://dcc.ligo.org/public/0118/G1500442/010/ligo-virgo-emfollowup-tutorial.html>`_
+
 The ``listen`` command is used to connect to `graceDB <https://gracedb.ligo.org>`_ and download the maps from recently detected waves. You can connect either once and download all maps within a time range, or connect in daemon mode to ping graceDB every 60 secs for new maps.
 
 To connect and download maps between MJDs 57382. and 57384. with a false alarm rate lower limit of 1e-7 Hz:
