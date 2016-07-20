@@ -16,13 +16,16 @@ install_requires = [
     'astropy',
     'healpy',
     'crowdedText',
-    'sherlock',
+    'QUB-sherlock',
     'neddy',
     'wcsaxes',
     'docopt',
     'ligo-gracedb',
     'numpy',
-    'HMpTy'
+    'HMpTy',
+    'cython',
+    'scipy',
+    'cartopy'
 ]
 
 # READ THE DOCS SERVERS

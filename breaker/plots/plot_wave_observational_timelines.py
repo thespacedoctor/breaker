@@ -29,6 +29,7 @@ from matplotlib.pyplot import savefig
 import matplotlib.patches as patches
 import matplotlib.path as mpath
 from matplotlib.projections.geo import GeoAxes
+import cartopy.crs as ccrs
 from astropy import wcs as awcs
 from astropy.io import fits
 from fundamentals import tools, times
@@ -141,7 +142,10 @@ class plot_wave_observational_timelines():
             log=self.log,
             settings=self.settings
         )
-        self.ligo_virgo_wavesDbConn, self.ps1gwDbConn, self.cataloguesDbConn = db.get()
+        if self.settings:
+            self.ligo_virgo_wavesDbConn, self.ps1gwDbConn, self.cataloguesDbConn = db.get()
+        else:
+            self.ligo_virgo_wavesDbConn, self.ps1gwDbConn, self.cataloguesDbConn = False, False, False
 
         self.log.debug(
             'connected to databases')
@@ -437,40 +441,42 @@ class plot_wave_observational_timelines():
 
     def generate_probability_plot(
             self,
-            gwid,
-            plotParameters,
-            ps1Transients,
-            ps1Pointings,
-            atlasPointings,
             pathToProbMap,
-            mjdStart,
-            timeLimitLabel,
-            timeLimitDay,
-            fileFormats,
-            folderName,
-            plotType,
+            gwid,
+            mjdStart=False,
+            timeLimitLabel=False,
+            timeLimitDay=False,
+            fileFormats=["pdf"],
+            folderName="",
+            plotType="timeline",
+            plotParameters=False,
+            ps1Transients=[],
+            ps1Pointings=[],
+            atlasPointings=[],
             projection="wcs",
             raLimit=False,
-            probabilityCut=False):
+            probabilityCut=False,
+            outputDirectory=False):
         """
         *Generate a single probability map plot for a given gravitational wave and save it to file*
 
         **Key Arguments:**
             - ``gwid`` -- the unique ID of the gravitational wave to plot
-            - ``plotParameters`` -- the parameters of the plot (for spatial & temporal parameters etc)
-            - ``ps1Transients`` -- the transients to add to the plot
-            - ``ps1Pointings`` -- the PS1 pointings to place on the plot
-            - ``atlasPointings`` -- the atlas pointings to add to the plot
+            - ``plotParameters`` -- the parameters of the plot (for spatial & temporal parameters etc).
+            - ``ps1Transients`` -- the transients to add to the plot. Default **[]**
+            - ``ps1Pointings`` -- the PS1 pointings to place on the plot. Default **[]**
+            - ``atlasPointings`` -- the atlas pointings to add to the plot. Default **[]**
             - ``pathToProbMap`` -- path to the FITS file containing the probability map of the wave
             - ``mjdStart`` -- earliest mjd of discovery
             - ``timeLimitLabel`` -- the labels of the time contraints (for titles)
             - ``timeLimitDay`` -- the time limits (in ints)
             - ``raLimit`` -- ra limit at twilight
-            - ``fileFormats`` -- the format(s) to output the plots in (list of strings)
+            - ``fileFormats`` -- the format(s) to output the plots in (list of strings) Default **["pdf"]**
             - ``folderName`` -- the name of the folder to add the plots to
-            - ``plotType`` -- history (looking back from now) or timeline (looking forward from date of GW detection)
+            - ``plotType`` -- history (looking back from now) or timeline (looking forward from date of GW detection). Default **timeline**
             - ``projection`` -- projection for the plot. Default *wcs*. [wcs|mollweide]
             - ``probabilityCut`` -- remove footprints where probability assigned to the healpix pixel found at the center of the exposure is ~0.0. Default *False*
+            - ``outputDirectory`` -- can be used to override the output destination in the settings file
 
 
         **Return:**
@@ -510,9 +516,9 @@ class plot_wave_observational_timelines():
                     fileFormats=["pdf"],
                     folderName="survey_timeline_plots",
                     projection="tan",
-                    # projection="mollweide",
                     plotType="timeline",
-                    probabilityCut=True
+                    probabilityCut=True,
+                    outputDirectory=False
                 )
 
         """
@@ -555,7 +561,10 @@ class plot_wave_observational_timelines():
         print "Total Probability for the entire sky is %(totalProb)s" % locals()
 
         # UNPACK THE PLOT PARAMETERS
-        centralCoordinate = plotParameters["centralCoordinate"]
+        if plotParameters:
+            centralCoordinate = plotParameters["centralCoordinate"]
+        else:
+            centralCoordinate = [0, 0]
 
         # CREATE A NEW WCS OBJECT
         w = awcs.WCS(naxis=2)
@@ -564,7 +573,16 @@ class plot_wave_observational_timelines():
         # WORLD COORDINATES AT REFERENCE PIXEL
         w.wcs.crval = centralCoordinate
 
-        if projection in ["mollweide"]:
+        projectionDict = {
+            "mollweide": "MOL",
+            "aitoff": "AIT",
+            "hammer": "AIT",
+            "lambert": "ZEA",
+            "polar": "TAN",
+            "rectilinear": "MER"
+        }
+
+        if projection in ["mollweide", "aitoff", "hammer", "lambert", "polar", "rectilinear"]:
             # MAP VISULISATION RATIO IS ALWAYS 1/2
             xRange = 2000
             yRange = xRange / 2.
@@ -589,24 +607,49 @@ class plot_wave_observational_timelines():
             # healpixIds = np.reshape(healpixIds, (1, -1))[0]
 
             # CTYPE FOR THE FITS HEADER
-            w.wcs.ctype = ["RA---MOL", "DEC--MOL"]
+            thisctype = projectionDict[projection]
+            w.wcs.ctype = ["RA---%(thisctype)s" %
+                           locals(), "DEC--%(thisctype)s" % locals()]
 
             stampProb = np.sum(aMap)
             print "Probability for the plot stamp is %(stampProb)s" % locals()
 
-            # MATPLOTLIB IS DOING THE MOLLVEIDE PROJECTION
-            ax = fig.add_subplot(111, projection='mollweide')
+            # MATPLOTLIB IS DOING THE PROJECTION
+            # ax = fig.add_subplot(111, projection=projection)
+            # USE WCS AS THE PROJECTION
+
+            if projection == "mollweide":
+                ax = plt.axes(projection=ccrs.Mollweide())
+                ax.set_extent([80, 170, -45, 30])
+            else:
+                ax = fig.add_axes([0.15, 0.1, 0.8, 0.8], projection=projection)
+
+            print ax.get_extent()
 
             # RASTERIZED MAKES THE MAP BITMAP WHILE THE LABELS REMAIN VECTORIAL
             # FLIP LONGITUDE TO THE ASTRO CONVENTION
-            image = plt.pcolormesh(longitude[
-                                   ::-1], latitude, probs, rasterized=True, cmap=cmap)
+            ax.contourf(longitude[
+                ::-1], latitude, probs,
+                transform=ccrs.PlateCarree(),
+                cmap=cmap)
+
+            # ax.coastlines()
+            ax.set_global()
+            plt.show()
+
+            sys.exit(0)
+
+            image = ax.pcolormesh(longitude[
+                ::-1], latitude, probs, rasterized=True, cmap=cmap)
+
+            plt.show()
 
             # GRATICULE
-            ax.set_longitude_grid(60)
-            ax.xaxis.set_major_formatter(ThetaFormatterShiftPi(60))
-            ax.set_latitude_grid(45)
-            ax.set_longitude_grid_ends(90)
+            if projection not in ["polar", "rectilinear", "mollweide"]:
+                ax.set_longitude_grid(60)
+                ax.set_latitude_grid(45)
+                ax.xaxis.set_major_formatter(ThetaFormatterShiftPi(60))
+                ax.set_longitude_grid_ends(90)
 
             # CONTOURS - NEED TO ADD THE CUMMULATIVE PROBABILITY
             i = np.flipud(np.argsort(aMap))
@@ -618,12 +661,14 @@ class plot_wave_observational_timelines():
             contours = []
             contours[:] = [cls[i] for i in healpixIds]
             # contours = np.reshape(np.array(contours), (yRange, xRange))
-            CS = plt.contour(longitude[::-1], latitude,
-                             contours, linewidths=.5, alpha=0.4, zorder=2)
 
-            # CS = plt.contour(contours, linewidths=10, alpha=0.7, zorder=2)
-            plt.clabel(CS, fontsize=12, inline=1,
-                       fmt='%2.1f', fontproperties=font, alpha=0.7)
+            CS = ax.contour(longitude[::-1], latitude,
+                            contours, linewidths=.5, alpha=0.7, zorder=2, origin='image')
+
+            if projection not in ["lambert", "aitoff"]:
+                CS.set_alpha(0.5)
+                CS.clabel(fontsize=10, inline=True,
+                          fmt='%2.1f', fontproperties=font, alpha=0.0)
 
             # COLORBAR
             if colorBar:
@@ -826,7 +871,7 @@ class plot_wave_observational_timelines():
                 plotTitle = "%(gwid)s Probability Map, PS1 Footprints & Transients\nDiscovered Since MJD %(mjdStart)s" % locals(
                 )
                 timeRangeLabel = "MJD > %(mjdStart)s" % locals()
-        elif plotType == "timeline":
+        elif plotType == "timeline" and timeLimitDay:
             start = timeLimitDay[0]
             end = timeLimitDay[1]
             plotTitle = "%(gwid)s Probability Map, PS1 Footprints & Transients\nDiscovered %(timeLimitLabel)s of Wave Detection" % locals()
@@ -836,6 +881,9 @@ class plot_wave_observational_timelines():
                 plotTitle = "%(gwid)s Probability Map, PS1 Footprints\n& All Transients Discovered" % locals(
                 )
                 timeRangeLabel = "all transients"
+        elif plotType == "timeline":
+            plotTitle = "%(gwid)s Probability Map" % locals()
+            timeRangeLabel = ""
 
         else:
             timeRangeLabel = ""
@@ -1224,7 +1272,10 @@ class plot_wave_observational_timelines():
             )
 
         # Recursively create missing directories
-        plotDir = self.settings["output directory"] + "/" + gwid
+        if self.settings and not outputDirectory:
+            plotDir = self.settings["output directory"] + "/" + gwid
+        elif outputDirectory:
+            plotDir = outputDirectory
         if not os.path.exists(plotDir):
             os.makedirs(plotDir)
 
@@ -1243,7 +1294,7 @@ class plot_wave_observational_timelines():
 
         if not os.path.exists("%(plotDir)s/%(folderName)s/fits" % locals()):
             os.makedirs("%(plotDir)s/%(folderName)s/fits" % locals())
-        pathToExportFits = "%(plotDir)s/%(folderName)s/fits/%(gwid)s_stamp_%(projection)s.fits" % locals()
+        pathToExportFits = "%(plotDir)s/%(folderName)s/fits/%(gwid)s_map_%(projection)s.fits" % locals()
         try:
             os.remove(pathToExportFits)
         except:
@@ -1263,7 +1314,7 @@ class plot_wave_observational_timelines():
 
         **Usage:**
 
-            .. code-block:: python 
+            .. code-block:: python
 
                 from breaker.plots import plot_wave_observational_timelines
                 plotter = plot_wave_observational_timelines(
@@ -1273,7 +1324,7 @@ class plot_wave_observational_timelines():
                        gwid="G184098",
                        projection="tan"
                 )
-                plotter.get() 
+                plotter.get()
         """
         self.log.info('starting the ``get_history_plots`` method')
 
@@ -1335,7 +1386,7 @@ class plot_wave_observational_timelines():
 
         **Usage:**
 
-            .. code-block:: python 
+            .. code-block:: python
 
                 from breaker.plots import plot_wave_observational_timelines
                 plotter = plot_wave_observational_timelines(
@@ -1345,7 +1396,7 @@ class plot_wave_observational_timelines():
                        gwid="G184098",
                        projection="tan"
                 )
-                plotter.get() 
+                plotter.get()
         """
         self.log.info('starting the ``get_timeline_plots`` method')
 
