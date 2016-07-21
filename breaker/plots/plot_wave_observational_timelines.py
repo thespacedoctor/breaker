@@ -723,9 +723,15 @@ class plot_wave_observational_timelines():
 
             # GRAB THE WCS FROM HEADER GENERATED EARLIER
             from wcsaxes import datasets, WCS
+            from astropy.wcs import WCS
+            from wcsaxes import WCSAxes
+
             wcs = WCS(hdu.header)
             # USE WCS AS THE PROJECTION
-            ax = fig.add_axes([0.15, 0.1, 0.8, 0.8], projection=wcs)
+            ax = WCSAxes(fig, [0.15, 0.1, 0.8, 0.8], wcs=wcs)
+            # note that the axes have to be explicitly added to the figure
+            ax = fig.add_axes(ax)
+
             # PLOT MAP WITH PROJECTION IN HEADER
             im = ax.imshow(probs,
                            cmap=cmap, origin='lower', alpha=0.7, zorder=1, vmin=vmin, vmax=vmax)
