@@ -22,7 +22,8 @@ install_requires = [
     'docopt',
     'ligo-gracedb',
     'numpy',
-    'HMpTy'
+    'HMpTy',
+    'Tornado'
 ]
 
 # READ THE DOCS SERVERS
