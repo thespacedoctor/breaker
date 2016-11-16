@@ -13,6 +13,7 @@ Command-Line Usage
         October 29, 2015
     
     Usage:
+        breaker init
         breaker update [-n] [-s <pathToSettingsFile>]
         breaker skymap <gwid> <pathToLVMap>
         breaker plot (timeline|history|sources) [-w <gwid>] [-s <pathToSettingsFile>]
@@ -24,6 +25,7 @@ Command-Line Usage
     
         COMMANDS
         --------
+        init                  setup the breaker settings file for the first time
         update                update the PS1 footprint table in breaker database and associate with GW-IDs. Optionally download overlapping NED source and also add to the database
         skymap                generate an all sky FITS & PDF image map given the path to the LV likeihood map (Meractor and Mollweide projections respectively)
         plot                  enter plotting mode
