@@ -11,8 +11,7 @@ su = tools(
     docString=__doc__,
     logLevel="DEBUG",
     options_first=False,
-    projectName="breaker",
-    tunnel=False
+    projectName="breaker"
 )
 arguments, settings, log, dbConn = su.setup()
 

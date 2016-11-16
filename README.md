@@ -1,11 +1,14 @@
 breaker
 =======
 
-*Tools used by the PanSTARRS & ATLAS teams when surveying the likely
-sky-locations of LIGO-VIRGO discovered Gravitational Waves*.
+*A python package and command-line tools used by the PanSTARRS & ATLAS
+teams when surveying the likely sky-locations of LIGO-VIRGO discovered
+Gravitational Waves*.
 
-Usage
------
+Here's a summary of what's included in the python package:
+
+Command-Line Usage
+------------------
 
     breaker update [-n] [-s <pathToSettingsFile>]
     breaker plot (timeline|history|sources) [-w <gwid>] [-s <pathToSettingsFile>]
