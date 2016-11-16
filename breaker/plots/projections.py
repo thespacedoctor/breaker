@@ -17,9 +17,6 @@ from fundamentals import tools
 from plot_wave_observational_timelines import plot_wave_observational_timelines
 
 
-# OR YOU CAN REMOVE THE CLASS BELOW AND ADD A WORKER FUNCTION ... SNIPPET TRIGGER BELOW
-# xt-worker-def
-
 class projections():
     """
     *The worker class for the projections module*
@@ -29,7 +26,7 @@ class projections():
         - ``settings`` -- the settings dictionary
         - ``gwid`` -- the map's gravitational wave ID 
         - ``healpixPath`` -- path to the LV Healpix likelihood map.
-        - ``projection`` -- the desired projection to warp the map to. Default *mollweide*
+        - ``projection`` -- the desired projection to warp the map to. Default *mollweide* (nothing else added yet)
         - ``outputDirectory`` -- path to the directory to output the map to. 
 
     **Usage:**

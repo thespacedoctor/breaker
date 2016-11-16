@@ -13,6 +13,7 @@ install_requires = [
     'pyyaml',
     'fundamentals',
     'requests',
+    'numpy',
     'astropy',
     'healpy',
     'crowdedText',
@@ -21,11 +22,11 @@ install_requires = [
     'wcsaxes',
     'docopt',
     'ligo-gracedb',
-    'numpy',
     'HMpTy',
     'cython',
     'scipy',
-    'cartopy'
+    'cartopy',
+    'Tornado'
 ]
 
 # READ THE DOCS SERVERS
@@ -42,7 +43,7 @@ if exists:
 
 setup(name="breaker",
       version=__version__,
-      description="Tools used by the PanSTARRS & ATLAS teams when surveying the likely sky-locations of LIGO-VIRGO discovered Gravitational Waves",
+      description="CL-tools for PanSTARRS & ATLAS LIGO-VIRGO (PSAT) group to aid surveys of the likely sky-locations of LIGO-VIRGO discovered Gravitational Waves",
       long_description=readme(),
       classifiers=[
           'Development Status :: 4 - Beta',

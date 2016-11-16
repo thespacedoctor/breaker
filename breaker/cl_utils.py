@@ -11,6 +11,7 @@
 
 Usage:
     breaker update [-n] [-s <pathToSettingsFile>]
+    breaker skymap <gwid> <pathToLVMap>
     breaker plot (timeline|history|sources) [-w <gwid>] [-s <pathToSettingsFile>]
     breaker plot comparison <gwid> <pathToMapDirectory> [-s <pathToSettingsFile>]
     breaker faker <ps1ExpId> [-s <pathToSettingsFile>]
@@ -20,7 +21,8 @@ Usage:
 
     COMMANDS
     --------
-    update                update the PS1 footprint table in breaker database and associate with GW-IDs. Optionally download overlapping NED source and also add to the database.
+    update                update the PS1 footprint table in breaker database and associate with GW-IDs. Optionally download overlapping NED source and also add to the database
+    skymap                generate an all sky FITS & PDF image map given the path to the LV likeihood map (Meractor and Mollweide projections respectively)
     plot                  enter plotting mode
     timeline              plot from the epoch of the wave detection forward in time
     history               plot from now back in time over the last days, weeks and months
@@ -40,6 +42,7 @@ Usage:
     mjdStart              start of an MJD range
     mjdEnd                end of the MJD range
     inLastNMins           in the last N number of minutes
+    pathToLVMap           path to the LV likelihood map
 
     FLAGS
     -----
@@ -201,6 +204,17 @@ def main(arguments=None):
             daemon=True
         )
         this.get_maps()
+
+    if skymap:
+        from breaker.plots import projections
+        this = projections(
+            log=log,
+            gwid=gwid,
+            healpixPath=pathToLVMap,
+            projection="mollweide",
+            outputDirectory="."
+        )
+        this.get()
 
     if "dbConn" in locals() and dbConn:
         dbConn.commit()

@@ -2,10 +2,14 @@
 breaker 
 =======
 
-*Tools used by the PanSTARRS & ATLAS teams when surveying the likely sky-locations of LIGO-VIRGO discovered Gravitational Waves*.
+*A python package and command-line tools for the PanSTARRS & ATLAS LIGO-VIRGO (PSAT) group to aid surveys of the likely sky-locations of LIGO-VIRGO discovered Gravitational Waves*.
 
-Usage
-======
+Here's a summary of what's included in the python package:
+
+.. include:: /classes_and_functions.rst
+
+Command-Line Usage
+==================
 
 .. code-block:: bash 
    
@@ -48,6 +52,7 @@ Usage
     -d, --daemon          listen in daemon mode
     -w, --waveId          a gravitational wave ID
     
+
 Documentation
 =============
 
@@ -107,6 +112,8 @@ Untar, set your ``MACOSX_DEPLOYMENT_TARGET`` environment variable and install:
     cd healpy-1.9.0
     setenv MACOSX_DEPLOYMENT_TARGET 10.11
     python setup.py install
+
+    
 
 
 

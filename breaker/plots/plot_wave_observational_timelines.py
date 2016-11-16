@@ -611,45 +611,26 @@ class plot_wave_observational_timelines():
             w.wcs.ctype = ["RA---%(thisctype)s" %
                            locals(), "DEC--%(thisctype)s" % locals()]
 
+            # ALL PROJECTIONS IN FITS SEEM TO BE MER
+            w.wcs.ctype = ["RA---MER" %
+                           locals(), "DEC--MER" % locals()]
+
             stampProb = np.sum(aMap)
             print "Probability for the plot stamp is %(stampProb)s" % locals()
 
             # MATPLOTLIB IS DOING THE PROJECTION
-            # ax = fig.add_subplot(111, projection=projection)
-            # USE WCS AS THE PROJECTION
-
-            if projection == "mollweide":
-                ax = plt.axes(projection=ccrs.Mollweide())
-                ax.set_extent([80, 170, -45, 30])
-            else:
-                ax = fig.add_axes([0.15, 0.1, 0.8, 0.8], projection=projection)
-
-            print ax.get_extent()
+            ax = fig.add_subplot(111, projection=projection)
 
             # RASTERIZED MAKES THE MAP BITMAP WHILE THE LABELS REMAIN VECTORIAL
             # FLIP LONGITUDE TO THE ASTRO CONVENTION
-            ax.contourf(longitude[
-                ::-1], latitude, probs,
-                transform=ccrs.PlateCarree(),
-                cmap=cmap)
-
-            # ax.coastlines()
-            ax.set_global()
-            plt.show()
-
-            sys.exit(0)
-
             image = ax.pcolormesh(longitude[
                 ::-1], latitude, probs, rasterized=True, cmap=cmap)
 
-            plt.show()
-
             # GRATICULE
-            if projection not in ["polar", "rectilinear", "mollweide"]:
-                ax.set_longitude_grid(60)
-                ax.set_latitude_grid(45)
-                ax.xaxis.set_major_formatter(ThetaFormatterShiftPi(60))
-                ax.set_longitude_grid_ends(90)
+            ax.set_longitude_grid(60)
+            ax.set_latitude_grid(45)
+            ax.xaxis.set_major_formatter(ThetaFormatterShiftPi(60))
+            ax.set_longitude_grid_ends(90)
 
             # CONTOURS - NEED TO ADD THE CUMMULATIVE PROBABILITY
             i = np.flipud(np.argsort(aMap))
@@ -663,12 +644,11 @@ class plot_wave_observational_timelines():
             # contours = np.reshape(np.array(contours), (yRange, xRange))
 
             CS = ax.contour(longitude[::-1], latitude,
-                            contours, linewidths=.5, alpha=0.7, zorder=2, origin='image')
+                            contours, linewidths=.5, alpha=0.7, zorder=2)
 
-            if projection not in ["lambert", "aitoff"]:
-                CS.set_alpha(0.5)
-                CS.clabel(fontsize=10, inline=True,
-                          fmt='%2.1f', fontproperties=font, alpha=0.0)
+            CS.set_alpha(0.5)
+            CS.clabel(fontsize=10, inline=True,
+                      fmt='%2.1f', fontproperties=font, alpha=0.0)
 
             # COLORBAR
             if colorBar:
@@ -1180,7 +1160,7 @@ class plot_wave_observational_timelines():
                     alpha=1,
                     zorder=4
                 )
-                xx, yy = w.wcs_world2pix(np.array(ra), np.array(dec), 1)
+                xx, yy = w.wcs_world2pix(np.array(ra), np.array(dec), 0)
                 # ADD TRANSIENT LABELS
                 for r, d, n in zip(xx, yy, names):
                     texts.append(ax.text(
@@ -1282,6 +1262,7 @@ class plot_wave_observational_timelines():
             plotDir = self.settings["output directory"] + "/" + gwid
         elif outputDirectory:
             plotDir = outputDirectory
+
         if not os.path.exists(plotDir):
             os.makedirs(plotDir)
 
@@ -1292,20 +1273,32 @@ class plot_wave_observational_timelines():
         if timeLimitDay == 0:
             figureName = """%(plotTitle)s""" % locals(
             )
-        for f in fileFormats:
-            if not os.path.exists("%(plotDir)s/%(folderName)s/%(f)s" % locals()):
-                os.makedirs("%(plotDir)s/%(folderName)s/%(f)s" % locals())
-            figurePath = "%(plotDir)s/%(folderName)s/%(f)s/%(figureName)s_%(projection)s.%(f)s" % locals()
-            savefig(figurePath, bbox_inches='tight', dpi=300)
+        if plotDir != ".":
+            for f in fileFormats:
+                if not os.path.exists("%(plotDir)s/%(folderName)s/%(f)s" % locals()):
+                    os.makedirs("%(plotDir)s/%(folderName)s/%(f)s" % locals())
+                figurePath = "%(plotDir)s/%(folderName)s/%(f)s/%(figureName)s_%(projection)s.%(f)s" % locals()
+                savefig(figurePath, bbox_inches='tight', dpi=300)
 
-        if not os.path.exists("%(plotDir)s/%(folderName)s/fits" % locals()):
-            os.makedirs("%(plotDir)s/%(folderName)s/fits" % locals())
-        pathToExportFits = "%(plotDir)s/%(folderName)s/fits/%(gwid)s_map_%(projection)s.fits" % locals()
-        try:
-            os.remove(pathToExportFits)
-        except:
-            pass
-        hdu.writeto(pathToExportFits)
+            if not os.path.exists("%(plotDir)s/%(folderName)s/fits" % locals()):
+                os.makedirs("%(plotDir)s/%(folderName)s/fits" % locals())
+            pathToExportFits = "%(plotDir)s/%(folderName)s/fits/%(gwid)s_map_%(projection)s.fits" % locals()
+            try:
+                os.remove(pathToExportFits)
+            except:
+                pass
+            hdu.writeto(pathToExportFits)
+        else:
+            for f in fileFormats:
+                figurePath = "%(plotDir)s/%(figureName)s_%(projection)s.%(f)s" % locals()
+                savefig(figurePath, bbox_inches='tight', dpi=300)
+
+            pathToExportFits = "%(plotDir)s/%(gwid)s_map_%(projection)s.fits" % locals()
+            try:
+                os.remove(pathToExportFits)
+            except:
+                pass
+            hdu.writeto(pathToExportFits)
 
         self.log.info('completed the ``generate_probability_plot`` method')
         return None

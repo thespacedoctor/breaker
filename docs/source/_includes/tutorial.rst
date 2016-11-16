@@ -1,5 +1,5 @@
-Tutorial
-========
+Command-Line Tutorial
+=====================
 
 This is a tutorial for using the CL ``breaker`` tools. To use ``breaker`` in your python scripts, see the full documentation.
 
