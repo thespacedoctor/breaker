@@ -10,6 +10,7 @@
     October 29, 2015
 
 Usage:
+    breaker init
     breaker update [-n] [-s <pathToSettingsFile>]
     breaker skymap <gwid> <pathToLVMap>
     breaker plot (timeline|history|sources) [-w <gwid>] [-s <pathToSettingsFile>]
@@ -21,6 +22,7 @@ Usage:
 
     COMMANDS
     --------
+    init                  setup the breaker settings file for the first time
     update                update the PS1 footprint table in breaker database and associate with GW-IDs. Optionally download overlapping NED source and also add to the database
     skymap                generate an all sky FITS & PDF image map given the path to the LV likeihood map (Meractor and Mollweide projections respectively)
     plot                  enter plotting mode
@@ -70,11 +72,8 @@ from breaker.stats.survey_footprint import survey_footprint
 from breaker.plots.plot_multi_panel_alternate_map_comparison import plot_multi_panel_alternate_map_comparison
 from breaker.gracedb.listen import listen as mlisten
 from astrocalc.times import now as mjdNow
+from subprocess import Popen, PIPE, STDOUT
 # from ..__init__ import *
-
-
-def tab_complete(text, state):
-    return (glob.glob(text + '*') + [None])[state]
 
 
 def main(arguments=None):
@@ -91,11 +90,6 @@ def main(arguments=None):
         projectName="breaker"
     )
     arguments, settings, log, dbConn = su.setup()
-
-    # tab completion for raw_input
-    readline.set_completer_delims(' \t\n;')
-    readline.parse_and_bind("tab: complete")
-    readline.set_completer(tab_complete)
 
     # unpack remaining cl arguments using `exec` to setup the variable names
     # automatically
@@ -117,6 +111,21 @@ def main(arguments=None):
     log.info(
         '--- STARTING TO RUN THE cl_utils.py AT %s' %
         (startTime,))
+
+    if init:
+        from os.path import expanduser
+        home = expanduser("~")
+        filepath = home + "/.config/breaker/breaker.yaml"
+        try:
+            cmd = """open %(filepath)s""" % locals()
+            p = Popen(cmd, stdout=PIPE, stderr=PIPE, shell=True)
+        except:
+            pass
+        try:
+            cmd = """start %(filepath)s""" % locals()
+            p = Popen(cmd, stdout=PIPE, stderr=PIPE, shell=True)
+        except:
+            pass
 
     # CALL FUNCTIONS/OBJECTS
     if update:

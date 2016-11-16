@@ -1290,10 +1290,10 @@ class plot_wave_observational_timelines():
             hdu.writeto(pathToExportFits)
         else:
             for f in fileFormats:
-                figurePath = "%(plotDir)s/%(figureName)s_%(projection)s.%(f)s" % locals()
+                figurePath = "%(plotDir)s/%(figureName)s.%(f)s" % locals()
                 savefig(figurePath, bbox_inches='tight', dpi=300)
 
-            pathToExportFits = "%(plotDir)s/%(gwid)s_map_%(projection)s.fits" % locals()
+            pathToExportFits = "%(plotDir)s/%(gwid)s_skymap.fits" % locals()
             try:
                 os.remove(pathToExportFits)
             except:
