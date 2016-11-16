@@ -34,7 +34,7 @@ class Mock(MagicMock):
         return Mock()
 
 MOCK_MODULES = ['numpy', 'scipy', 'matplotlib', 'matplotlib.colors',
-                'matplotlib.pyplot', 'matplotlib.cm', 'matplotlib.path', 'matplotlib.patches', 'matplotlib.projections', 'matplotlib.projections.geo', 'healpy', 'astropy', 'astropy.io', 'pylibmc', 'HMpTy', 'HMpTy.mysql', 'ligo', 'ligo.gracedb', 'ligo.gracedb.rest']
+                'matplotlib.pyplot', 'matplotlib.cm', 'matplotlib.path', 'matplotlib.patches', 'matplotlib.projections', 'matplotlib.projections.geo', 'healpy', 'astropy', 'astropy.io', 'pylibmc', 'HMpTy', 'HMpTy.mysql', 'ligo', 'ligo.gracedb', 'ligo.gracedb.rest', 'cartopy', 'cartopy.crs']
 sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
 
 
@@ -263,7 +263,7 @@ man_pages = [
 #  dir menu entry, description, category)
 texinfo_documents = [
     ('index', 'breaker', u'breaker Documentation',
-     u'Dave Young', 'breaker', 'Tools used by the PanSTARRS & ATLAS teams when surveying the likely sky-locations of LIGO-VIRGO discovered Gravitational Waves',
+     u'Dave Young', 'breaker', 'Tools for the PanSTARRS & ATLAS LIGO-VIRGO (PSAT) group to aid surveys of the likely sky-locations of LIGO-VIRGO discovered Gravitational Waves',
      'Miscellaneous'),
 ]
 
@@ -294,14 +294,16 @@ def updateUsageRST():
 
     if not "Usage:" in usage or "todo:" in usage:
         return None
-    usage = usage.split("Usage:")[-1].strip()
-    usage = """Usage
-======
+    usageString = ""
+    for l in usage.split("\n"):
+        usageString += "    " + l + "\n"
+
+    usage = """Command-Line Usage
+==================
 
 .. code-block:: bash 
    
-    %(usage)s
-    """ % locals()
+%(usageString)s""" % locals()
 
     moduleDirectory = os.path.dirname(__file__)
     uFile = moduleDirectory + "/_includes/usage.rst"
@@ -313,6 +315,7 @@ def updateUsageRST():
         writeFile.close()
 
     return None
+
 
 updateUsageRST()
 
@@ -422,6 +425,32 @@ Functions
     writeFile = codecs.open(
         moduleDirectory + "/autosummary.rst", encoding='utf-8', mode='w')
     writeFile.write(thisText)
+    writeFile.close()
+
+    import re
+    regex = re.compile(r'\n\s*.*?utKit\.utKit(\n|$)', re.I)
+    allClasses = regex.sub("\n", allClasses)
+
+    classAndFunctions = u"""
+**Classes**
+
+.. autosummary::
+   :nosignatures:
+
+   %(allClasses)s 
+
+**Functions**
+
+.. autosummary::
+   :nosignatures:
+
+   %(allFunctions)s 
+""" % locals()
+
+    moduleDirectory = os.path.dirname(__file__)
+    writeFile = codecs.open(
+        moduleDirectory + "/classes_and_functions.rst", encoding='utf-8', mode='w')
+    writeFile.write(classAndFunctions)
     writeFile.close()
 
     return thisText
