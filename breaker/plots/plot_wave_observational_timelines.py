@@ -29,7 +29,6 @@ from matplotlib.pyplot import savefig
 import matplotlib.patches as patches
 import matplotlib.path as mpath
 from matplotlib.projections.geo import GeoAxes
-import cartopy.crs as ccrs
 from astropy import wcs as awcs
 from astropy.io import fits
 from fundamentals import tools, times
