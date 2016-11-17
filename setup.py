@@ -25,7 +25,6 @@ install_requires = [
     'HMpTy',
     'cython',
     'scipy',
-    'cartopy',
     'Tornado'
 ]
 
