@@ -204,6 +204,16 @@ Download Recently Detected Wave Maps
 
 Before running the ``listen`` command you need to create a ``.netrc`` file with your GraceDb credentials (with 600 permissions). `See here for a tutorial <https://dcc.ligo.org/public/0118/G1500442/010/ligo-virgo-emfollowup-tutorial.html>`_
 
+Alternatively you can add the GraceDB robot credentials into breaker's settings file. Just take the username and password found in your ``.netrc`` and add them to ``breaker.yaml`` as follows:
+
+.. code-block:: yaml 
+    
+    graceDB robot credentials: 
+        username: <yourLigoUsername>
+        password: <yourLigoRobotPassword>
+
+Breaker will first check its own settings file for the GraceDB credentials and then the ``.netrc`` file in your home directory, in that order.
+        
 The ``listen`` command is used to connect to `graceDB <https://gracedb.ligo.org>`_ and download the maps from recently detected waves. You can connect either once and download all maps within a time range, or connect in daemon mode to ping graceDB every 60 secs for new maps.
 
 To connect and download maps between MJDs 57382. and 57384. with a false alarm rate lower limit of 1e-7 Hz:
@@ -211,7 +221,33 @@ To connect and download maps between MJDs 57382. and 57384. with a false alarm r
 .. code-block:: bash 
  
     > breaker listen 1e-7 57382. 57384.
-    Downloading bayestar.fits.gz for GW event G211117
+    NEW GRAVITATIONAL WAVE EVENT FOUND ...
+        GraceDB ID: G211117
+    NEW MAP FOUND FOR GW EVENT G211117 ...
+        Downloading LALInference_skymap.fits.gz
+    NEW MAP FOUND FOR GW EVENT G211117 ...
+        Downloading bayestar.fits.gz
+    NEW MAP FOUND FOR GW EVENT G211117 ...
+        Downloading LIB_skymap.fits.gz
+
+    METADATA FOR G211117 ...
+    Date Added to GraceDB: 2015-12-26 03:40:00 UTC
+    Detection Interferometers: H1,L1
+    Detection Pipeline: gstlal
+    Discovery Group: CBC
+    Discovery Search Type: HighMass
+    Event Submitter: gstlalcbc
+    False Alarm Rate: 3.33262857227e-11 Hz
+    GPS Event Time: 1135136350.647758
+    GraceDB ID: G211117
+    Hanford MJD: 57382.152009812
+    Livingston MJD: 57382.1520098019
+    MJD Difference Seconds: 0.0008749962
+    Maps:
+      LALInference_skymap.fits.gz: true
+      LIB_skymap.fits.gz: true
+      bayestar.fits.gz: true
+      skymap.fits.gz: false
 
 Or to download maps within the last 15 mins:
 
@@ -224,12 +260,93 @@ To connect in daemon mode:
 .. code-block:: bash 
 
     > breaker listen -d 1e-7
-    Downloading bayestar.fits.gz for GW event G211117
-    Downloading skymap.fits.gz for GW event G194575
-    2 recent events found, will try again in 60 secs
-    No recent events, will try again in 60 secs
+    NEW GRAVITATIONAL WAVE EVENT FOUND ...
+        GraceDB ID: G211117
+    NEW MAP FOUND FOR GW EVENT G211117 ...
+        Downloading LALInference_skymap.fits.gz
+    NEW MAP FOUND FOR GW EVENT G211117 ...
+        Downloading bayestar.fits.gz
+    NEW MAP FOUND FOR GW EVENT G211117 ...
+        Downloading LIB_skymap.fits.gz
+
+    METADATA FOR G211117 ...
+    Date Added to GraceDB: 2015-12-26 03:40:00 UTC
+    Detection Interferometers: H1,L1
+    Detection Pipeline: gstlal
+    Discovery Group: CBC
+    Discovery Search Type: HighMass
+    Event Submitter: gstlalcbc
+    False Alarm Rate: 3.33262857227e-11 Hz
+    GPS Event Time: 1135136350.647758
+    GraceDB ID: G211117
+    Hanford MJD: 57382.152009812
+    Livingston MJD: 57382.1520098019
+    MJD Difference Seconds: 0.0008749962
+    Maps:
+      LALInference_skymap.fits.gz: true
+      LIB_skymap.fits.gz: true
+      bayestar.fits.gz: true
+      skymap.fits.gz: false
+
+    NEW GRAVITATIONAL WAVE EVENT FOUND ...
+        GraceDB ID: G194575
+    NEW MAP FOUND FOR GW EVENT G194575 ...
+        Downloading skymap.fits.gz
+
+    METADATA FOR G194575 ...
+    Date Added to GraceDB: 2015-10-22 13:35:44 UTC
+    Detection Interferometers: H1,L1
+    Detection Pipeline: gstlal
+    Discovery Group: CBC
+    Discovery Search Type: LowMass
+    Event Submitter: gstlalcbc
+    False Alarm Rate: 9.65424329993e-08 Hz
+    GPS Event Time: 1129556016.942353
+    GraceDB ID: G194575
+    Hanford MJD: 57317.5648143102
+    Livingston MJD: 57317.5648141476
+    MJD Difference Seconds: 0.0140454769
+    Maps:
+      LALInference_skymap.fits.gz: false
+      LIB_skymap.fits.gz: false
+      bayestar.fits.gz: false
+      skymap.fits.gz: true
+
+    0 archived and 2 events found, will try again in 60 secs
+    2 archived and 0 events found, will try again in 60 secs
+    2 archived and 0 events found, will try again in 60 secs
+    ...
     
-Note the first time ``breaker`` connects to graceDB in daemon mode it downloads all maps from the beginning of time.
+Note the first time ``breaker`` connects to graceDB in daemon mode it downloads all maps from the beginning of operations (2015-09-01 00:00:00 UTC).
+
+Maps are downloaded to whatever directory you have set as ``gw maps directory`` in the breaker settings file.
+
+.. image:: https://i.imgur.com/kkOlSlp.png
+        :width: 800px
+        :alt: maps and metadata
+
+Alongside the maps you will find a ``meta.yaml`` file containing some pertinent data about the event as reported in GraceDB.
+
+.. code-block:: yaml 
+    
+    Date Added to GraceDB: 2015-12-26 03:40:00 UTC
+    Detection Interferometers: H1,L1
+    Detection Pipeline: gstlal
+    Discovery Group: CBC
+    Discovery Search Type: HighMass
+    Event Submitter: gstlalcbc
+    False Alarm Rate: 3.33262857227e-11 Hz
+    GPS Event Time: 1135136350.647758
+    GraceDB ID: G211117
+    Hanford MJD: 57382.152009812
+    Livingston MJD: 57382.1520098019
+    MJD Difference Seconds: 0.0008749962
+    Maps:
+      LALInference_skymap.fits.gz: true
+      LIB_skymap.fits.gz: true
+      bayestar.fits.gz: true
+      skymap.fits.gz: false
+
 
 
 
