@@ -1,0 +1,56 @@
+version: 1
+
+## MISSING DATABASE INFO AND SSH TUNNEL DETAILS GO HERE - ASK DAVE!
+
+
+# I/O SETTINGS
+gw maps directory: /Users/Dave/.config/breaker/maps
+output directory: "/Users/Dave/Desktop/breaker-output"
+
+# EXAMPLE WAVE SETTINGS - ADD MORE WAVES AS THEY ARE DETECTED
+gravitational waves:
+    G184098:
+            time:
+                mjdStart: 57279.90
+                mjdEnd: 57369.90
+            plot:
+                raRange: 48.  # CENTRAL WIDTH IN DEGREES
+                decRange: 45.  # CENTRAL HEIGHT IN DEGREES
+                centralCoordinate: [141., 0.0]
+            mapPath: "/Users/Dave/.config/breaker/maps/G184098/LALInference_skymap.fits"
+
+graceDB robot credentials: 
+    username: michael.coughlin@LIGO.ORG
+    password: CaNPNsAnNWVny2L5nxv8
+    # username: 102528212927421197349@GOOGLE.COM 
+    # password: zsGrkBDctwjG6RgMqEwT
+
+
+logging settings:
+    formatters:
+        file_style:
+            format: '* %(asctime)s - %(name)s - %(levelname)s (%(pathname)s > %(funcName)s > %(lineno)d) - %(message)s  '
+            datefmt: '%Y/%m/%d %H:%M:%S'
+        console_style:
+            format: '* %(asctime)s - %(levelname)s: %(pathname)s:%(funcName)s:%(lineno)d > %(message)s'
+            datefmt: '%H:%M:%S'
+        html_style:
+            format: '<div id="row" class="%(levelname)s"><span class="date">%(asctime)s</span>   <span class="label">file:</span><span class="filename">%(filename)s</span>   <span class="label">method:</span><span class="funcName">%(funcName)s</span>   <span class="label">line#:</span><span class="lineno">%(lineno)d</span> <span class="pathname">%(pathname)s</span>  <div class="right"><span class="message">%(message)s</span><span class="levelname">%(levelname)s</span></div></div>'
+            datefmt: '%Y-%m-%d <span class= "time">%H:%M <span class= "seconds">%Ss</span></span>'
+    handlers:
+        console:
+            class: logging.StreamHandler
+            level: DEBUG
+            formatter: console_style
+            stream: ext://sys.stdout
+        file:
+            class: logging.handlers.GroupWriteRotatingFileHandler
+            level: WARNING
+            formatter: file_style
+            filename: /Users/Dave/.config/breaker/breaker.log
+            mode: w+
+            maxBytes: 102400
+            backupCount: 1
+    root:
+        level: WARNING
+        handlers: [file,console]

@@ -14,12 +14,15 @@ import sys
 import os
 os.environ['TERM'] = 'vt100'
 from fundamentals import tools
+import yaml
+import codecs
 import numpy as np
 from ligo.gracedb.rest import GraceDb, HTTPError
 from ligo.gracedb.rest import GraceDbBasic
 from astrocalc.times import conversions
 from astrocalc.times import now as mjdNow
 import time
+from astropy.time import Time
 
 
 class listen():
@@ -29,9 +32,9 @@ class listen():
     **Key Arguments:**
         - ``log`` -- logger
         - ``settings`` -- the settings dictionary
-        - ``label`` -- filter wave event by label. Default *EM_READY*
+        - ``label`` -- filter wave event by label. Default *ADVOK & EM_READY*
         - ``farThreshold`` -- the false alarm rate threshold. Default *1e-7*
-        - ``startMJD`` -- startMJD. Default *56658.0 (2014-01-01)*
+        - ``startMJD`` -- startMJD. Default *57266.0 (2015-09-01)*
         - ``endMJD`` -- endMJD. Default *69807.0 (2050-01-01)*
         - ``daemon`` -- run in daemon mode. Ignores MJD settings and pings GraceDB every 1 mins.
     """
@@ -41,10 +44,10 @@ class listen():
             self,
             log,
             settings=False,
-            label="EM_READY",
+            label="ADVOK & EM_READY",
             farThreshold=1e-7,
-            startMJD=56658.0,
-            endMJD=69807.0,
+            startMJD=57266.0,
+            endMJD=False,
             daemon=False
     ):
         self.log = log
@@ -57,6 +60,9 @@ class listen():
         self.daemon = daemon
         # xt-self-arg-tmpx
 
+        if not self.endMJD:
+            self.endMJD = Time.now().mjd + 20. / (60. * 24.)
+
         # Initial Actions
         self.mapDirectory = self.settings["gw maps directory"]
         # RECURSIVELY CREATE MISSING DIRECTORIES
@@ -64,7 +70,14 @@ class listen():
             os.makedirs(self.mapDirectory)
 
         # INSTANTIATE GRACEDB CLIENT WITH A QUERY STRING
-        self.client = GraceDbBasic()
+        u = None
+        p = None
+        # CHECK FOR ROBOT CREDENTIALS IN BREAKER SETTINGS ELSE RELY ON .netrc
+        # FILE
+        if "graceDB robot credentials" in self.settings:
+            u = self.settings["graceDB robot credentials"]["username"]
+            p = self.settings["graceDB robot credentials"]["password"]
+        self.client = GraceDbBasic(username=u, password=p)
 
         return None
 
@@ -80,53 +93,58 @@ class listen():
                 downloader = listen(
                     log=log,
                     settings=settings,
-                    label="EM_READY",
+                    label="ADVOK & EM_READY",
                     farThreshold=1e-7,
                     startMJD=56658.0,
-                    endMJD=69807.0
+                    endMJD=False,
+                    daemon=False
                 )
                 downloader.get_maps()
         """
         self.log.info('starting the ``get_maps`` method')
 
-        eventKeys = ['graceid', 'gpstime', 'group', 'links', 'created',
-                     'far', 'instruments', 'labels', 'nevents', 'submitter', 'search', 'likelihood']
+        # VARIABLES
         fileorder = ['LALInference_skymap.fits.gz',
                      'bayestar.fits.gz', 'LIB_skymap.fits.gz', 'skymap.fits.gz']
-
-        # CONVERT MJD TO GPS
-        converter = conversions(
-            log=self.log
-        )
-        gpsZeroMjd = converter.ut_datetime_to_mjd(
-            utDatetime="1980-01-06 00:00:00")
-
         stop = False
 
-        beginningOfTime = 1e09
+        # INPUT TIME-VALUES CAN BE SCALAR OR AN ARRAY
+        startOfLV = Time(
+            "2015-09-01T00:00:00",
+            format='isot',
+            scale='utc'
+        )
+
         while stop == False:
 
             if self.daemon:
-                mjd = mjdNow(
-                    log=self.log
-                ).get_mjd()
-                # 20 MINS AGO
-                startGPS = (mjd - float(gpsZeroMjd)) * 60 * 60 * 24. - \
-                    beginningOfTime
-                beginningOfTime = 0.
+                now = Time.now()
+                startGPS = startOfLV.gps
+                startUTC = startOfLV.value
                 # 20 MINS FROM NOW
-                endGPS = (mjd - float(gpsZeroMjd)) * 60 * 60 * 24. + 1200.
+                endGPS = now.gps + 1200.
+                endUTC = now.isot
             else:
                 stop = True
-                startGPS = (self.startMJD - float(gpsZeroMjd)) * 60 * 60 * 24.
-                endGPS = (self.endMJD - float(gpsZeroMjd)) * 60 * 60 * 24.
+                times = [self.startMJD, self.endMJD]
+                t = Time(
+                    times,
+                    format='mjd',
+                    scale='utc'
+                )
+                startGPS = t[0].gps
+                endGPS = t[1].gps
+                startUTC = t[0].isot
+                endUTC = t[1].isot
+            self.log.info(
+                "checking for events detected between GPS times %(startGPS)s (%(startUTC)s UTC) and %(endGPS)s (%(endUTC)s UTC)" % locals())
 
+            # BUILD THE EVENT QUERY STRING
             label = self.label
             farThreshold = self.farThreshold
-            self.eventString = '%(label)s far <%(farThreshold)s %(startGPS)s  .. %(endGPS)s' % locals(
+            self.eventString = '%(label)s far < %(farThreshold)s %(startGPS)s  .. %(endGPS)s' % locals(
             )
-
-            # REST API RETURNS AN ITERATOR
+            # QUERY GRACEDB REST API - RETURNS AN ITERATOR
             self.events = self.client.events(
                 query=self.eventString,
                 orderby=None,
@@ -134,51 +152,78 @@ class listen():
                 columns=None
             )
 
-            count = 0
+            # ITERATE OVER RESULTS
+            oldEvents = 0
+            newEvents = 0
             for event in self.events:
-                count += 1
-                eventinfo = {}
-                for key in eventKeys:
-                    if not key in event:
-                        self.log.warning(
-                            "`%(key)s` not in event %(event)s" % locals())
-                        continue
-                    eventinfo[key] = event[key]
-                eventinfo['gpstime'] = float(eventinfo['gpstime'])
+                waveId = event['graceid']
 
-                if eventinfo['far'] > self.farThreshold:
-                    far = eventinfo['far']
-                    farthres = self.farThreshold
-                    self.info.warning(
-                        "event %(event)s does not pass FAR threshold of %(farthres)s. (FAR = %(far)s)" % locals())
+                # GET LATEST METADATA FOR THE EVENT FROM GRACEDB
+                meta = self._get_event_meta_data(event=event)
+
+                if not meta:
                     continue
+
+                # DETERMINE IF THIS SYSTEM HAS SEEN THE EVENT BEFORE
+                newEvent = self._is_the_a_new_event(waveId=event['graceid'])
+
+                if newEvent:
+                    newEvents += 1
+                    print """NEW GRAVITATIONAL WAVE EVENT FOUND ...
+    GraceDB ID: %(waveId)s""" % locals()
+                else:
+                    oldEvents += 1
 
                 allMaps = []
 
+                maps = {}
                 for lvfile in fileorder:
                     try:
-                        aMap = self.client.files(eventinfo['graceid'], lvfile)
+                        aMap = self.client.files(event['graceid'], lvfile)
                         allMaps.append(aMap)
                         self._write_map_to_disk(
                             sMap=aMap,
                             mapName=lvfile,
-                            waveId=eventinfo['graceid']
+                            waveId=event['graceid']
                         )
+                        maps[lvfile] = True
                     except:
-                        eventId = eventinfo['graceid']
+                        maps[lvfile] = False
+                        eventId = event['graceid']
                         self.log.info(
                             "The %(lvfile)s path for %(eventId)s does not seem to exist yet" % locals())
 
                 if len(allMaps) == 0:
-                    eventId = eventinfo['graceid']
+                    eventId = event['graceid']
                     self.log.warning(
                         'cound not download skymaps for event %(eventId)s' % locals())
 
+                meta["Maps"] = maps
+                fileName = self.mapDirectory + "/" + waveId + "/meta.yaml"
+                stream = file(fileName, 'w')
+                yaml.dump(meta, stream, default_flow_style=False)
+                stream.close()
+
+                if newEvent:
+                    try:
+                        self.log.debug(
+                            "attempting to open the file %s" % (fileName,))
+                        readFile = codecs.open(
+                            fileName, encoding='utf-8', mode='r')
+                        thisData = readFile.read()
+                        readFile.close()
+                    except IOError, e:
+                        message = 'could not open the file %s' % (
+                            fileName,)
+                        self.log.critical(message)
+                        raise IOError(message)
+
+                    print "\nMETADATA FOR %(waveId)s ..." % locals()
+                    print thisData
+                    readFile.close()
+
             if stop == False:
-                if count == 0:
-                    print "No recent events, will try again in 60 secs"
-                else:
-                    print "%(count)s recent events found, will try again in 60 secs" % locals()
+                print "%(oldEvents)s archived and %(newEvents)s events found, will try again in 60 secs" % locals()
                 # WAIT 1 MIN
                 time.sleep(60)
 
@@ -203,14 +248,185 @@ class listen():
         # RECURSIVELY CREATE MISSING DIRECTORIES
         if not os.path.exists(outputDir):
             os.makedirs(outputDir)
-
-        print "Downloading %(mapName)s for GW event %(waveId)s " % locals()
-
         mapPath = outputDir + "/" + mapName
 
-        skymapfile = open(mapPath, 'w')
-        skymapfile.write(sMap.read())
-        skymapfile.close()
+        if not os.path.exists(mapPath):
+            print "NEW MAP FOUND FOR GW EVENT %(waveId)s ... " % locals()
+            print "    Downloading %(mapName)s" % locals()
+            skymapfile = open(mapPath, 'w')
+            skymapfile.write(sMap.read())
+            skymapfile.close()
+        else:
+            self.log.info("%(mapName)s has alreday been downloaded" % locals())
 
         self.log.info('completed the ``_write_map_to_disk`` method')
         return None
+
+    def _get_event_meta_data(
+            self,
+            event):
+        """*query graceDB and parse the event metadata into dictionary*
+
+        **Key Arguments:**
+            - ``event`` -- the event data from graceDB
+
+        **Return:**
+            - None
+
+        **Usage:**
+            ..  todo::
+
+                - add usage info
+                - create a sublime snippet for usage
+                - update package tutorial if needed
+
+            .. code-block:: python
+
+                usage code
+
+        """
+        self.log.info('starting the ``_get_event_meta_data`` method')
+
+        eventKeys = ['graceid', 'gpstime', 'group', 'links', 'created',
+                     'far', 'instruments', 'labels', 'nevents', 'submitter', 'search', 'likelihood', 'extra_attributes']
+        eventinfo = {}
+        mjds = [-1, -1]
+        timediff = -1
+
+        # CHECK ALL THE EVENT KEYS EXIST - ELSE PASS ON THIS EVENT
+        for key in eventKeys:
+            if not key in event:
+                self.log.info(
+                    "`%(key)s` not in event %(event)s" % locals())
+                return None
+            eventinfo[key] = event[key]
+        eventinfo['gpstime'] = float(eventinfo['gpstime'])
+
+        # INJ : EVENT RESULTS FROM AN INJECTION (FAKE) - PASS
+        if "INJ" in eventinfo['labels']:
+            self.log.info(
+                "event %(event)s has an INJ label" % locals())
+            return None
+
+        # QUERY THE FALSE ALARM RATE. FAR TOO HIGH == PASS
+        if eventinfo['far'] > self.farThreshold:
+            far = eventinfo['far']
+            farthres = self.farThreshold
+            self.log.info(
+                "event %(event)s does not pass FAR threshold of %(farthres)s. (FAR = %(far)s)" % locals())
+            return None
+
+        self.log.info("Getting info for %s" % event["graceid"])
+
+        # LOOK UP THE EXTRA-ATTRIBUTES VALUE (NEED TO BE LV-MEMBER TO VIEW)
+        if 'CoincInspiral' in event['extra_attributes']:
+            eventinfo['coinc'] = event[
+                'extra_attributes']['CoincInspiral']
+        if 'SingleInspiral' in event['extra_attributes']:
+            eventinfo['coinc'] = event[
+                'extra_attributes']['CoincInspiral']
+            eventinfo['singles'] = {}
+            for single in event['extra_attributes']['SingleInspiral']:
+                eventinfo['singles'][single['ifo']] = single
+                eventinfo['singles'][single['ifo']]['gpstime'] = single[
+                    'end_time'] + 10**-9 * single['end_time_ns']
+
+            if ("H1" in eventinfo['singles']) and ("L1" in eventinfo['singles']):
+                eventinfo["H1_L1_difference"] = eventinfo['singles']['H1'][
+                    "gpstime"] - eventinfo['singles']['L1']["gpstime"]
+                t = Time([eventinfo['singles']['H1']["gpstime"], eventinfo[
+                         'singles']['L1']["gpstime"]], format='gps', scale='utc')
+                mjds = t.mjd
+                timediff = eventinfo["H1_L1_difference"]
+
+        try:
+            self.log.debug("Looking for cWB file for the event %s" %
+                           (eventinfo['graceid'],))
+            # READ THIS TRIGGER FILE FROM GRACEDB
+            r = self.client.files(eventinfo['graceid'],
+                                  "trigger_%.4f.txt" % eventinfo['gpstime'])
+            exists = True
+        except Exception, e:
+            self.log.info("No cWB file found for the event %s" %
+                          (eventinfo['graceid'],))
+            exists = False
+
+        if exists:
+            cwbfile = open('/tmp/trigger.txt', 'w')
+            cwbfile.write(r.read())
+            cwbfile.close()
+
+            eventinfo['burst'] = {}
+            lines = [line.rstrip('\n') for line in open('/tmp/trigger.txt')]
+            for line in lines:
+                lineSplit = line.split(":")
+                if len(lineSplit) < 2:
+                    continue
+                key = lineSplit[0]
+                value = filter(None, lineSplit[1].split(" "))
+                eventinfo['burst'][lineSplit[0]] = value
+
+            ifo1 = eventinfo['burst']['ifo'][0]
+            gps1 = float(eventinfo['burst']['time'][0])
+
+            ifo2 = eventinfo['burst']['ifo'][1]
+            gps2 = float(eventinfo['burst']['time'][1])
+
+            eventinfo['burst'][ifo1] = {}
+            eventinfo['burst'][ifo1]['gpstime'] = gps1
+
+            eventinfo['burst'][ifo2] = {}
+            eventinfo['burst'][ifo2]['gpstime'] = gps2
+
+            if ("H1" in eventinfo['burst']) and ("L1" in eventinfo['burst']):
+                eventinfo["H1_L1_difference"] = eventinfo['burst']['H1'][
+                    "gpstime"] - eventinfo['burst']['L1']["gpstime"]
+                t = Time([eventinfo['burst']['H1']["gpstime"], eventinfo[
+                    'burst']['L1']["gpstime"]], format='gps', scale='utc')
+                mjds = t.mjd
+                timediff = eventinfo["H1_L1_difference"]
+
+        # FILL IN META DICTIONARY
+        meta = {}
+        meta["GraceDB ID"] = str(event['graceid'])
+        meta["GPS Event Time"] = event["gpstime"]
+        meta["Discovery Group"] = str(event["group"])
+        meta["Detection Pipeline"] = str(event["pipeline"])
+        meta["Discovery Search Type"] = str(event["search"])
+        # meta["Links"] = event["links"]
+        meta["Date Added to GraceDB"] = str(event["created"])
+        meta["False Alarm Rate"] = str(event["far"]) + " Hz"
+        meta["Event Submitter"] = str(event["submitter"])
+        meta["Detection Interferometers"] = str(event["instruments"])
+        meta["Hanford MJD"] = float("%.10f" % (mjds[0],))
+        meta["Livingston MJD"] = float("%.10f" % (mjds[1],))
+        meta["MJD Difference Seconds"] = float("%.10f" % (timediff,))
+
+        self.log.info('completed the ``_get_event_meta_data`` method')
+        return meta
+
+    def _is_the_a_new_event(
+            self,
+            waveId):
+        """*determine if this system has seen this event yet*
+
+        **Key Arguments:**
+            - ``waveId`` -- the graceDB id for the wave.
+
+        **Return:**
+            - ``newEvent`` -- is this a new event (Boolean)
+        """
+        self.log.info('starting the ``_is_the_a_new_event`` method')
+
+        newEvent = False
+        outputDir = self.mapDirectory + "/" + waveId.upper()
+        # RECURSIVELY CREATE MISSING DIRECTORIES
+        if not os.path.exists(outputDir):
+            newEvent = True
+            os.makedirs(outputDir)
+
+        self.log.info('completed the ``_is_the_a_new_event`` method')
+        return newEvent
+
+    # use the tab-trigger below for new method
+    # xt-class-method

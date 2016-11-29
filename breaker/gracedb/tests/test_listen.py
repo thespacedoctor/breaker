@@ -15,17 +15,19 @@ su = tools(
 )
 arguments, settings, log, dbConn = su.setup()
 
-# load settings
-stream = file(
-    "/Users/Dave/.config/breaker/breaker.yaml", 'r')
-settings = yaml.load(stream)
-stream.close()
 
 # SETUP AND TEARDOWN FIXTURE FUNCTIONS FOR THE ENTIRE MODULE
 moduleDirectory = os.path.dirname(__file__)
 utKit = utKit(moduleDirectory)
 log, dbConn, pathToInputDir, pathToOutputDir = utKit.setupModule()
 utKit.tearDownModule()
+
+
+# load settings
+stream = file(
+    pathToInputDir + "example-settings.yaml", 'r')
+settings = yaml.load(stream)
+stream.close()
 
 
 class test_listen():
@@ -36,24 +38,24 @@ class test_listen():
         this = listen(
             log=log,
             settings=settings,
-            label="EM_READY",
+            label="ADVOK & EM_READY",
             farThreshold=1e-7,
-            startMJD=56658.0,
-            endMJD=69807.0
+            startMJD=57266.0,
+            endMJD=False
         )
         this.get_maps()
 
-    def test_listen_daemon_function(self):
+    # def test_listen_daemon_function(self):
 
-        from breaker.gracedb import listen
-        this = listen(
-            log=log,
-            settings=settings,
-            label="EM_READY",
-            farThreshold=1e-7,
-            daemon=True
-        )
-        this.get_maps()
+    #     from breaker.gracedb import listen
+    #     this = listen(
+    #         log=log,
+    #         settings=settings,
+    #         label="EM_READY",
+    #         farThreshold=1e-7,
+    #         daemon=False
+    #     )
+    #     this.get_maps()
 
     # def test_listen_function_exception(self):
 
