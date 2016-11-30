@@ -27,7 +27,7 @@ from astropy.time import Time
 
 class listen():
     """
-    *The worker class for the listen module*
+    *The listen object; connects to GraceDB and 'listens' for new wave events and new skymaps*
 
     **Key Arguments:**
         - ``log`` -- logger
@@ -109,6 +109,7 @@ class listen():
         stop = False
 
         # INPUT TIME-VALUES CAN BE SCALAR OR AN ARRAY
+        # GET TIME FOR THE VERY START OF LV OPERATIONS
         startOfLV = Time(
             "2015-09-01T00:00:00",
             format='isot',
@@ -116,7 +117,8 @@ class listen():
         )
 
         while stop == False:
-
+            # DAEMON MODE - LISTEN FROM START OF LV OPERATIONS UNTIL NOW + 20
+            # MIN
             if self.daemon:
                 now = Time.now()
                 startGPS = startOfLV.gps
@@ -125,6 +127,8 @@ class listen():
                 endGPS = now.gps + 1200.
                 endUTC = now.isot
             else:
+                # NON-DAEMON MODE - DOWNLOAD EVENT MAPS WITHIN THE GIVE
+                # TIME-RANGE
                 stop = True
                 times = [self.startMJD, self.endMJD]
                 t = Time(
@@ -161,6 +165,8 @@ class listen():
                 # GET LATEST METADATA FOR THE EVENT FROM GRACEDB
                 meta = self._get_event_meta_data(event=event)
 
+                # IF THERE IS NO META IT IS BECOME EVENT ABOVE FAR OR HAD
+                # INCORRECT LABELS
                 if not meta:
                     continue
 
@@ -176,6 +182,7 @@ class listen():
 
                 allMaps = []
 
+                # CHECK FOR NEW EVENT SKYMAPS
                 maps = {}
                 for lvfile in fileorder:
                     try:
@@ -198,12 +205,15 @@ class listen():
                     self.log.warning(
                         'cound not download skymaps for event %(eventId)s' % locals())
 
+                # DUMP THE KNOWN EVENT METADATA BESIDE MAPS
                 meta["Maps"] = maps
                 fileName = self.mapDirectory + "/" + waveId + "/meta.yaml"
                 stream = file(fileName, 'w')
                 yaml.dump(meta, stream, default_flow_style=False)
                 stream.close()
 
+                # PRINT METADATA TO SCREEN IF THIS IS THE FIRST TIME THIS
+                # SYSTEM HAS SEEN THE EVENT
                 if newEvent:
                     try:
                         self.log.debug(
@@ -271,19 +281,7 @@ class listen():
             - ``event`` -- the event data from graceDB
 
         **Return:**
-            - None
-
-        **Usage:**
-            ..  todo::
-
-                - add usage info
-                - create a sublime snippet for usage
-                - update package tutorial if needed
-
-            .. code-block:: python
-
-                usage code
-
+            - ``None`` or ``meta`` -- a dictionary of event metadata pulled from graceDB, or none if event doesn't match our requirements
         """
         self.log.info('starting the ``_get_event_meta_data`` method')
 
