@@ -65,6 +65,7 @@ class plot_wave_observational_timelines():
         - ``gwid`` -- a given graviational wave ID. If given only maps for this wave shall be plotted. Default *False* (i.e. plot all waves)
         - ``projection`` -- projection for the plot. Default *tan*
         - ``probabilityCut`` -- remove footprints where probability assigned to the healpix pixel found at the center of the exposure is ~0.0. Default *False*
+        - ``databaseConnRequired`` -- are the database connections going to be required? Default *True*
 
     **Usage:**
 
@@ -106,11 +107,6 @@ class plot_wave_observational_timelines():
                    plotType="timeline"
             )
             plotter.get()
-
-        .. todo::
-
-            - add projection options to the command-line
-            - add probabilityCut options to the command-line?
     """
     # Initialisation
 
@@ -121,27 +117,28 @@ class plot_wave_observational_timelines():
             plotType=False,
             gwid=False,
             projection="tan",
-            probabilityCut=False
+            probabilityCut=False,
+            databaseConnRequired=True
     ):
         self.log = log
-        log.debug("instansiating a new 'plot_wave_observational_timelines' object")
+        log.debug("instantiating a new 'plot_wave_observational_timelines' object")
         self.settings = settings
         self.plotType = plotType
         self.gwid = gwid
         self.projection = projection
         self.probabilityCut = probabilityCut
-        probabilityCut,
 
         # xt-self-arg-tmpx
 
         # Initial Actions
-        # CONNECT TO THE VARIOUS DATABASES REQUIRED
-        from breaker import database
-        db = database(
-            log=self.log,
-            settings=self.settings
-        )
-        if self.settings:
+
+        if self.settings and databaseConnRequired:
+            # CONNECT TO THE VARIOUS DATABASES REQUIRED
+            from breaker import database
+            db = database(
+                log=self.log,
+                settings=self.settings
+            )
             self.ligo_virgo_wavesDbConn, self.ps1gwDbConn, self.cataloguesDbConn = db.get()
         else:
             self.ligo_virgo_wavesDbConn, self.ps1gwDbConn, self.cataloguesDbConn = False, False, False

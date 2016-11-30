@@ -215,15 +215,20 @@ def main(arguments=None):
         this.get_maps()
 
     if skymap:
-        from breaker.plots import projections
-        this = projections(
+        plotter = plot_wave_observational_timelines(
             log=log,
-            gwid=gwid,
-            healpixPath=pathToLVMap,
-            projection="mollweide",
-            outputDirectory="."
+            settings=settings,
+            databaseConnRequired=False
         )
-        this.get()
+
+        plotter.generate_probability_plot(
+            gwid=gwid,
+            pathToProbMap=pathToLVMap,
+            fileFormats=["pdf"],
+            outputDirectory=".",
+            projection="mollweide",
+            plotType="timeline"
+        )
 
     if "dbConn" in locals() and dbConn:
         dbConn.commit()
