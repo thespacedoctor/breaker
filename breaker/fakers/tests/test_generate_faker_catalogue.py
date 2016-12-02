@@ -11,7 +11,7 @@ from fundamentals import tools, times
 su = tools(
     arguments={},
     docString=__doc__,
-    logLevel="DEBUG",
+    logLevel="WARNING",
     options_first=False,
     projectName="breaker"
 )

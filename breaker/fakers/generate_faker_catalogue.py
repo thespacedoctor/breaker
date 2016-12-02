@@ -171,7 +171,8 @@ class generate_faker_catalogue():
             tableName="tcs_%(gwid)s_catalogued_sources" % locals(),
             dbConn=self.ligo_virgo_wavesDbConn,
             log=self.log,
-            primaryIdColumnName="id"
+            primaryIdColumnName="id",
+            batchSize=50000
         )
 
         # FINALLY SELECT THE FAKER DETAILS FROM FOV

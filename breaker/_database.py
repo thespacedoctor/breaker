@@ -84,42 +84,41 @@ class database():
             tunnels = self.settings["ssh tunnels"]
             for tunnelName in tunnels:
                 tunnel = self.settings["ssh tunnels"][tunnelName]
-                if tunnel["use tunnel"] is True:
-                    # TEST TUNNEL DOES NOT ALREADY EXIST
-                    sshPort = tunnel["port"]
-                    for db in tunnelDatabases[tunnelName]:
-                        connected = self._checkServer(
-                            self.settings["database settings"][db]["host"], sshPort)
-                        if connected:
-                            break
+                # TEST TUNNEL DOES NOT ALREADY EXIST
+                sshPort = tunnel["port"]
+                for db in tunnelDatabases[tunnelName]:
+                    connected = self._checkServer(
+                        self.settings["database settings"][db]["host"], sshPort)
                     if connected:
-                        self.log.debug('ssh tunnel already exists - moving on')
-                    else:
-                        # GRAB TUNNEL SETTINGS FROM SETTINGS FILE
-                        ru = tunnel["remote user"]
-                        rip = tunnel["remote ip"]
-                        rh = tunnel["remote datbase host"]
+                        break
+                if connected:
+                    self.log.debug('ssh tunnel already exists - moving on')
+                else:
+                    # GRAB TUNNEL SETTINGS FROM SETTINGS FILE
+                    ru = tunnel["remote user"]
+                    rip = tunnel["remote ip"]
+                    rh = tunnel["remote datbase host"]
 
-                        cmd = "ssh -fnN %(ru)s@%(rip)s -L %(sshPort)s:%(rh)s:3306" % locals()
-                        p = Popen(cmd, shell=True, close_fds=True)
-                        output = p.communicate()[0]
-                        self.log.debug('output: %(output)s' % locals())
+                    cmd = "ssh -fnN %(ru)s@%(rip)s -L %(sshPort)s:%(rh)s:3306" % locals()
+                    p = Popen(cmd, shell=True, close_fds=True)
+                    output = p.communicate()[0]
+                    self.log.debug('output: %(output)s' % locals())
 
-                        # TEST CONNECTION - QUIT AFTER SO MANY TRIES
-                        connected = False
-                        count = 0
-                        while not connected:
-                            for db in tunnelDatabases[tunnelName]:
-                                connected = self._checkServer(
-                                    self.settings["database settings"][db]["host"], sshPort)
-                                if connected:
-                                    break
-                            time.sleep(1)
-                            count += 1
-                            if count == 5:
-                                self.log.error(
-                                    'cound not setup tunnel to remote datbase' % locals())
-                                sys.exit(0)
+                    # TEST CONNECTION - QUIT AFTER SO MANY TRIES
+                    connected = False
+                    count = 0
+                    while not connected:
+                        for db in tunnelDatabases[tunnelName]:
+                            connected = self._checkServer(
+                                self.settings["database settings"][db]["host"], sshPort)
+                            if connected:
+                                break
+                        time.sleep(1)
+                        count += 1
+                        if count == 5:
+                            self.log.error(
+                                'cound not setup tunnel to remote datbase' % locals())
+                            sys.exit(0)
 
         # SETUP A DATABASE CONNECTION FOR THE ps1gw
         host = self.settings["database settings"][

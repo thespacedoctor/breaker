@@ -27,7 +27,7 @@ from astropy.time import Time
 
 class listen():
     """
-    *The worker class for the listen module*
+    *The listen object; connects to GraceDB and 'listens' for new wave events and new skymaps*
 
     **Key Arguments:**
         - ``log`` -- logger
@@ -109,6 +109,7 @@ class listen():
         stop = False
 
         # INPUT TIME-VALUES CAN BE SCALAR OR AN ARRAY
+        # GET TIME FOR THE VERY START OF LV OPERATIONS
         startOfLV = Time(
             "2015-09-01T00:00:00",
             format='isot',
@@ -116,7 +117,8 @@ class listen():
         )
 
         while stop == False:
-
+            # DAEMON MODE - LISTEN FROM START OF LV OPERATIONS UNTIL NOW + 20
+            # MIN
             if self.daemon:
                 now = Time.now()
                 startGPS = startOfLV.gps
@@ -125,6 +127,8 @@ class listen():
                 endGPS = now.gps + 1200.
                 endUTC = now.isot
             else:
+                # NON-DAEMON MODE - DOWNLOAD EVENT MAPS WITHIN THE GIVE
+                # TIME-RANGE
                 stop = True
                 times = [self.startMJD, self.endMJD]
                 t = Time(
@@ -161,6 +165,8 @@ class listen():
                 # GET LATEST METADATA FOR THE EVENT FROM GRACEDB
                 meta = self._get_event_meta_data(event=event)
 
+                # IF THERE IS NO META IT IS BECOME EVENT ABOVE FAR OR HAD
+                # INCORRECT LABELS
                 if not meta:
                     continue
 
@@ -176,6 +182,7 @@ class listen():
 
                 allMaps = []
 
+                # CHECK FOR NEW EVENT SKYMAPS
                 maps = {}
                 for lvfile in fileorder:
                     try:
@@ -198,12 +205,15 @@ class listen():
                     self.log.warning(
                         'cound not download skymaps for event %(eventId)s' % locals())
 
+                # DUMP THE KNOWN EVENT METADATA BESIDE MAPS
                 meta["Maps"] = maps
                 fileName = self.mapDirectory + "/" + waveId + "/meta.yaml"
                 stream = file(fileName, 'w')
                 yaml.dump(meta, stream, default_flow_style=False)
                 stream.close()
 
+                # PRINT METADATA TO SCREEN IF THIS IS THE FIRST TIME THIS
+                # SYSTEM HAS SEEN THE EVENT
                 if newEvent:
                     try:
                         self.log.debug(
@@ -271,24 +281,12 @@ class listen():
             - ``event`` -- the event data from graceDB
 
         **Return:**
-            - None
-
-        **Usage:**
-            ..  todo::
-
-                - add usage info
-                - create a sublime snippet for usage
-                - update package tutorial if needed
-
-            .. code-block:: python
-
-                usage code
-
+            - ``None`` or ``meta`` -- a dictionary of event metadata pulled from graceDB, or none if event doesn't match our requirements
         """
         self.log.info('starting the ``_get_event_meta_data`` method')
 
         eventKeys = ['graceid', 'gpstime', 'group', 'links', 'created',
-                     'far', 'instruments', 'labels', 'nevents', 'submitter', 'search', 'likelihood', 'extra_attributes']
+                     'far', 'instruments', 'labels', 'nevents', 'submitter', 'search', 'likelihood']
         eventinfo = {}
         mjds = [-1, -1]
         timediff = -1
@@ -318,73 +316,75 @@ class listen():
 
         self.log.info("Getting info for %s" % event["graceid"])
 
-        # LOOK UP THE EXTRA-ATTRIBUTES VALUE (NEED TO BE LV-MEMBER TO VIEW)
-        if 'CoincInspiral' in event['extra_attributes']:
-            eventinfo['coinc'] = event[
-                'extra_attributes']['CoincInspiral']
-        if 'SingleInspiral' in event['extra_attributes']:
-            eventinfo['coinc'] = event[
-                'extra_attributes']['CoincInspiral']
-            eventinfo['singles'] = {}
-            for single in event['extra_attributes']['SingleInspiral']:
-                eventinfo['singles'][single['ifo']] = single
-                eventinfo['singles'][single['ifo']]['gpstime'] = single[
-                    'end_time'] + 10**-9 * single['end_time_ns']
+        if 'extra_attributes' in event:
+            # LOOK UP THE EXTRA-ATTRIBUTES VALUE (NEED TO BE LV-MEMBER TO VIEW)
+            if 'CoincInspiral' in event['extra_attributes']:
+                eventinfo['coinc'] = event[
+                    'extra_attributes']['CoincInspiral']
+            if 'SingleInspiral' in event['extra_attributes']:
+                eventinfo['coinc'] = event[
+                    'extra_attributes']['CoincInspiral']
+                eventinfo['singles'] = {}
+                for single in event['extra_attributes']['SingleInspiral']:
+                    eventinfo['singles'][single['ifo']] = single
+                    eventinfo['singles'][single['ifo']]['gpstime'] = single[
+                        'end_time'] + 10**-9 * single['end_time_ns']
 
-            if ("H1" in eventinfo['singles']) and ("L1" in eventinfo['singles']):
-                eventinfo["H1_L1_difference"] = eventinfo['singles']['H1'][
-                    "gpstime"] - eventinfo['singles']['L1']["gpstime"]
-                t = Time([eventinfo['singles']['H1']["gpstime"], eventinfo[
-                         'singles']['L1']["gpstime"]], format='gps', scale='utc')
-                mjds = t.mjd
-                timediff = eventinfo["H1_L1_difference"]
+                if ("H1" in eventinfo['singles']) and ("L1" in eventinfo['singles']):
+                    eventinfo["H1_L1_difference"] = eventinfo['singles']['H1'][
+                        "gpstime"] - eventinfo['singles']['L1']["gpstime"]
+                    t = Time([eventinfo['singles']['H1']["gpstime"], eventinfo[
+                             'singles']['L1']["gpstime"]], format='gps', scale='utc')
+                    mjds = t.mjd
+                    timediff = eventinfo["H1_L1_difference"]
 
-        try:
-            self.log.debug("Looking for cWB file for the event %s" %
-                           (eventinfo['graceid'],))
-            # READ THIS TRIGGER FILE FROM GRACEDB
-            r = self.client.files(eventinfo['graceid'],
-                                  "trigger_%.4f.txt" % eventinfo['gpstime'])
-            exists = True
-        except Exception, e:
-            self.log.info("No cWB file found for the event %s" %
-                          (eventinfo['graceid'],))
-            exists = False
+            try:
+                self.log.debug("Looking for cWB file for the event %s" %
+                               (eventinfo['graceid'],))
+                # READ THIS TRIGGER FILE FROM GRACEDB
+                r = self.client.files(eventinfo['graceid'],
+                                      "trigger_%.4f.txt" % eventinfo['gpstime'])
+                exists = True
+            except Exception, e:
+                self.log.info("No cWB file found for the event %s" %
+                              (eventinfo['graceid'],))
+                exists = False
 
-        if exists:
-            cwbfile = open('/tmp/trigger.txt', 'w')
-            cwbfile.write(r.read())
-            cwbfile.close()
+            if exists:
+                cwbfile = open('/tmp/trigger.txt', 'w')
+                cwbfile.write(r.read())
+                cwbfile.close()
 
-            eventinfo['burst'] = {}
-            lines = [line.rstrip('\n') for line in open('/tmp/trigger.txt')]
-            for line in lines:
-                lineSplit = line.split(":")
-                if len(lineSplit) < 2:
-                    continue
-                key = lineSplit[0]
-                value = filter(None, lineSplit[1].split(" "))
-                eventinfo['burst'][lineSplit[0]] = value
+                eventinfo['burst'] = {}
+                lines = [line.rstrip('\n')
+                         for line in open('/tmp/trigger.txt')]
+                for line in lines:
+                    lineSplit = line.split(":")
+                    if len(lineSplit) < 2:
+                        continue
+                    key = lineSplit[0]
+                    value = filter(None, lineSplit[1].split(" "))
+                    eventinfo['burst'][lineSplit[0]] = value
 
-            ifo1 = eventinfo['burst']['ifo'][0]
-            gps1 = float(eventinfo['burst']['time'][0])
+                ifo1 = eventinfo['burst']['ifo'][0]
+                gps1 = float(eventinfo['burst']['time'][0])
 
-            ifo2 = eventinfo['burst']['ifo'][1]
-            gps2 = float(eventinfo['burst']['time'][1])
+                ifo2 = eventinfo['burst']['ifo'][1]
+                gps2 = float(eventinfo['burst']['time'][1])
 
-            eventinfo['burst'][ifo1] = {}
-            eventinfo['burst'][ifo1]['gpstime'] = gps1
+                eventinfo['burst'][ifo1] = {}
+                eventinfo['burst'][ifo1]['gpstime'] = gps1
 
-            eventinfo['burst'][ifo2] = {}
-            eventinfo['burst'][ifo2]['gpstime'] = gps2
+                eventinfo['burst'][ifo2] = {}
+                eventinfo['burst'][ifo2]['gpstime'] = gps2
 
-            if ("H1" in eventinfo['burst']) and ("L1" in eventinfo['burst']):
-                eventinfo["H1_L1_difference"] = eventinfo['burst']['H1'][
-                    "gpstime"] - eventinfo['burst']['L1']["gpstime"]
-                t = Time([eventinfo['burst']['H1']["gpstime"], eventinfo[
-                    'burst']['L1']["gpstime"]], format='gps', scale='utc')
-                mjds = t.mjd
-                timediff = eventinfo["H1_L1_difference"]
+                if ("H1" in eventinfo['burst']) and ("L1" in eventinfo['burst']):
+                    eventinfo["H1_L1_difference"] = eventinfo['burst']['H1'][
+                        "gpstime"] - eventinfo['burst']['L1']["gpstime"]
+                    t = Time([eventinfo['burst']['H1']["gpstime"], eventinfo[
+                        'burst']['L1']["gpstime"]], format='gps', scale='utc')
+                    mjds = t.mjd
+                    timediff = eventinfo["H1_L1_difference"]
 
         # FILL IN META DICTIONARY
         meta = {}
@@ -398,9 +398,10 @@ class listen():
         meta["False Alarm Rate"] = str(event["far"]) + " Hz"
         meta["Event Submitter"] = str(event["submitter"])
         meta["Detection Interferometers"] = str(event["instruments"])
-        meta["Hanford MJD"] = float("%.10f" % (mjds[0],))
-        meta["Livingston MJD"] = float("%.10f" % (mjds[1],))
-        meta["MJD Difference Seconds"] = float("%.10f" % (timediff,))
+        if 'extra_attributes' in event:
+            meta["Hanford MJD"] = float("%.10f" % (mjds[0],))
+            meta["Livingston MJD"] = float("%.10f" % (mjds[1],))
+            meta["MJD Difference Seconds"] = float("%.10f" % (timediff,))
 
         self.log.info('completed the ``_get_event_meta_data`` method')
         return meta

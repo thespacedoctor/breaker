@@ -32,16 +32,28 @@ utKit.tearDownModule()
 
 class test_plot_wave_observational_timelines():
 
-    def test_plot_wave_observational_timelines_function(self):
+    # def test_plot_wave_observational_timelines_function(self):
 
-        testObject = plot_wave_observational_timelines(
+    #     testObject = plot_wave_observational_timelines(
+    #         log=log,
+    #         settings=settings,
+    #         plotType="timeline",
+    #         gwid="G184098",
+    #         projection="tan",
+    #         probabilityCut=False)
+    #     testObject.get()
+
+    def test_generate_fits_image_map(self):
+        plotter = plot_wave_observational_timelines(
             log=log,
             settings=settings,
-            plotType="timeline",
-            gwid="G184098",
-            projection="tan",
-            probabilityCut=False)
-        testObject.get()
+            databaseConnRequired=False
+        )
+
+        plotter.generate_fits_image_map(
+            pathToProbMap=pathToInputDir + "/GW151226-bayestar.fits",
+            gwid="G184098"
+        )
 
         # x-print-testpage-for-pessto-marshall-web-object
 
