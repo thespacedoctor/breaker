@@ -545,7 +545,7 @@ class plot_wave_observational_timelines():
         # THIS FILE IS A ONE COLUMN FITS BINARY, WITH EACH CELL CONTAINING AN
         # ARRAY OF PROBABILITIES (3,072 ROWS)
         # READ IN THE HEALPIX FITS FILE
-        aMap, mapHeader = hp.read_map(pathToProbMap, 0, h=True)
+        aMap, mapHeader = hp.read_map(pathToProbMap, 0, h=True, verbose=False)
         # DETERMINE THE SIZE OF THE HEALPIXELS
         nside = hp.npix2nside(len(aMap))
 
@@ -554,7 +554,8 @@ class plot_wave_observational_timelines():
         vmax = max(aMap) * 0.9
 
         totalProb = sum(aMap)
-        print "Total Probability for the entire sky is %(totalProb)s" % locals()
+        # print "Total Probability for the entire sky is %(totalProb)s" %
+        # locals()
 
         # UNPACK THE PLOT PARAMETERS
         if plotParameters:
@@ -589,6 +590,7 @@ class plot_wave_observational_timelines():
             # FULL-SKY MAP SO PLOT FULL RA AND DEC RANGES
             # DEC FROM 180 to 0
             theta = np.linspace(np.pi, 0, yRange)
+
             latitude = np.radians(np.linspace(-90, 90, yRange))
             # RA FROM -180 to +180
             phi = np.linspace(-np.pi, np.pi, xRange)
@@ -971,7 +973,8 @@ class plot_wave_observational_timelines():
             if probabilityCut and probs == 0.:
                 continue
             elif probabilityCut:
-                print atlasExpId
+                pass
+                # print atlasExpId
 
             deltaDeg = atlasPointingSide / 2
             if decDeg < 0:
@@ -1209,7 +1212,6 @@ class plot_wave_observational_timelines():
         # TIME-RANGE LABEL
         fig = plt.gcf()
         fWidth, fHeight = fig.get_size_inches()
-        print fWidth, fHeight
         if projection == "tan":
             plt.text(
                 xRange * 0.25,
@@ -1276,25 +1278,32 @@ class plot_wave_observational_timelines():
                 figurePath = "%(plotDir)s/%(folderName)s/%(f)s/%(figureName)s_%(projection)s.%(f)s" % locals()
                 savefig(figurePath, bbox_inches='tight', dpi=300)
 
-            if not os.path.exists("%(plotDir)s/%(folderName)s/fits" % locals()):
-                os.makedirs("%(plotDir)s/%(folderName)s/fits" % locals())
-            pathToExportFits = "%(plotDir)s/%(folderName)s/fits/%(gwid)s_map_%(projection)s.fits" % locals()
-            try:
-                os.remove(pathToExportFits)
-            except:
-                pass
-            hdu.writeto(pathToExportFits)
+            # if not os.path.exists("%(plotDir)s/%(folderName)s/fits" % locals()):
+            #     os.makedirs("%(plotDir)s/%(folderName)s/fits" % locals())
+            # pathToExportFits = "%(plotDir)s/%(folderName)s/fits/%(gwid)s_map_%(projection)s.fits" % locals()
+            # try:
+            #     os.remove(pathToExportFits)
+            # except:
+            #     pass
+            # hdu.writeto(pathToExportFits)
         else:
             for f in fileFormats:
                 figurePath = "%(plotDir)s/%(figureName)s.%(f)s" % locals()
                 savefig(figurePath, bbox_inches='tight', dpi=300)
 
-            pathToExportFits = "%(plotDir)s/%(gwid)s_skymap.fits" % locals()
-            try:
-                os.remove(pathToExportFits)
-            except:
-                pass
-            hdu.writeto(pathToExportFits)
+            # pathToExportFits = "%(plotDir)s/%(gwid)s_skymap.fits" % locals()
+            # try:
+            #     os.remove(pathToExportFits)
+            # except:
+            #     pass
+            # hdu.writeto(pathToExportFits)
+
+        self.generate_fits_image_map(
+            gwid=gwid,
+            pathToProbMap=pathToProbMap,
+            folderName=folderName,
+            outputDirectory=outputDirectory
+        )
 
         self.log.info('completed the ``generate_probability_plot`` method')
         return None
@@ -1448,5 +1457,147 @@ class plot_wave_observational_timelines():
         self.log.info('completed the ``get_timeline_plots`` method')
         return None
 
+    def generate_fits_image_map(
+            self,
+            gwid,
+            pathToProbMap,
+            folderName="",
+            outputDirectory=False):
+        """*generate fits image map*
+
+        **Key Arguments:**
+            - ``pathToProbMap`` -- path to the FITS file containing the probability map of the wave
+            - ``outputDirectory`` -- can be used to override the output destination in the settings file
+            - ``gwid`` -- the unique ID of the gravitational wave to plot
+            - ``folderName`` -- the name of the folder to add the plots to
+
+
+        **Return:**
+            - None
+
+        **Usage:**
+            ..  todo::
+
+                - add usage info
+                - create a sublime snippet for usage
+                - update package tutorial if needed
+
+            .. code-block:: python
+
+                usage code
+
+        """
+        self.log.info('starting the ``generate_fits_image_map`` method')
+
+        import healpy as hp
+        # HEALPY REQUIRES RA, DEC IN RADIANS AND AS TWO SEPERATE ARRAYS
+        import math
+        pi = (4 * math.atan(1.0))
+        DEG_TO_RAD_FACTOR = pi / 180.0
+        RAD_TO_DEG_FACTOR = 180.0 / pi
+
+        # X, Y PIXEL COORDINATE GRID
+        xRange = 3072
+        yRange = xRange * 1.7
+
+        # PIXELSIZE AS MAPPED TO THE FULL SKY
+        pixelSizeDeg = 360. / xRange
+
+        # READ HEALPIX MAPS FROM FITS FILE
+        # THIS FILE IS A ONE COLUMN FITS BINARY, WITH EACH CELL CONTAINING AN
+        # ARRAY OF PROBABILITIES (3,072 ROWS)
+        # READ IN THE HEALPIX FITS FILE
+        aMap, mapHeader = hp.read_map(pathToProbMap, 0, h=True, verbose=False)
+        # DETERMINE THE SIZE OF THE HEALPIXELS
+        nside = hp.npix2nside(len(aMap))
+        centralCoordinate = [0, 0]
+
+        # CREATE A NEW WCS OBJECT
+        w = awcs.WCS(naxis=2)
+        # SET THE REQUIRED PIXEL SIZE
+        w.wcs.cdelt = np.array([pixelSizeDeg, pixelSizeDeg])
+        # WORLD COORDINATES AT REFERENCE PIXEL
+        w.wcs.crval = centralCoordinate
+
+        # FROM THE PIXEL GRID (xRange, yRange), GENERATE A MAP TO LAT (pi to 0) AND LONG (-pi to pi) THAT CAN THEN MAPS TO HEALPIX SKYMAP
+        # RA FROM -pi to pi
+        phi = x2long(np.arange(xRange), xRange)
+        # DEC FROM pi to 0
+        theta = y2lat(np.arange(yRange), xRange, yRange)
+
+        # SET THE REFERENCE PIXEL TO THE CENTRE PIXEL
+        w.wcs.crpix = [xRange / 2., yRange / 2.]
+
+        # PROJECT THE MAP TO A RECTANGULAR MATRIX xRange X yRange
+        PHI, THETA = np.meshgrid(phi, theta)
+        healpixIds = hp.ang2pix(nside, THETA, PHI)
+        # GIVEN A HIGH ENOUGH RESOLUTION IN THE PIXEL GRID WE WILL HAVE
+        # DUPLICATES - LET COUNT THEM ADD DIVIDE PROBABILITY EQUALLY
+        unique, counts = np.unique(healpixIds, return_counts=True)
+        countDict = dict(zip(unique, counts))
+        # print countDict
+        probs = aMap[healpixIds]
+
+        weightedProb = np.array([[probs[i, j] / countDict[healpixIds[i, j]] for j in xrange(probs.shape[1])]
+                                 for i in xrange(probs.shape[0])])
+        # healpixIds = np.reshape(healpixIds, (1, -1))[0]
+
+        # CTYPE FOR THE FITS HEADER
+        w.wcs.ctype = ["RA---MER" %
+                       locals(), "DEC--MER" % locals()]
+
+        header = w.to_header()
+        # CREATE THE FITS FILE
+        hdu = fits.PrimaryHDU(header=header, data=weightedProb)
+
+        # Recursively create missing directories
+        if self.settings and not outputDirectory:
+            plotDir = self.settings["output directory"] + "/" + gwid
+        elif outputDirectory:
+            plotDir = outputDirectory
+
+        if not os.path.exists(plotDir):
+            os.makedirs(plotDir)
+
+        if plotDir != ".":
+            if not os.path.exists("%(plotDir)s/%(folderName)s/fits" % locals()):
+                os.makedirs("%(plotDir)s/%(folderName)s/fits" % locals())
+            pathToExportFits = "%(plotDir)s/%(folderName)s/fits/%(gwid)s_skymap.fits" % locals()
+            try:
+                os.remove(pathToExportFits)
+            except:
+                pass
+            hdu.writeto(pathToExportFits)
+        else:
+            pathToExportFits = "%(plotDir)s/%(gwid)s_skymap.fits" % locals()
+            try:
+                os.remove(pathToExportFits)
+            except:
+                pass
+            hdu.writeto(pathToExportFits)
+
+        self.log.info('completed the ``generate_fits_image_map`` method')
+        return None
+
     # use the tab-trigger below for new method
     # xt-class-method
+
+
+def y2lat(
+    y,
+    xRange,
+    yRange
+):
+    # R is the radius of the sphere at the scale of the map as drawn
+    y = y - yRange / 2
+    R = xRange / (2. * np.pi)
+    return -((np.pi / 2.0) - 2.0 * np.arctan(np.e ** (-y / R))) + np.pi / 2
+
+
+def x2long(
+    x,
+    xRange
+):
+    # R is the radius of the sphere at the scale of the map as drawn
+    R = xRange / (2. * np.pi)
+    return x / R - np.pi
