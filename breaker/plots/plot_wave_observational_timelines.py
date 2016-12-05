@@ -1497,7 +1497,7 @@ class plot_wave_observational_timelines():
         RAD_TO_DEG_FACTOR = 180.0 / pi
 
         # X, Y PIXEL COORDINATE GRID
-        xRange = 3072
+        xRange = 10000
         yRange = xRange * 1.7
 
         # PIXELSIZE AS MAPPED TO THE FULL SKY
@@ -1535,12 +1535,18 @@ class plot_wave_observational_timelines():
         # DUPLICATES - LET COUNT THEM ADD DIVIDE PROBABILITY EQUALLY
         unique, counts = np.unique(healpixIds, return_counts=True)
         countDict = dict(zip(unique, counts))
-        # print countDict
-        probs = aMap[healpixIds]
 
+        probs = aMap[healpixIds]
         weightedProb = np.array([[probs[i, j] / countDict[healpixIds[i, j]] for j in xrange(probs.shape[1])]
                                  for i in xrange(probs.shape[0])])
-        # healpixIds = np.reshape(healpixIds, (1, -1))[0]
+
+        # unweightedImageProb = np.sum(probs)
+        # print "The total unweighted probability flux in the FITS images added
+        # to %(unweightedImageProb)s" % locals()
+
+        # totalImageProb = np.sum(weightedProb)
+        # print "The total probability flux in the FITS images added to
+        # %(totalImageProb)s" % locals()
 
         # CTYPE FOR THE FITS HEADER
         w.wcs.ctype = ["RA---MER" %
