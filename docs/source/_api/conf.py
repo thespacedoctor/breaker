@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 # breaker documentation build configuration file, created by
-# sphinx-quickstart on Wed Nov 30 09:36:17 2016.
+# sphinx-quickstart on Tue Dec  6 10:34:57 2016.
 #
 # This file is execfile()d with the current directory set to its
 # containing dir.
