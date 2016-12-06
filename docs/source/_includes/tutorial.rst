@@ -52,6 +52,25 @@ and to also download all the overlapping NED sources and add them to the databas
 
     breaker update -n
 
+Skymaps
+^^^^^^^
+
+The Ligo-Virgo likeihood maps are a Healpix rendering of the sky and delivered in a FITS binary table format. To convert these maps to a PDF image (molleweide projection) and an all-sky FITS image (normal mercator projection) use the `skymap` command. For example to convert the *G211117/GW151226* event baystar-map run the following:
+
+.. code-block:: bash 
+     
+    breaker skymap G211117 ~/.config/breaker/maps/G211117/bayestar.fits.gz
+    
+This will generate the FITS and PDF images in the CWD:
+
+.. image:: https://i.imgur.com/n5NDDZj.png
+        :width: 800px
+        :alt: GW151226 FITS image
+
+.. image:: https://i.imgur.com/GynPdBY.png
+        :width: 800px
+        :alt: GW151226 PDF Mollweide Projection
+
 Plots
 ^^^^^
 

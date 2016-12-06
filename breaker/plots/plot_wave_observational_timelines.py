@@ -1462,30 +1462,38 @@ class plot_wave_observational_timelines():
             gwid,
             pathToProbMap,
             folderName="",
-            outputDirectory=False):
-        """*generate fits image map*
+            outputDirectory=False,
+            rebin=True):
+        """*generate fits image map from the LV-skymap (FITS binary table)*
 
         **Key Arguments:**
             - ``pathToProbMap`` -- path to the FITS file containing the probability map of the wave
             - ``outputDirectory`` -- can be used to override the output destination in the settings file
             - ``gwid`` -- the unique ID of the gravitational wave to plot
             - ``folderName`` -- the name of the folder to add the plots to
-
+            - ``rebin`` -- rebin the final image to reduce size
 
         **Return:**
             - None
 
         **Usage:**
-            ..  todo::
 
-                - add usage info
-                - create a sublime snippet for usage
-                - update package tutorial if needed
+            To generate an all-sky image from the LV FITS binary table healpix map run the following code:
 
-            .. code-block:: python
+                from breaker.plots import plot_wave_observational_timelines
+                plotter = plot_wave_observational_timelines(
+                    log=log,
+                    settings=settings,
+                    databaseConnRequired=False
+                )
+                plotter.generate_fits_image_map(
+                    gwid="G211117",
+                    pathToProbMap="/path/to/LV/healpix_map.fits",
+                    outputDirectory="/path/to/output",
+                    rebin=True
+                )
 
-                usage code
-
+        The size of the final FITS image map is ~1.1GB so it's probably best to rebin the image (~80MB) unless you really need the resolution.
         """
         self.log.info('starting the ``generate_fits_image_map`` method')
 
@@ -1512,21 +1520,11 @@ class plot_wave_observational_timelines():
         nside = hp.npix2nside(len(aMap))
         centralCoordinate = [0, 0]
 
-        # CREATE A NEW WCS OBJECT
-        w = awcs.WCS(naxis=2)
-        # SET THE REQUIRED PIXEL SIZE
-        w.wcs.cdelt = np.array([pixelSizeDeg, pixelSizeDeg])
-        # WORLD COORDINATES AT REFERENCE PIXEL
-        w.wcs.crval = centralCoordinate
-
         # FROM THE PIXEL GRID (xRange, yRange), GENERATE A MAP TO LAT (pi to 0) AND LONG (-pi to pi) THAT CAN THEN MAPS TO HEALPIX SKYMAP
         # RA FROM -pi to pi
         phi = x2long(np.arange(xRange), xRange)
         # DEC FROM pi to 0
         theta = y2lat(np.arange(yRange), xRange, yRange)
-
-        # SET THE REFERENCE PIXEL TO THE CENTRE PIXEL
-        w.wcs.crpix = [xRange / 2., yRange / 2.]
 
         # PROJECT THE MAP TO A RECTANGULAR MATRIX xRange X yRange
         PHI, THETA = np.meshgrid(phi, theta)
@@ -1540,13 +1538,42 @@ class plot_wave_observational_timelines():
         weightedProb = np.array([[probs[i, j] / countDict[healpixIds[i, j]] for j in xrange(probs.shape[1])]
                                  for i in xrange(probs.shape[0])])
 
-        # unweightedImageProb = np.sum(probs)
-        # print "The total unweighted probability flux in the FITS images added
-        # to %(unweightedImageProb)s" % locals()
+        if rebin == True:
+            rebinSize = 4
+            # resize by getting rid of extra columns/rows
+            xedge = np.shape(weightedProb)[0] % rebinSize
+            yedge = np.shape(weightedProb)[1] % rebinSize
+            weightedProb = weightedProb[xedge:, yedge:]
 
-        # totalImageProb = np.sum(weightedProb)
-        # print "The total probability flux in the FITS images added to
-        # %(totalImageProb)s" % locals()
+            # put image array into arrays of rebinSize x rebinSize
+            weightedProb = np.reshape(weightedProb, (np.shape(weightedProb)[
+                                      0] / rebinSize, rebinSize, np.shape(weightedProb)[1] / rebinSize, rebinSize))
+
+            # average each rebinSize x rebinSize array
+            weightedProb = np.mean(weightedProb, axis=3)
+            weightedProb = np.mean(weightedProb, axis=1)
+
+            pixelSizeDeg = pixelSizeDeg * rebinSize
+            xRange = int(xRange / rebinSize)
+            yRange = int(yRange / rebinSize)
+
+        # CREATE A NEW WCS OBJECT
+        w = awcs.WCS(naxis=2)
+        # SET THE REQUIRED PIXEL SIZE
+        w.wcs.cdelt = np.array([pixelSizeDeg, pixelSizeDeg])
+        # WORLD COORDINATES AT REFERENCE PIXEL
+        w.wcs.crval = centralCoordinate
+
+        # SET THE REFERENCE PIXEL TO THE CENTRE PIXEL
+        w.wcs.crpix = [xRange / 2., yRange / 2.]
+
+        unweightedImageProb = np.sum(probs)
+        self.log.info(
+            "The total unweighted probability flux in the FITS images added to %(unweightedImageProb)s" % locals())
+
+        totalImageProb = np.sum(weightedProb)
+        self.log.info(
+            "The total probability flux in the FITS images added to %(totalImageProb)s" % locals())
 
         # CTYPE FOR THE FITS HEADER
         w.wcs.ctype = ["RA---MER" %
