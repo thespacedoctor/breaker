@@ -16,6 +16,8 @@ os.environ['TERM'] = 'vt100'
 from fundamentals import tools
 import yaml
 import codecs
+import json
+import collections
 import numpy as np
 from ligo.gracedb.rest import GraceDb, HTTPError
 from ligo.gracedb.rest import GraceDbBasic
@@ -105,7 +107,7 @@ class listen():
 
         # VARIABLES
         fileorder = ['LALInference_skymap.fits.gz',
-                     'bayestar.fits.gz', 'LIB_skymap.fits.gz', 'skymap.fits.gz']
+                     'bayestar.fits.gz', 'LIB_skymap.fits.gz', 'skymap.fits.gz', 'LALInference3d.fits.gz', 'bayestar3d.fits.gz']
         stop = False
 
         # INPUT TIME-VALUES CAN BE SCALAR OR AN ARRAY
@@ -185,20 +187,35 @@ class listen():
                 # CHECK FOR NEW EVENT SKYMAPS
                 maps = {}
                 for lvfile in fileorder:
-                    try:
-                        aMap = self.client.files(event['graceid'], lvfile)
-                        allMaps.append(aMap)
-                        self._write_map_to_disk(
-                            sMap=aMap,
-                            mapName=lvfile,
-                            waveId=event['graceid']
-                        )
-                        maps[lvfile] = True
-                    except:
-                        maps[lvfile] = False
-                        eventId = event['graceid']
-                        self.log.info(
-                            "The %(lvfile)s path for %(eventId)s does not seem to exist yet" % locals())
+                    matchedFiles = {}
+                    files = self.client.files(event['graceid'])
+                    for k, v in files.json().iteritems():
+                        if lvfile == k.split(",")[0]:
+                            matchedFiles[k] = v
+
+                    omatchedFiles = collections.OrderedDict(
+                        sorted(matchedFiles.items(), reverse=True))
+                    maps[lvfile] = False
+
+                    count = 1
+
+                    for k, v in omatchedFiles.iteritems():
+                        count += 1
+                        if maps[lvfile] == False:
+                            try:
+                                aMap = self.client.files(
+                                    event['graceid'], k)
+                                self._write_map_to_disk(
+                                    sMap=aMap,
+                                    mapName=lvfile,
+                                    waveId=event['graceid']
+                                )
+                                allMaps.append(aMap)
+                                maps[lvfile] = True
+                            except:
+                                eventId = event['graceid']
+                                self.log.error(
+                                    "The %(lvfile)s path for %(eventId)s does not seem to exist yet" % locals())
 
                 if len(allMaps) == 0:
                     eventId = event['graceid']
@@ -267,7 +284,7 @@ class listen():
             skymapfile.write(sMap.read())
             skymapfile.close()
         else:
-            self.log.info("%(mapName)s has alreday been downloaded" % locals())
+            self.log.info("%(mapName)s has already been downloaded" % locals())
 
         self.log.info('completed the ``_write_map_to_disk`` method')
         return None
