@@ -263,9 +263,11 @@ To connect and download maps between MJDs 57382. and 57384. with a false alarm r
     Livingston MJD: 57382.1520098019
     MJD Difference Seconds: 0.0008749962
     Maps:
+      LALInference3d.fits.gz: false
       LALInference_skymap.fits.gz: true
-      LIB_skymap.fits.gz: true
+      LIB_skymap.fits.gz: false
       bayestar.fits.gz: true
+      bayestar3d.fits.gz: false
       skymap.fits.gz: false
 
 Or to download maps within the last 15 mins:
@@ -302,9 +304,11 @@ To connect in daemon mode:
     Livingston MJD: 57382.1520098019
     MJD Difference Seconds: 0.0008749962
     Maps:
+      LALInference3d.fits.gz: false
       LALInference_skymap.fits.gz: true
-      LIB_skymap.fits.gz: true
+      LIB_skymap.fits.gz: false
       bayestar.fits.gz: true
+      bayestar3d.fits.gz: false
       skymap.fits.gz: false
 
     NEW GRAVITATIONAL WAVE EVENT FOUND ...
@@ -326,6 +330,8 @@ To connect in daemon mode:
     Livingston MJD: 57317.5648141476
     MJD Difference Seconds: 0.0140454769
     Maps:
+      LALInference3d.fits.gz: false
+      LALInference_skymap.fits.gz: false
       LALInference_skymap.fits.gz: false
       LIB_skymap.fits.gz: false
       bayestar.fits.gz: false
@@ -361,9 +367,11 @@ Alongside the maps you will find a ``meta.yaml`` file containing some pertinent 
     Livingston MJD: 57382.1520098019
     MJD Difference Seconds: 0.0008749962
     Maps:
+      LALInference3d.fits.gz: false
       LALInference_skymap.fits.gz: true
-      LIB_skymap.fits.gz: true
+      LIB_skymap.fits.gz: false
       bayestar.fits.gz: true
+      bayestar3d.fits.gz: false
       skymap.fits.gz: false
 
 
