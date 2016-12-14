@@ -1,3 +1,6 @@
+breaker.plots.plot_wave_matched_source_maps module
+==================================================
+
 .. automodule:: breaker.plots.plot_wave_matched_source_maps
     :members:
     :undoc-members:
