@@ -250,9 +250,9 @@ class listen():
                     readFile.close()
 
             if stop == False:
-                print "%(oldEvents)s archived and %(newEvents)s events found, will try again in 60 secs" % locals()
+                print "%(oldEvents)s archived and %(newEvents)s events found, will try again in 5 secs" % locals()
                 # WAIT 1 MIN
-                time.sleep(60)
+                time.sleep(5)
 
         self.log.info('completed the ``get_maps`` method')
         return None
@@ -334,7 +334,6 @@ class listen():
         self.log.info("Getting info for %s" % event["graceid"])
 
         if 'extra_attributes' in event:
-            print event['extra_attributes']
             # LOOK UP THE EXTRA-ATTRIBUTES VALUE (NEED TO BE LV-MEMBER TO VIEW)
             if 'SingleInspiral' in event['extra_attributes']:
                 eventinfo['singles'] = {}
