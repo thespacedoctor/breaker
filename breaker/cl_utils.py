@@ -18,7 +18,7 @@ Usage:
     breaker faker <ps1ExpId> [-s <pathToSettingsFile>]
     breaker stats <gwid> [-s <pathToSettingsFile>]
     breaker listen <far> (<mjdStart> <mjdEnd> | <inLastNMins>) [-s <pathToSettingsFile>]
-    breaker listen -d <far> [-s <pathToSettingsFile>]
+    breaker listen -d <far> [<sec>] [-s <pathToSettingsFile>]
 
     COMMANDS
     --------
@@ -45,6 +45,7 @@ Usage:
     mjdEnd                end of the MJD range
     inLastNMins           in the last N number of minutes
     pathToLVMap           path to the LV likelihood map
+    sec                   time in seconds
 
     FLAGS
     -----
@@ -205,12 +206,16 @@ def main(arguments=None):
         )
         this.get_maps()
     if listen and daemonFlag:
+        if sec:
+            daemon = float(sec)
+        else:
+            daemon = True
         this = mlisten(
             log=log,
             settings=settings,
             label="EM_READY",
             farThreshold=far,
-            daemon=True
+            daemon=daemon
         )
         this.get_maps()
 
