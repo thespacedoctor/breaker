@@ -334,13 +334,9 @@ class listen():
         self.log.info("Getting info for %s" % event["graceid"])
 
         if 'extra_attributes' in event:
+            print event['extra_attributes']
             # LOOK UP THE EXTRA-ATTRIBUTES VALUE (NEED TO BE LV-MEMBER TO VIEW)
-            if 'CoincInspiral' in event['extra_attributes']:
-                eventinfo['coinc'] = event[
-                    'extra_attributes']['CoincInspiral']
             if 'SingleInspiral' in event['extra_attributes']:
-                eventinfo['coinc'] = event[
-                    'extra_attributes']['CoincInspiral']
                 eventinfo['singles'] = {}
                 for single in event['extra_attributes']['SingleInspiral']:
                     eventinfo['singles'][single['ifo']] = single
