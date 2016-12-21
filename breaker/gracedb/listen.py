@@ -38,7 +38,7 @@ class listen():
         - ``farThreshold`` -- the false alarm rate threshold. Default *1e-7*
         - ``startMJD`` -- startMJD. Default *57266.0 (2015-09-01)*
         - ``endMJD`` -- endMJD. Default *69807.0 (2050-01-01)*
-        - ``daemon`` -- run in daemon mode. Ignores MJD settings and pings GraceDB every 1 mins.
+        - ``daemon`` -- run in daemon mode. Set to 'True' to run every 30 sec, or pass in an integer to set a custom time frequency
     """
     # Initialisation
 
@@ -60,6 +60,10 @@ class listen():
         self.startMJD = startMJD
         self.endMJD = endMJD
         self.daemon = daemon
+
+        # SET DEFAULT FREQUENCY TO 30 SEC
+        if self.daemon == True:
+            self.daemon = 30
         # xt-self-arg-tmpx
 
         if not self.endMJD:
@@ -250,9 +254,9 @@ class listen():
                     readFile.close()
 
             if stop == False:
-                print "%(oldEvents)s archived and %(newEvents)s events found, will try again in 5 secs" % locals()
-                # WAIT 1 MIN
-                time.sleep(5)
+                freq = self.daemon
+                print "%(oldEvents)s archived and %(newEvents)s events found, will try again in %(freq)s secs" % locals()
+                time.sleep(freq)
 
         self.log.info('completed the ``get_maps`` method')
         return None
