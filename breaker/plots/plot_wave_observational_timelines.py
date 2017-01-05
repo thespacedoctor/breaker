@@ -264,8 +264,6 @@ class plot_wave_observational_timelines():
             inFirstDays=inFirstDays
         )
 
-        print atlasTransients
-
         self.log.debug(
             'finished getting the PS1 transients')
 
@@ -464,7 +462,8 @@ class plot_wave_observational_timelines():
             projection="wcs",
             raLimit=False,
             probabilityCut=False,
-            outputDirectory=False):
+            outputDirectory=False,
+            fitsImage=False):
         """
         *Generate a single probability map plot for a given gravitational wave and save it to file*
 
@@ -486,6 +485,7 @@ class plot_wave_observational_timelines():
             - ``projection`` -- projection for the plot. Default *wcs*. [wcs|mollweide]
             - ``probabilityCut`` -- remove footprints where probability assigned to the healpix pixel found at the center of the exposure is ~0.0. Default *False*
             - ``outputDirectory`` -- can be used to override the output destination in the settings file
+            - ``fitsImage`` -- generate a FITS image file of map
 
 
         **Return:**
@@ -888,7 +888,6 @@ class plot_wave_observational_timelines():
 
         else:
             timeRangeLabel = ""
-        timeRangeLabel = ""
 
         subTitle = "(updated %(now)s)" % locals()
         if timeLimitDay == 0 or plotType == "timeline":
@@ -1305,11 +1304,12 @@ class plot_wave_observational_timelines():
 
         # TIME-RANGE LABEL
         fig = plt.gcf()
+        fig.set_size_inches(8.0, 8.0)
         fWidth, fHeight = fig.get_size_inches()
 
         if projection == "tan":
             plt.text(
-                xRange * 0.25,
+                xRange * (0.25 + len(timeRangeLabel) / 200.),
                 # xRange * 0.95,
                 yRange * 0.93,
                 timeRangeLabel,
@@ -1371,7 +1371,8 @@ class plot_wave_observational_timelines():
                 if not os.path.exists("%(plotDir)s/%(folderName)s/%(f)s" % locals()):
                     os.makedirs("%(plotDir)s/%(folderName)s/%(f)s" % locals())
                 figurePath = "%(plotDir)s/%(folderName)s/%(f)s/%(figureName)s_%(projection)s.%(f)s" % locals()
-                savefig(figurePath, bbox_inches='tight', dpi=300)
+                # savefig(figurePath, bbox_inches='tight', dpi=300)
+                savefig(figurePath, dpi=300)
 
             # if not os.path.exists("%(plotDir)s/%(folderName)s/fits" % locals()):
             #     os.makedirs("%(plotDir)s/%(folderName)s/fits" % locals())
@@ -1384,7 +1385,7 @@ class plot_wave_observational_timelines():
         else:
             for f in fileFormats:
                 figurePath = "%(plotDir)s/%(figureName)s.%(f)s" % locals()
-                savefig(figurePath, bbox_inches='tight', dpi=300)
+                savefig(figurePath, dpi=300)
 
             # pathToExportFits = "%(plotDir)s/%(gwid)s_skymap.fits" % locals()
             # try:
@@ -1393,12 +1394,13 @@ class plot_wave_observational_timelines():
             #     pass
             # hdu.writeto(pathToExportFits)
 
-        # self.generate_fits_image_map(
-        #     gwid=gwid,
-        #     pathToProbMap=pathToProbMap,
-        #     folderName=folderName,
-        #     outputDirectory=outputDirectory
-        # )
+        if fitsImage:
+            self.generate_fits_image_map(
+                gwid=gwid,
+                pathToProbMap=pathToProbMap,
+                folderName=folderName,
+                outputDirectory=outputDirectory
+            )
 
         self.log.info('completed the ``generate_probability_plot`` method')
         return None
@@ -1505,7 +1507,7 @@ class plot_wave_observational_timelines():
         timeLimitDays = [(-21, 0), (0, 3), (3, 10), (10, 17),
                          (17, 24), (24, 31), (31, 0), (0, 0)]
         raLimits = [134.25, 144.75, 152.25, 159.50, 167.0, 174.5]
-        raLimits = [False, False, False, False, False, False, False]
+        raLimits = [False, False, False, False, False, False, False, False]
 
         # timeLimitLabels = ["in First 3 Days"]
         # timeLimitDays = [(2, 5)]
