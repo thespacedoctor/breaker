@@ -696,6 +696,9 @@ class plot_wave_observational_timelines():
             # DETERMINE THE PIXEL GRID X,Y RANGES
             xRange = int(raRange / pixelSizeDeg)
             yRange = int(decRange / pixelSizeDeg)
+            largest = max(xRange, yRange)
+            # xRange = largest
+            # yRange = largest
 
             # SET THE REFERENCE PIXEL TO THE CENTRE PIXEL
             w.wcs.crpix = [xRange / 2., yRange / 2.]
@@ -757,7 +760,7 @@ class plot_wave_observational_timelines():
 
             # PLOT MAP WITH PROJECTION IN HEADER
             im = ax.imshow(probs,
-                           cmap=cmap, origin='lower', alpha=0.7, zorder=1, vmin=vmin, vmax=vmax)
+                           cmap=cmap, origin='lower', alpha=0.7, zorder=1, vmin=vmin, vmax=vmax, aspect='auto')
 
             # CONTOURS - NEED TO ADD THE CUMMULATIVE PROBABILITY
             i = np.flipud(np.argsort(aMap))
@@ -871,6 +874,7 @@ class plot_wave_observational_timelines():
 
         else:
             timeRangeLabel = ""
+        timeRangeLabel = ""
 
         subTitle = "(updated %(now)s)" % locals()
         if timeLimitDay == 0 or plotType == "timeline":
@@ -1212,6 +1216,7 @@ class plot_wave_observational_timelines():
         # TIME-RANGE LABEL
         fig = plt.gcf()
         fWidth, fHeight = fig.get_size_inches()
+
         if projection == "tan":
             plt.text(
                 xRange * 0.25,
@@ -1298,12 +1303,12 @@ class plot_wave_observational_timelines():
             #     pass
             # hdu.writeto(pathToExportFits)
 
-        self.generate_fits_image_map(
-            gwid=gwid,
-            pathToProbMap=pathToProbMap,
-            folderName=folderName,
-            outputDirectory=outputDirectory
-        )
+        # self.generate_fits_image_map(
+        #     gwid=gwid,
+        #     pathToProbMap=pathToProbMap,
+        #     folderName=folderName,
+        #     outputDirectory=outputDirectory
+        # )
 
         self.log.info('completed the ``generate_probability_plot`` method')
         return None
@@ -1409,6 +1414,7 @@ class plot_wave_observational_timelines():
         timeLimitDays = [(0, 3), (3, 10), (10, 17),
                          (17, 24), (24, 31), (31, 0), (0, 0)]
         raLimits = [134.25, 144.75, 152.25, 159.50, 167.0, 174.5]
+        raLimits = [False, False, False, False, False, False]
 
         # timeLimitLabels = ["in First 3 Days"]
         # timeLimitDays = [(2, 5)]
