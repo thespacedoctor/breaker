@@ -229,10 +229,11 @@ def main(arguments=None):
         plotter.generate_probability_plot(
             gwid=gwid,
             pathToProbMap=pathToLVMap,
-            fileFormats=["pdf"],
+            fileFormats=["pdf", "png"],
             outputDirectory=".",
             projection="mollweide",
-            plotType="timeline"
+            plotType="timeline",
+            fitsImage=True
         )
 
     if "dbConn" in locals() and dbConn:
