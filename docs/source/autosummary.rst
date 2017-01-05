@@ -31,7 +31,7 @@ Classes
    :toctree: _autosummary
    :nosignatures:
 
-   breaker.update_ps1_footprint_table
+   breaker.update_ps1_atlas_footprint_tables
    breaker.fakers.generate_faker_catalogue
    breaker.gracedb.listen
    breaker.plots.plot_multi_panel_alternate_map_comparison

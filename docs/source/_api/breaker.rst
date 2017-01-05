@@ -23,6 +23,6 @@ Submodules
 .. toctree::
 
    breaker.cl_utils
-   breaker.update_ps1_footprint_table
+   breaker.update_ps1_atlas_footprint_tables
    breaker.utKit
 

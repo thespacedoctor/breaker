@@ -1,9 +1,9 @@
-breaker.update_ps1_footprint_table (*class*)
+breaker.update_ps1_atlas_footprint_tables (*class*)
 ==================================
 
 .. currentmodule:: breaker
 
-.. autoclass:: update_ps1_footprint_table
+.. autoclass:: update_ps1_atlas_footprint_tables
 
    
    .. automethod:: __init__
@@ -13,12 +13,12 @@ breaker.update_ps1_footprint_table (*class*)
 
    .. autosummary::
    
-      ~update_ps1_footprint_table.__init__
-      ~update_ps1_footprint_table.get
-      ~update_ps1_footprint_table.import_new_ps1_pointings
-      ~update_ps1_footprint_table.label_pointings_with_gw_ids
-      ~update_ps1_footprint_table.populate_ps1_subdisk_table
-      ~update_ps1_footprint_table.update_ned_database_table
+      ~update_ps1_atlas_footprint_tables.__init__
+      ~update_ps1_atlas_footprint_tables.get
+      ~update_ps1_atlas_footprint_tables.import_new_ps1_pointings
+      ~update_ps1_atlas_footprint_tables.label_pointings_with_gw_ids
+      ~update_ps1_atlas_footprint_tables.populate_ps1_subdisk_table
+      ~update_ps1_atlas_footprint_tables.update_ned_database_table
    
    
 

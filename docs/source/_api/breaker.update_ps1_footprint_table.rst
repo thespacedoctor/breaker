@@ -1,7 +1,7 @@
-breaker.update_ps1_footprint_table module
+breaker.update_ps1_atlas_footprint_tables module
 =========================================
 
-.. automodule:: breaker.update_ps1_footprint_table
+.. automodule:: breaker.update_ps1_atlas_footprint_tables
     :members:
     :undoc-members:
     :show-inheritance:

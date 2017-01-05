@@ -65,7 +65,7 @@ import glob
 import pickle
 from docopt import docopt
 from fundamentals import tools, times
-from breaker.update_ps1_footprint_table import update_ps1_footprint_table
+from breaker.update_ps1_atlas_footprint_tables import update_ps1_atlas_footprint_tables
 from breaker.plots.plot_wave_observational_timelines import plot_wave_observational_timelines
 from breaker.plots.plot_wave_matched_source_maps import plot_wave_matched_source_maps
 from breaker.fakers.generate_faker_catalogue import generate_faker_catalogue
@@ -130,7 +130,7 @@ def main(arguments=None):
 
     # CALL FUNCTIONS/OBJECTS
     if update:
-        u = update_ps1_footprint_table(
+        u = update_ps1_atlas_footprint_tables(
             log=log,
             settings=settings,
             updateNed=updateNedFlag
