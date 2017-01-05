@@ -1304,12 +1304,12 @@ class plot_wave_observational_timelines():
 
         # TIME-RANGE LABEL
         fig = plt.gcf()
-        fig.set_size_inches(8.0, 8.0)
         fWidth, fHeight = fig.get_size_inches()
 
         if projection == "tan":
+            fig.set_size_inches(8.0, 8.0)
             plt.text(
-                xRange * (0.25 + len(timeRangeLabel) / 200.),
+                xRange * (0.25 + len(timeRangeLabel) / 150.),
                 # xRange * 0.95,
                 yRange * 0.93,
                 timeRangeLabel,
