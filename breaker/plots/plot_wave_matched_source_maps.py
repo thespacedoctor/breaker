@@ -272,6 +272,7 @@ class plot_wave_matched_source_maps():
 
         # GRAB THE WCS FROM HEADER GENERATED EARLIER
         from wcsaxes import datasets, WCS
+        from astropy.wcs import WCS
         wcs = WCS(hdu.header)
 
         # PLOT MAP WITH PROJECTION IN HEADER
