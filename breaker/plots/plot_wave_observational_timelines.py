@@ -139,7 +139,7 @@ class plot_wave_observational_timelines():
                 log=self.log,
                 settings=self.settings
             )
-            self.ligo_virgo_wavesDbConn, self.ps1gwDbConn, self.cataloguesDbConn = db.get()
+            self.ligo_virgo_wavesDbConn, self.ps1gwDbConn, self.cataloguesDbConn, self.atlasDbConn = db.get()
         else:
             self.ligo_virgo_wavesDbConn, self.ps1gwDbConn, self.cataloguesDbConn = False, False, False
 
@@ -189,7 +189,7 @@ class plot_wave_observational_timelines():
                     log=log,
                        settings=settings
                 )
-                plotParameters, ps1Transients, ps1Pointings, atlasPointings = plotter.get_gw_parameters_from_settings(
+                plotParameters, ps1Transients, ps1Pointings, atlasPointings, atlasTransients = plotter.get_gw_parameters_from_settings(
                     gwid="G211117"
                 )
                 print plotParameters
@@ -230,7 +230,7 @@ class plot_wave_observational_timelines():
                     log=log,
                     settings=settings
                 )
-                plotParameters, ps1Transients, ps1Pointings, atlasPointings = plotter.get_gw_parameters_from_settings(
+                plotParameters, ps1Transients, ps1Pointings, atlasPointings, atlasTransients = plotter.get_gw_parameters_from_settings(
                     gwid="G211117",
                     inPastDays=7
                 )
@@ -242,7 +242,7 @@ class plot_wave_observational_timelines():
                     log=log,
                     settings=settings
                 )
-                plotParameters, ps1Transients, ps1Pointings, atlasPointings = plotter.get_gw_parameters_from_settings(
+                plotParameters, ps1Transients, ps1Pointings, atlasPointings, atlasTransients = plotter.get_gw_parameters_from_settings(
                     gwid="G211117",
                     inFirstDays=(0,3)
                 )
@@ -253,7 +253,7 @@ class plot_wave_observational_timelines():
         plotParameters = self.settings["gravitational waves"][gwid]["plot"]
 
         # GRAB PS1 TRANSIENTS FROM THE DATABASE
-        ps1Transients = self._get_ps1_transient_candidates(
+        ps1Transients, atlasTransients = self._get_ps1_transient_candidates(
             gwid=gwid,
             mjdStart=self.settings["gravitational waves"][
                 gwid]["time"]["mjdStart"],
@@ -263,6 +263,8 @@ class plot_wave_observational_timelines():
             inPastDays=inPastDays,
             inFirstDays=inFirstDays
         )
+
+        print atlasTransients
 
         self.log.debug(
             'finished getting the PS1 transients')
@@ -274,7 +276,7 @@ class plot_wave_observational_timelines():
 
         self.log.info(
             'completed the ``get_gw_parameters_from_settings`` method')
-        return plotParameters, ps1Transients, ps1Pointings, atlasPointings
+        return plotParameters, ps1Transients, ps1Pointings, atlasPointings, atlasTransients
 
     def _get_ps1_transient_candidates(
             self,
@@ -334,8 +336,17 @@ class plot_wave_observational_timelines():
             dbConn=self.ps1gwDbConn
         )
 
+        sqlQuery = u"""
+            SELECT atlas_designation, ra, `dec` FROM atlas_diff_objects o, tcs_latest_object_stats s where o.detection_list_id in (1,2,3) and o.id=s.id and (s.earliest_mjd between %(mjdStart)s and %(mjdEnd)s) and (ra between %(raMin)s and %(raMax)s) and (`dec` between %(decMin)s and %(decMax)s) ;
+        """ % locals()
+        atlasTransients = readquery(
+            log=self.log,
+            sqlQuery=sqlQuery,
+            dbConn=self.atlasDbConn
+        )
+
         self.log.info('completed the ``_get_ps1_transient_candidates`` method')
-        return ps1Transients
+        return ps1Transients, atlasTransients
 
     def _get_ps1_pointings(
             self,
@@ -447,6 +458,7 @@ class plot_wave_observational_timelines():
             plotType="timeline",
             plotParameters=False,
             ps1Transients=[],
+            atlasTransients=[],
             ps1Pointings=[],
             atlasPointings=[],
             projection="wcs",
@@ -459,7 +471,8 @@ class plot_wave_observational_timelines():
         **Key Arguments:**
             - ``gwid`` -- the unique ID of the gravitational wave to plot
             - ``plotParameters`` -- the parameters of the plot (for spatial & temporal parameters etc).
-            - ``ps1Transients`` -- the transients to add to the plot. Default **[]**
+            - ``ps1Transients`` -- the PS1 transients to add to the plot. Default **[]**
+            - ``atlasTransients`` -- the ATLAS transients to add to the plot. Default **[]**
             - ``ps1Pointings`` -- the PS1 pointings to place on the plot. Default **[]**
             - ``atlasPointings`` -- the atlas pointings to add to the plot. Default **[]**
             - ``pathToProbMap`` -- path to the FITS file containing the probability map of the wave
@@ -489,7 +502,7 @@ class plot_wave_observational_timelines():
                     log=log,
                     settings=settings
                 )
-                plotParameters, ps1Transients, ps1Pointings, atlasPointings = plotter.get_gw_parameters_from_settings(
+                plotParameters, ps1Transients, ps1Pointings, atlasPointings, atlasTransients = plotter.get_gw_parameters_from_settings(
                     gwid="G211117",
                     inFirstDays=(0,7)
                 )
@@ -502,6 +515,7 @@ class plot_wave_observational_timelines():
                     gwid="G211117",
                     plotParameters=plotParameters,
                     ps1Transients=ps1Transients,
+                    atlasTransient=atlasTransient,
                     ps1Pointings=ps1Pointings,
                     atlasPointings=altasPointings,
                     pathToProbMap="/Users/Dave/config/breaker/maps/G211117/LALInference_skymap.fits",
@@ -920,7 +934,7 @@ class plot_wave_observational_timelines():
             ax.add_patch(circ)
 
         # LEGEND FOR PS1
-        if len(ps1Pointings):
+        if len(ps1Pointings) and 1 == -1:
             raDeg = 90.
             decDeg = 10.
             height = 3.5
@@ -1043,7 +1057,7 @@ class plot_wave_observational_timelines():
             ax.add_patch(patch)
 
         # LEGEND FOR ATLAS
-        if len(atlasPointings):
+        if len(atlasPointings) and 1 == -1:
             if projection in ["tan"]:
                 raDeg = 88.
                 decDeg = 4.
@@ -1145,6 +1159,82 @@ class plot_wave_observational_timelines():
             names.append(name)
             raDeg = trans["ra_psf"]
             decDeg = trans["dec_psf"]
+            ra.append(raDeg)
+            dec.append(decDeg)
+            raRad.append(-raDeg * DEG_TO_RAD_FACTOR)
+            decRad.append(decDeg * DEG_TO_RAD_FACTOR)
+
+        if len(ra) > 0:
+            # MULTIPLE CIRCLES
+            if projection in ["tan"]:
+                ax.scatter(
+                    x=np.array(ra),
+                    y=np.array(dec),
+                    transform=ax.get_transform('fk5'),
+                    s=6,
+                    c='black',
+                    edgecolor='black',
+                    alpha=1,
+                    zorder=4
+                )
+                xx, yy = w.wcs_world2pix(np.array(ra), np.array(dec), 0)
+                # ADD TRANSIENT LABELS
+                for r, d, n in zip(xx, yy, names):
+                    texts.append(ax.text(
+                        r,
+                        d,
+                        n,
+                        fontsize=10,
+                        zorder=4,
+                        family='monospace'
+                    ))
+
+                if len(texts):
+                    adjust_text(
+                        xx,
+                        yy,
+                        texts,
+                        expand_text=(1.2, 1.6),
+                        expand_points=(1.2, 3.2),
+                        va='center',
+                        ha='center',
+                        force_text=2.0,
+                        force_points=0.5,
+                        lim=1000,
+                        precision=0,
+                        only_move={},
+                        text_from_text=True,
+                        text_from_points=True,
+                        save_steps=False,
+                        save_prefix='',
+                        save_format='png',
+                        add_step_numbers=True,
+                        min_arrow_sep=50.0,
+                        draggable=True,
+                        arrowprops=dict(arrowstyle="-", color='black', lw=1.2,
+                                        patchB=None, shrinkB=0, connectionstyle="arc3,rad=0.1", zorder=3, alpha=0.5),
+                        fontsize=10,
+                        family='monospace'
+                    )
+            else:
+                ax.scatter(
+                    x=np.array(raRad),
+                    y=np.array(decRad),
+                    s=6,
+                    c='#dc322f',
+                    edgecolor='#dc322f',
+                    alpha=1,
+                    zorder=4
+                )
+
+        for trans in atlasTransients:
+            # if trans["ps1_designation"] in ["PS15dpg", "PS15dpp", "PS15dpq", "PS15don", "PS15dpa", "PS15dom"]:
+            #     continue
+
+            name = trans["atlas_designation"]
+            names.append(name)
+            raDeg = trans["ra"]
+            decDeg = trans["dec"]
             ra.append(raDeg)
             dec.append(decDeg)
             raRad.append(-raDeg * DEG_TO_RAD_FACTOR)
@@ -1349,7 +1439,7 @@ class plot_wave_observational_timelines():
         for gwid in theseIds:
             for tday, tlabel in zip(timeLimitDays, timeLimitLabels):
 
-                plotParameters, ps1Transients, ps1Pointings, atlasPointings = self.get_gw_parameters_from_settings(
+                plotParameters, ps1Transients, ps1Pointings, atlasPointings, atlasTransients = self.get_gw_parameters_from_settings(
                     gwid=gwid,
                     inPastDays=tday,
                     inFirstDays=False)
@@ -1369,6 +1459,7 @@ class plot_wave_observational_timelines():
                     gwid=gwid,
                     plotParameters=plotParameters,
                     ps1Transients=ps1Transients,
+                    atlasTransients=atlasTransients,
                     ps1Pointings=ps1Pointings,
                     atlasPointings=atlasPointings,
                     pathToProbMap=pathToProbMap,
@@ -1409,12 +1500,12 @@ class plot_wave_observational_timelines():
         """
         self.log.info('starting the ``get_timeline_plots`` method')
 
-        timeLimitLabels = ["in First 3 Days",
+        timeLimitLabels = ["21 days pre-detection", "in First 3 Days",
                            "Between 3-10 Days", "Between 10-17 Days", "Between 17-24 Days", "Between 24-31 Days", "> 31 Days", "no limit"]
-        timeLimitDays = [(0, 3), (3, 10), (10, 17),
+        timeLimitDays = [(-21, 0), (0, 3), (3, 10), (10, 17),
                          (17, 24), (24, 31), (31, 0), (0, 0)]
         raLimits = [134.25, 144.75, 152.25, 159.50, 167.0, 174.5]
-        raLimits = [False, False, False, False, False, False]
+        raLimits = [False, False, False, False, False, False, False]
 
         # timeLimitLabels = ["in First 3 Days"]
         # timeLimitDays = [(2, 5)]
@@ -1427,7 +1518,7 @@ class plot_wave_observational_timelines():
         for gwid in theseIds:
             for tday, tlabel, raLimit in zip(timeLimitDays, timeLimitLabels, raLimits):
 
-                plotParameters, ps1Transients, ps1Pointings, atlasPointings = self.get_gw_parameters_from_settings(
+                plotParameters, ps1Transients, ps1Pointings, atlasPointings, atlasTransients = self.get_gw_parameters_from_settings(
                     gwid=gwid,
                     inPastDays=False,
                     inFirstDays=tday)
@@ -1448,6 +1539,7 @@ class plot_wave_observational_timelines():
                     plotParameters=plotParameters,
                     ps1Transients=ps1Transients,
                     ps1Pointings=ps1Pointings,
+                    atlasTransients=atlasTransients,
                     atlasPointings=atlasPointings,
                     pathToProbMap=pathToProbMap,
                     mjdStart=mjdStart,

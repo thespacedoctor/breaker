@@ -2,7 +2,7 @@ import os
 import nose
 import shutil
 import yaml
-from breaker import update_ps1_footprint_table, cl_utils
+from breaker import update_ps1_atlas_footprint_tables, cl_utils
 from breaker.utKit import utKit
 
 from fundamentals import tools, times
@@ -29,14 +29,22 @@ log, dbConn, pathToInputDir, pathToOutputDir = utKit.setupModule()
 utKit.tearDownModule()
 
 
-class test_update_ps1_footprint_table():
+class test_update_ps1_atlas_footprint_tables():
 
-    def test_update_ps1_footprint_table_function(self):
-        testObject = update_ps1_footprint_table(
-            log,
-            settings=settings,
-            updateNed=False)
-        testObject.get()
+    # def test_update_ps1_atlas_footprint_tables_function(self):
+    #     testObject = update_ps1_atlas_footprint_tables(
+    #         log,
+    #         settings=settings,
+    #         updateNed=False)
+    #     testObject.get()
+
+    def test_update_atlas_footprint_tables(self):
+        from breaker import update_ps1_atlas_footprint_tables
+        dbUpdater = update_ps1_atlas_footprint_tables(
+            log=log,
+            settings=settings
+        )
+        dbUpdater.import_new_atlas_pointings()
 
         # x-print-testpage-for-pessto-marshall-web-object
 

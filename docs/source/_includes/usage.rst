@@ -21,7 +21,7 @@ Command-Line Usage
         breaker faker <ps1ExpId> [-s <pathToSettingsFile>]
         breaker stats <gwid> [-s <pathToSettingsFile>]
         breaker listen <far> (<mjdStart> <mjdEnd> | <inLastNMins>) [-s <pathToSettingsFile>]
-        breaker listen -d <far> [-s <pathToSettingsFile>]
+        breaker listen -d <far> [<sec>] [-s <pathToSettingsFile>]
     
         COMMANDS
         --------
@@ -48,6 +48,7 @@ Command-Line Usage
         mjdEnd                end of the MJD range
         inLastNMins           in the last N number of minutes
         pathToLVMap           path to the LV likelihood map
+        sec                   time in seconds
     
         FLAGS
         -----

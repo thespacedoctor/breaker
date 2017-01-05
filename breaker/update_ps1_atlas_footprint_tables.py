@@ -20,7 +20,7 @@ from astrocalc.coords import unit_conversion
 from HMpTy.mysql import add_htm_ids_to_mysql_database_table
 
 
-class update_ps1_footprint_table():
+class update_ps1_atlas_footprint_tables():
     """
     *Update the PS1 footprint table in breaker database and associate with GWs*
 
@@ -50,8 +50,8 @@ class update_ps1_footprint_table():
 
         .. code-block:: python 
 
-            from breaker import update_ps1_footprint_table
-            dbUpdater = update_ps1_footprint_table(
+            from breaker import update_ps1_atlas_footprint_tables
+            dbUpdater = update_ps1_atlas_footprint_tables(
                 log=log, 
                 settings=settings,
                 updateNed=False
@@ -66,7 +66,7 @@ class update_ps1_footprint_table():
             updateNed=False
     ):
         self.log = log
-        log.debug("instansiating a new 'update_ps1_footprint_table' object")
+        log.debug("instansiating a new 'update_ps1_atlas_footprint_tables' object")
         self.settings = settings
         self.updateNed = updateNed
 
@@ -78,7 +78,7 @@ class update_ps1_footprint_table():
             log=self.log,
             settings=self.settings
         )
-        self.ligo_virgo_wavesDbConn, self.ps1gwDbConn, self.cataloguesDbConn = db.get()
+        self.ligo_virgo_wavesDbConn, self.ps1gwDbConn, self.cataloguesDbConn, self.atlasDbConn = db.get()
 
         return None
 
@@ -89,11 +89,12 @@ class update_ps1_footprint_table():
         This method:
 
             * Imports the new PS1 pointings from the PS1 database, 
+            * Imports the new ATLAS pointings from the ATLAS database, 
             * attempts to label these pointings with the ID for an associated GW, 
             * queries NED for new data covered by the sky-area of these pointings and 
             * adds data to the NED stream database table
 
-        See the ``update_ps1_footprint_table`` class of usage info.
+        See the ``update_ps1_atlas_footprint_tables`` class of usage info.
 
         **Return:**
             - None
@@ -101,6 +102,7 @@ class update_ps1_footprint_table():
         self.log.info('starting the ``get`` method')
 
         self.import_new_ps1_pointings()
+        self.import_new_atlas_pointings()
         self.label_pointings_with_gw_ids()
         self.populate_ps1_subdisk_table()
         if self.updateNed:
@@ -122,8 +124,8 @@ class update_ps1_footprint_table():
             .. code-block:: python 
 
                 # IMPORT NEW PS1 POINTINGS FROM PS1 GW DATABASE INTO LIGO-VIRGO WAVES DATABASE
-                from breaker import update_ps1_footprint_table
-                dbUpdater = update_ps1_footprint_table(
+                from breaker import update_ps1_atlas_footprint_tables
+                dbUpdater = update_ps1_atlas_footprint_tables(
                     log=log,
                     settings=settings
                 )
@@ -191,6 +193,74 @@ class update_ps1_footprint_table():
         self.log.info('completed the ``import_new_ps1_pointings`` method')
         return None
 
+    def import_new_atlas_pointings(
+            self):
+        """
+        *Import any new ATLAS GW pointings from the atlas3 database into the ``atlas_pointings`` table of the Ligo-Virgo Waves database*
+
+        **Return:**
+            - None
+
+         **Usage:**
+
+            .. code-block:: python 
+
+                # IMPORT NEW ATLAS POINTINGS FROM ATLAS DATABASE INTO LIGO-VIRGO WAVES DATABASE
+                from breaker import update_ps1_atlas_footprint_tables
+                dbUpdater = update_ps1_atlas_footprint_tables(
+                    log=log,
+                    settings=settings
+                )
+                dbUpdater.import_new_atlas_pointings()
+        """
+        self.log.info('starting the ``import_new_atlas_pointings`` method')
+
+        # SELECT ALL OF THE POINTING INFO REQUIRED FROM THE ps1gw DATABASE
+        sqlQuery = u"""
+            SELECT
+                `dec` as `decDeg`,
+                `exptime` as `exp_time`,
+                `filter`,
+                `mjd_obs` as `mjd`,
+                `ra` as `raDeg`,
+                `object` as `atlas_object_id` from atlas_metadata;
+        """ % locals()
+        rows = readquery(
+            log=self.log,
+            sqlQuery=sqlQuery,
+            dbConn=self.atlasDbConn,
+            quiet=False
+        )
+
+        # TIDY RESULTS BEFORE IMPORT
+        entries = rows
+
+        # ADD THE NEW RESULTS TO THE ps1_pointings TABLE
+        insert_list_of_dictionaries_into_database_tables(
+            dbConn=self.ligo_virgo_wavesDbConn,
+            log=self.log,
+            dictList=entries,
+            dbTableName="atlas_pointings",
+            uniqueKeyList=["raDeg", "decDeg", "mjd"],
+            dateModified=False,
+            batchSize=2500
+        )
+
+        # APPEND HTMIDs TO THE ps1_pointings TABLE
+        add_htm_ids_to_mysql_database_table(
+            raColName="raDeg",
+            declColName="decDeg",
+            tableName="atlas_pointings",
+            dbConn=self.ligo_virgo_wavesDbConn,
+            log=self.log,
+            primaryIdColumnName="primaryId"
+        )
+
+        print "ATLAS pointings synced between `atlas_metadata` and `altas_pointings` database tables"
+
+        self.log.info('completed the ``import_new_atlas_pointings`` method')
+        return None
+
     def label_pointings_with_gw_ids(
             self):
         """
@@ -206,8 +276,8 @@ class update_ps1_footprint_table():
             .. code-block:: python 
 
                 # ATTEMPT TO LABEL PS1 POINTINGS IN DATABASE WITH A GW ID 
-                from breaker import update_ps1_footprint_table
-                dbUpdater = update_ps1_footprint_table(
+                from breaker import update_ps1_atlas_footprint_tables
+                dbUpdater = update_ps1_atlas_footprint_tables(
                     log=log,
                     settings=settings
                 )
@@ -261,6 +331,14 @@ class update_ps1_footprint_table():
                 sqlQuery=sqlQuery,
                 dbConn=self.ligo_virgo_wavesDbConn,
             )
+            sqlQuery = u"""
+                update atlas_pointings set gw_id = "%(wave)s" where %(raWhere)s and %(decWhere)s and %(mjdWhere)s and gw_id is null
+            """ % locals()
+            writequery(
+                log=self.log,
+                sqlQuery=sqlQuery,
+                dbConn=self.ligo_virgo_wavesDbConn,
+            )
 
         sqlQuery = u"""
             select count(*) as count from ps1_pointings where gw_id is null;
@@ -299,8 +377,8 @@ class update_ps1_footprint_table():
             .. code-block:: python 
 
                 # SPLIT PS1 POINTINGS INTO SUB-DISKS AND ADD TO LV DATABASE 
-                from breaker import update_ps1_footprint_table
-                dbUpdater = update_ps1_footprint_table(
+                from breaker import update_ps1_atlas_footprint_tables
+                dbUpdater = update_ps1_atlas_footprint_tables(
                     log=log,
                     settings=settings
                 )
@@ -442,8 +520,8 @@ class update_ps1_footprint_table():
             .. code-block:: python 
 
                 # UPDATE THE NED STREAM FOR NEW PS1 FOOTPRINTS 
-                from breaker import update_ps1_footprint_table
-                dbUpdater = update_ps1_footprint_table(
+                from breaker import update_ps1_atlas_footprint_tables
+                dbUpdater = update_ps1_atlas_footprint_tables(
                     log=log,
                     settings=settings
                 )

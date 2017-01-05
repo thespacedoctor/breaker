@@ -59,7 +59,7 @@ class database():
         self.log.debug('starting the ``get`` method')
         self._setup_database_connections()
         self.log.debug('completed the ``get`` method')
-        return self.ligo_virgo_wavesDbConn, self.ps1gwDbConn, self.cataloguesDbConn
+        return self.ligo_virgo_wavesDbConn, self.ps1gwDbConn, self.cataloguesDbConn, self.atlasDbConn
 
     def _setup_database_connections(
             self):
@@ -145,6 +145,32 @@ class database():
         thisConn.autocommit(True)
         self.log.debug('ps1gwDbConn: %s' % (thisConn,))
         self.ps1gwDbConn = thisConn
+
+        # SETUP A DATABASE CONNECTION FOR THE altas DATABASE
+        host = self.settings["database settings"][
+            "atlas"]["host"]
+        user = self.settings["database settings"][
+            "atlas"]["user"]
+        passwd = self.settings["database settings"][
+            "atlas"]["password"]
+        dbName = self.settings["database settings"][
+            "atlas"]["db"]
+        port = self.settings["database settings"][
+            "atlas"]["port"]
+        if "tunnel" in str(port):
+            port = self.settings["ssh tunnels"][port]["port"]
+        thisConn = ms.connect(
+            host=host,
+            user=user,
+            passwd=passwd,
+            db=dbName,
+            port=port,
+            use_unicode=True,
+            charset='utf8'
+        )
+        thisConn.autocommit(True)
+        self.log.debug('altasDbConn: %s' % (thisConn,))
+        self.atlasDbConn = thisConn
 
         # SETUP DATABASE CONNECTION FOR WAVE DATABASE
         host = self.settings["database settings"][
