@@ -38,13 +38,21 @@ class test_update_ps1_atlas_footprint_tables():
     #         updateNed=False)
     #     testObject.get()
 
-    def test_update_atlas_footprint_tables(self):
+    # def test_update_atlas_footprint_tables(self):
+    #     from breaker import update_ps1_atlas_footprint_tables
+    #     dbUpdater = update_ps1_atlas_footprint_tables(
+    #         log=log,
+    #         settings=settings
+    #     )
+    #     dbUpdater.import_new_atlas_pointings()
+
+    def test_ps1_nightlog_parser(self):
         from breaker import update_ps1_atlas_footprint_tables
         dbUpdater = update_ps1_atlas_footprint_tables(
             log=log,
             settings=settings
         )
-        dbUpdater.import_new_atlas_pointings()
+        dbUpdater.parse_panstarrs_nightlogs(updateAll=False)
 
         # x-print-testpage-for-pessto-marshall-web-object
 

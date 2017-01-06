@@ -17,7 +17,15 @@ import numpy as np
 from fundamentals import tools, times
 from fundamentals.mysql import readquery, insert_list_of_dictionaries_into_database_tables, writequery
 from astrocalc.coords import unit_conversion
+from astrocalc.times import conversions
 from HMpTy.mysql import add_htm_ids_to_mysql_database_table
+from fundamentals.download import multiobject_download
+import codecs
+import csv
+import re
+import io
+from fundamentals.renderer import list_of_dictionaries
+from fundamentals.mysql import directory_script_runner
 
 
 class update_ps1_atlas_footprint_tables():
@@ -103,6 +111,7 @@ class update_ps1_atlas_footprint_tables():
 
         self.import_new_ps1_pointings()
         self.import_new_atlas_pointings()
+        self.parse_panstarrs_nightlogs()
         self.label_pointings_with_gw_ids()
         self.populate_ps1_subdisk_table()
         if self.updateNed:
@@ -333,6 +342,16 @@ class update_ps1_atlas_footprint_tables():
             )
             sqlQuery = u"""
                 update atlas_pointings set gw_id = "%(wave)s" where %(raWhere)s and %(decWhere)s and %(mjdWhere)s and gw_id is null
+            """ % locals()
+            writequery(
+                log=self.log,
+                sqlQuery=sqlQuery,
+                dbConn=self.ligo_virgo_wavesDbConn,
+            )
+
+            mjdWhere = mjdWhere.replace("mjd", "mjd_registered")
+            sqlQuery = u"""
+                update ps1_nightlogs set gw_id = "%(wave)s" where %(raWhere)s and %(decWhere)s and %(mjdWhere)s and gw_id is null and type = "OBJECT"
             """ % locals()
             writequery(
                 log=self.log,
@@ -588,6 +607,189 @@ class update_ps1_atlas_footprint_tables():
                 print "-----\n\n"
 
         self.log.info('completed the ``update_ned_database_table`` method')
+        return None
+
+    def parse_panstarrs_nightlogs(
+            self,
+            updateAll=False):
+        """*download and parse the ps1 night logs from the range of time a wave survey campaign is active*
+
+        The night-log data is added to the ps1_nightlogs table
+
+        **Key Arguments:**
+            - ``updateAll`` -- update all of the PS1 nightlogs. This will take sometime, the default is to lift the logs from the last 7 days. Default *False*.
+
+        **Return:**
+            - None
+
+        **Usage:**
+            ..  todo::
+
+                - add usage info
+                - create a sublime snippet for usage
+                - update package tutorial if needed
+
+            .. code-block:: python 
+
+                usage code 
+
+        """
+        self.log.info('starting the ``parse_panstarrs_nightlogs`` method')
+
+        # CONVERTER TO CONVERT MJD TO DATE
+        converter = conversions(
+            log=self.log
+        )
+
+        createStatement = """
+CREATE TABLE `ps1_nightlogs` (
+  `primaryId` bigint(20) NOT NULL AUTO_INCREMENT COMMENT 'An internal counter',
+  `airm` double DEFAULT NULL,
+  `comments` varchar(200) DEFAULT NULL,
+  `decDeg` double DEFAULT NULL,
+  `etime` double DEFAULT NULL,
+  `f` varchar(10) DEFAULT NULL,
+  `filesetID` varchar(100) DEFAULT NULL,
+  `raDeg` double DEFAULT NULL,
+  `telescope_pointing` varchar(200) DEFAULT NULL,
+  `time_registered` datetime DEFAULT NULL,
+  `type` varchar(100) DEFAULT NULL,
+  `dateCreated` datetime DEFAULT CURRENT_TIMESTAMP,
+  `dateLastModified` datetime DEFAULT CURRENT_TIMESTAMP,
+  `updated` varchar(45) DEFAULT '0',
+  PRIMARY KEY (`primaryId`),
+  UNIQUE KEY `filesetid` (`filesetID`)
+) ENGINE=MyISAM AUTO_INCREMENT=0 DEFAULT CHARSET=latin1;
+"""
+
+        from astrocalc.times import now
+        mjdNow = now(
+            log=self.log
+        ).get_mjd()
+
+        # WAVE METADATA FOUND IN SETTINGS FILE
+        for wave in self.settings["gravitational waves"]:
+            # GIVE A 3 DAY WINDOW EITHER SIDE OF WAVE TIME-RANGE
+            mjdLower = int(self.settings["gravitational waves"][
+                wave]["time"]["mjdStart"] - 21. - 3.)
+            mjdUpper = int(self.settings["gravitational waves"][
+                wave]["time"]["mjdEnd"] + 3.)
+
+            if updateAll == False:
+                if mjdUpper < mjdNow - 7.:
+                    continue
+                if mjdUpper > mjdNow:
+                    mjdUpper = int(mjdNow)
+                if mjdLower < mjdNow - 7.:
+                    mjdLower = int(mjdNow - 7.)
+
+            # METRIC NIGHT LOGS FOR EACH NIGHT FOUND AT A URL SIMILAR TO :
+            # "http://ipp0022.ifa.hawaii.edu/ps1sc/metrics/2016-12-14/index.html"
+            urls = []
+            for i in range(mjdUpper - mjdLower):
+                mjd = i + mjdLower
+                utDate = converter.mjd_to_ut_datetime(
+                    mjd=mjd,
+                    sqlDate=False,
+                    datetimeObject=True
+                )
+                utDate = utDate.strftime("%Y-%m-%d")
+                urls.append("http://ipp0022.ifa.hawaii.edu/ps1sc/metrics/%(utDate)s/index.html" % locals(
+                ))
+
+            localUrls = multiobject_download(
+                urlList=urls,
+                downloadDirectory="/tmp",
+                log=self.log,
+                timeStamp=True,
+                timeout=180,
+                concurrentDownloads=2,
+                resetFilename=False,
+                credentials=False,  # { 'username' : "...", "password", "..." }
+                longTime=True,
+                indexFilenames=False
+            )
+
+            for url in localUrls:
+                if not url:
+                    continue
+                pathToReadFile = url
+                try:
+                    self.log.debug("attempting to open the file %s" %
+                                   (pathToReadFile,))
+                    readFile = codecs.open(
+                        pathToReadFile, encoding='utf-8', mode='r')
+                    thisData = readFile.read()
+                    readFile.close()
+                except IOError, e:
+                    message = 'could not open the file %s' % (pathToReadFile,)
+                    self.log.critical(message)
+                    raise IOError(message)
+                readFile.close()
+
+                regex = re.compile(r'<pre>\s*# (filesetID.*?)</pre>', re.S)
+                matchObject = re.finditer(
+                    regex,
+                    thisData
+                )
+
+                for match in matchObject:
+                    csvReader = csv.DictReader(
+                        io.StringIO(match.group(1)), delimiter='|')
+                    nightLog = []
+                    for row in csvReader:
+                        cleanDict = {}
+                        for k, v in row.iteritems():
+                            cleanDict[k.strip().replace(" ", "_")] = v.strip()
+                        if "telescope_pointing" in cleanDict:
+                            cleanDict["raDeg"] = cleanDict["telescope_pointing"].split()[
+                                0]
+                            cleanDict["decDeg"] = cleanDict["telescope_pointing"].split()[
+                                1]
+                        if "time_registered" in cleanDict:
+                            cleanDict["time_registered"] = cleanDict[
+                                "time_registered"].replace("Z", "")
+                        nightLog.append(cleanDict)
+
+                dataSet = list_of_dictionaries(
+                    log=self.log,
+                    listOfDictionaries=nightLog
+                )
+                # Recursively create missing directories
+                if not os.path.exists("/tmp/ps1_nightlogs"):
+                    os.makedirs("/tmp/ps1_nightlogs")
+                mysqlData = dataSet.mysql(
+                    tableName="ps1_nightlogs", filepath="/tmp/ps1_nightlogs/ps1_nightlog_%(utDate)s.sql" % locals(), createStatement=createStatement)
+
+                directory_script_runner(
+                    log=self.log,
+                    pathToScriptDirectory="/tmp/ps1_nightlogs",
+                    databaseName=self.settings["database settings"][
+                        "ligo_virgo_waves"]["db"],
+                    loginPath=self.settings["database settings"][
+                        "ligo_virgo_waves"]["loginPath"],
+                    successRule="delete",
+                    failureRule="failed"
+                )
+
+        # APPEND HTMIDs TO THE ps1_pointings TABLE
+        add_htm_ids_to_mysql_database_table(
+            raColName="raDeg",
+            declColName="decDeg",
+            tableName="ps1_nightlogs",
+            dbConn=self.ligo_virgo_wavesDbConn,
+            log=self.log,
+            primaryIdColumnName="primaryId"
+        )
+
+        sqlQuery = """update ps1_nightlogs set mjd_registered = ((UNIX_TIMESTAMP(time_registered)/ 86400.0)+ 2440587.5-2400000.5) where mjd_registered is null;""" % locals()
+        writequery(
+            log=self.log,
+            sqlQuery=sqlQuery,
+            dbConn=self.ligo_virgo_wavesDbConn
+        )
+
+        self.log.info('completed the ``parse_panstarrs_nightlogs`` method')
         return None
 
     # use the tab-trigger below for new method

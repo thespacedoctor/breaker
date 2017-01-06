@@ -379,11 +379,15 @@ class plot_wave_observational_timelines():
                 "mjdStart"] + inFirstDays[0]
             mjdEnd = self.settings["gravitational waves"][
                 gwid]["time"]["mjdStart"] + inFirstDays[1]
-            if inFirstDays[1] == 0:
+            if inFirstDays[1] == 0 and inFirstDays[0] == 0:
                 mjdEnd = 10000000000
 
         sqlQuery = u"""
             SELECT raDeg, decDeg, mjd FROM ps1_pointings where gw_id = "%(gwid)s" and mjd between %(mjdStart)s and %(mjdEnd)s
+        """ % locals()
+
+        sqlQuery = u"""
+            SELECT raDeg, decDeg, mjd_registered as mjd FROM ps1_nightlogs where gw_id = "%(gwid)s" and mjd_registered between %(mjdStart)s and %(mjdEnd)s
         """ % locals()
 
         ps1Pointings = readquery(
@@ -844,6 +848,7 @@ class plot_wave_observational_timelines():
             # ADD A GRID
             ax.coords.grid(color='#657b83', alpha=0.5, linestyle='dashed')
             plt.gca().invert_xaxis()
+            lon.set_ticks(number=20)
 
         else:
             self.log.error(
@@ -1148,6 +1153,7 @@ class plot_wave_observational_timelines():
         decRad = []
         texts = []
 
+        # ps1Transients = []
         for trans in ps1Transients:
             # if trans["ps1_designation"] in ["PS15dpg", "PS15dpp", "PS15dpq", "PS15don", "PS15dpa", "PS15dom"]:
             #     continue
@@ -1234,6 +1240,7 @@ class plot_wave_observational_timelines():
         raRad = []
         decRad = []
         texts = []
+        # atlasTransients = []
         for trans in atlasTransients:
             # if trans["ps1_designation"] in ["PS15dpg", "PS15dpp", "PS15dpq", "PS15don", "PS15dpa", "PS15dom"]:
             #     continue
@@ -1317,16 +1324,16 @@ class plot_wave_observational_timelines():
 
         if projection == "tan":
             fig.set_size_inches(8.0, 8.0)
-            plt.text(
-                xRange * (0.25 + len(timeRangeLabel) / 150.),
-                # xRange * 0.95,
-                yRange * 0.93,
-                timeRangeLabel,
-                fontsize=16,
-                zorder=4,
-                color="#dc322f",
-                fontproperties=font
-            )
+            # plt.text(
+            #     xRange * (0.25 + len(timeRangeLabel) / 150.),
+            #     # xRange * 0.95,
+            #     yRange * 0.93,
+            #     timeRangeLabel,
+            #     fontsize=16,
+            #     zorder=4,
+            #     color="#dc322f",
+            #     fontproperties=font
+            # )
             plt.text(
                 xRange * 0.1,
                 # xRange * 0.95,
