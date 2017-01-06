@@ -302,7 +302,7 @@ class update_ps1_atlas_footprint_tables():
             decMin = (centralCoordinate[1] - decRange / 2.) - 5.
 
             mjdLower = self.settings["gravitational waves"][
-                wave]["time"]["mjdStart"]
+                wave]["time"]["mjdStart"] - 21.
             mjdUpper = self.settings["gravitational waves"][
                 wave]["time"]["mjdEnd"]
 
