@@ -322,7 +322,7 @@ class plot_wave_observational_timelines():
                 "mjdStart"] + inFirstDays[0]
             mjdEnd = self.settings["gravitational waves"][
                 gwid]["time"]["mjdStart"] + inFirstDays[1]
-            if inFirstDays[1] == 0:
+            if inFirstDays[1] == 0 and inFirstDays[0] == 0:
                 mjdEnd = 10000000000
 
         sqlQuery = u"""
@@ -428,7 +428,7 @@ class plot_wave_observational_timelines():
                 "mjdStart"] + inFirstDays[0]
             mjdEnd = self.settings["gravitational waves"][
                 gwid]["time"]["mjdStart"] + inFirstDays[1]
-            if inFirstDays[1] == 0:
+            if inFirstDays[1] == 0 and inFirstDays[0] == 0:
                 mjdEnd = 10000000000
 
         sqlQuery = u"""
@@ -1171,8 +1171,8 @@ class plot_wave_observational_timelines():
                     y=np.array(dec),
                     transform=ax.get_transform('fk5'),
                     s=6,
-                    c='black',
-                    edgecolor='black',
+                    c='#036d09',
+                    edgecolor='#036d09',
                     alpha=1,
                     zorder=4
                 )
@@ -1183,6 +1183,7 @@ class plot_wave_observational_timelines():
                         r,
                         d,
                         n,
+                        color='#036d09',
                         fontsize=10,
                         zorder=4,
                         family='monospace'
@@ -1210,7 +1211,7 @@ class plot_wave_observational_timelines():
                         add_step_numbers=True,
                         min_arrow_sep=50.0,
                         draggable=True,
-                        arrowprops=dict(arrowstyle="-", color='black', lw=1.2,
+                        arrowprops=dict(arrowstyle="-", color='#036d09', lw=1.2,
                                         patchB=None, shrinkB=0, connectionstyle="arc3,rad=0.1", zorder=3, alpha=0.5),
                         fontsize=10,
                         family='monospace'
@@ -1226,6 +1227,13 @@ class plot_wave_observational_timelines():
                     zorder=4
                 )
 
+        # ADD DATA POINTS FOR TRANSIENTS
+        names = []
+        ra = []
+        dec = []
+        raRad = []
+        decRad = []
+        texts = []
         for trans in atlasTransients:
             # if trans["ps1_designation"] in ["PS15dpg", "PS15dpp", "PS15dpq", "PS15don", "PS15dpa", "PS15dom"]:
             #     continue
@@ -1247,8 +1255,8 @@ class plot_wave_observational_timelines():
                     y=np.array(dec),
                     transform=ax.get_transform('fk5'),
                     s=6,
-                    c='black',
-                    edgecolor='black',
+                    c='#5c0bb0',
+                    edgecolor='#5c0bb0',
                     alpha=1,
                     zorder=4
                 )
@@ -1260,6 +1268,7 @@ class plot_wave_observational_timelines():
                         d,
                         n,
                         fontsize=10,
+                        color='#5c0bb0',
                         zorder=4,
                         family='monospace'
                     ))
@@ -1286,7 +1295,7 @@ class plot_wave_observational_timelines():
                         add_step_numbers=True,
                         min_arrow_sep=50.0,
                         draggable=True,
-                        arrowprops=dict(arrowstyle="-", color='black', lw=1.2,
+                        arrowprops=dict(arrowstyle="-", color='#5c0bb0', lw=1.2,
                                         patchB=None, shrinkB=0, connectionstyle="arc3,rad=0.1", zorder=3, alpha=0.5),
                         fontsize=10,
                         family='monospace'
