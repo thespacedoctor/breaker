@@ -1324,16 +1324,16 @@ class plot_wave_observational_timelines():
 
         if projection == "tan":
             fig.set_size_inches(8.0, 8.0)
-            # plt.text(
-            #     xRange * (0.25 + len(timeRangeLabel) / 150.),
-            #     # xRange * 0.95,
-            #     yRange * 0.93,
-            #     timeRangeLabel,
-            #     fontsize=16,
-            #     zorder=4,
-            #     color="#dc322f",
-            #     fontproperties=font
-            # )
+            plt.text(
+                xRange * (0.25 + len(timeRangeLabel) / 150.),
+                # xRange * 0.95,
+                yRange * 0.93,
+                timeRangeLabel,
+                fontsize=16,
+                zorder=4,
+                color="#dc322f",
+                fontproperties=font
+            )
             plt.text(
                 xRange * 0.1,
                 # xRange * 0.95,
