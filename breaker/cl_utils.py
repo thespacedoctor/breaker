@@ -67,7 +67,7 @@ import pickle
 from docopt import docopt
 from fundamentals import tools, times
 from breaker.update_ps1_atlas_footprint_tables import update_ps1_atlas_footprint_tables
-from breaker.plots.plot_wave_observational_timelines2 import plot_wave_observational_timelines
+from breaker.plots.plot_wave_observational_timelines import plot_wave_observational_timelines
 from breaker.plots.plot_wave_matched_source_maps import plot_wave_matched_source_maps
 from breaker.fakers.generate_faker_catalogue import generate_faker_catalogue
 from breaker.stats.survey_footprint import survey_footprint
@@ -239,16 +239,16 @@ def main(arguments=None):
             allSky=True
         )
 
-        # plotter.generate_probability_plot(
-        #     gwid=gwid,
-        #     pathToProbMap=pathToLVMap,
-        #     fileFormats=["pdf", "png"],
-        #     outputDirectory=".",
-        #     projection="mollweide",
-        #     plotType="timeline",
-        #     fitsImage=False,
-        #     allSky=True
-        # )
+        plotter.generate_probability_plot(
+            gwid=gwid,
+            pathToProbMap=pathToLVMap,
+            fileFormats=["pdf", "png"],
+            outputDirectory=".",
+            projection="mollweide",
+            plotType="timeline",
+            fitsImage=True,
+            allSky=True
+        )
 
         # plotter.generate_probability_plot(
         #     gwid=gwid,
