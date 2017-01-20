@@ -11,6 +11,7 @@
 """
 ################# GLOBAL IMPORTS ####################
 # SUPPRESS MATPLOTLIB WARNINGS
+from __future__ import unicode_literals
 import warnings
 warnings.filterwarnings("ignore")
 import sys
@@ -37,9 +38,6 @@ from crowdedText import adjust_text
 from astrocalc.times import now
 
 
-from matplotlib.projections.geo import GeoAxes
-
-
 class ThetaFormatterShiftPi(GeoAxes.ThetaFormatter):
     """Shifts labelling by pi
     Shifts labelling from -180,180 to 0-360"""
@@ -63,7 +61,7 @@ class plot_wave_observational_timelines():
         - ``settings`` -- the settings dictionary
         - ``plotType`` -- history (looking back from now) or timeline (looking forward from date of GW detection)
         - ``gwid`` -- a given graviational wave ID. If given only maps for this wave shall be plotted. Default *False* (i.e. plot all waves)
-        - ``projection`` -- projection for the plot. Default *tan*
+        - ``projection`` -- projection for the plot. Default *mercator*
         - ``probabilityCut`` -- remove footprints where probability assigned to the healpix pixel found at the center of the exposure is ~0.0. Default *False*
         - ``databaseConnRequired`` -- are the database connections going to be required? Default *True*
 
@@ -79,7 +77,7 @@ class plot_wave_observational_timelines():
                    settings=settings,
                    plotType="history",
                    gwid="G184098",
-                   projection="tan"
+                   projection="mercator"
             )
             plotter.get()
 
@@ -116,7 +114,7 @@ class plot_wave_observational_timelines():
             settings=False,
             plotType=False,
             gwid=False,
-            projection="tan",
+            projection="mercator",
             probabilityCut=False,
             databaseConnRequired=True
     ):
@@ -382,6 +380,12 @@ class plot_wave_observational_timelines():
             if inFirstDays[1] == 0 and inFirstDays[0] == 0:
                 mjdEnd = 10000000000
 
+        if inPastDays == False and inFirstDays == False:
+            mjdStart = self.settings["gravitational waves"][gwid]["time"][
+                "mjdStart"]
+            mjdEnd = self.settings["gravitational waves"][
+                gwid]["time"]["mjdEnd"]
+
         sqlQuery = u"""
             SELECT raDeg, decDeg, mjd FROM ps1_pointings where gw_id = "%(gwid)s" and mjd between %(mjdStart)s and %(mjdEnd)s
         """ % locals()
@@ -435,6 +439,12 @@ class plot_wave_observational_timelines():
             if inFirstDays[1] == 0 and inFirstDays[0] == 0:
                 mjdEnd = 10000000000
 
+        if inPastDays == False and inFirstDays == False:
+            mjdStart = self.settings["gravitational waves"][gwid]["time"][
+                "mjdStart"]
+            mjdEnd = self.settings["gravitational waves"][
+                gwid]["time"]["mjdEnd"]
+
         sqlQuery = u"""
             SELECT atlas_object_id, raDeg, decDeg, mjd FROM atlas_pointings where gw_id = "%(gwid)s" and mjd between %(mjdStart)s and %(mjdEnd)s group by atlas_object_id;
         """ % locals()
@@ -463,11 +473,12 @@ class plot_wave_observational_timelines():
             atlasTransients=[],
             ps1Pointings=[],
             atlasPointings=[],
-            projection="wcs",
+            projection="mercator",
             raLimit=False,
             probabilityCut=False,
             outputDirectory=False,
-            fitsImage=False):
+            fitsImage=False,
+            allSky=False):
         """
         *Generate a single probability map plot for a given gravitational wave and save it to file*
 
@@ -486,10 +497,11 @@ class plot_wave_observational_timelines():
             - ``fileFormats`` -- the format(s) to output the plots in (list of strings) Default **["pdf"]**
             - ``folderName`` -- the name of the folder to add the plots to
             - ``plotType`` -- history (looking back from now) or timeline (looking forward from date of GW detection). Default **timeline**
-            - ``projection`` -- projection for the plot. Default *wcs*. [wcs|mollweide]
+            - ``projection`` -- projection for the plot. Default *mercator*. [mercator|mollweide|gnomonic]
             - ``probabilityCut`` -- remove footprints where probability assigned to the healpix pixel found at the center of the exposure is ~0.0. Default *False*
             - ``outputDirectory`` -- can be used to override the output destination in the settings file
             - ``fitsImage`` -- generate a FITS image file of map
+            - ``allSky`` -- generate an all-sky map (do not use the ra, dec window in the breaker settings file). Default *False*
 
 
         **Return:**
@@ -529,7 +541,7 @@ class plot_wave_observational_timelines():
                     raLimit=False,
                     fileFormats=["pdf"],
                     folderName="survey_timeline_plots",
-                    projection="tan",
+                    projection="mercator",
                     plotType="timeline",
                     probabilityCut=True,
                     outputDirectory=False
@@ -590,14 +602,11 @@ class plot_wave_observational_timelines():
 
         projectionDict = {
             "mollweide": "MOL",
-            "aitoff": "AIT",
-            "hammer": "AIT",
-            "lambert": "ZEA",
-            "polar": "TAN",
-            "rectilinear": "MER"
+            "gnomonic": "mercator",
+            "mercator": "MER"
         }
 
-        if projection in ["mollweide", "aitoff", "hammer", "lambert", "polar", "rectilinear"]:
+        if projection in ["mollweide"]:
             # MAP VISULISATION RATIO IS ALWAYS 1/2
             xRange = 2000
             yRange = xRange / 2.
@@ -700,11 +709,15 @@ class plot_wave_observational_timelines():
 
             plt.grid(True)
 
-        elif projection in ["tan"]:
+        elif projection in ["mercator", "gnomonic"]:
 
-            # UNPACK THE PLOT PARAMETERS
-            raRange = plotParameters["raRange"]
-            decRange = plotParameters["decRange"]
+            if allSky:
+                raRange = 360.
+                decRange = 180.
+            else:
+                # UNPACK THE PLOT PARAMETERS
+                raRange = plotParameters["raRange"]
+                decRange = plotParameters["decRange"]
 
             raMax = centralCoordinate[0] + raRange / 2.
             raMin = centralCoordinate[0] - raRange / 2.
@@ -714,6 +727,9 @@ class plot_wave_observational_timelines():
             # DETERMINE THE PIXEL GRID X,Y RANGES
             xRange = int(raRange / pixelSizeDeg)
             yRange = int(decRange / pixelSizeDeg)
+            if projection == "mercator" and allSky:
+                yRange = yRange
+                # yRange = yRange * 2
             largest = max(xRange, yRange)
             # xRange = largest
             # yRange = largest
@@ -721,8 +737,14 @@ class plot_wave_observational_timelines():
             # SET THE REFERENCE PIXEL TO THE CENTRE PIXEL
             w.wcs.crpix = [xRange / 2., yRange / 2.]
 
+            # FOR AN ORTHOGONAL GRID THE CRPIX2 VALUE MUST BE ZERO AND CRPIX2
+            # MUST REFLECT THIS
+            w.wcs.crpix[1] -= w.wcs.crval[1] / w.wcs.cdelt[1]
+            w.wcs.crval[1] = 0
+
             # USE THE "GNOMONIC" PROJECTION ("COORDINATESYS---PROJECTION")
-            w.wcs.ctype = ["RA---TAN", "DEC--TAN"]
+            ctype = projectionDict[projection]
+            w.wcs.ctype = ["RA---" + ctype, "DEC--" + ctype]
 
             # CREATE A PIXEL GRID - 2 ARRAYS OF X, Y
             columns = []
@@ -815,10 +837,10 @@ class plot_wave_observational_timelines():
 
             # THE SEPARATORS FOR ANGULAR COORDINATE TICK LABELS CAN ALSO BE SET BY
             # SPECIFYING A STRING
-            lat.set_separator(':-s')
+            # lat.set_separator(':-s')
             # SET THE APPROXIMATE NUMBER OF TICKS, WITH COLOR & PREVENT OVERLAPPING
             # TICK LABELS FROM BEING DISPLAYED.
-            lon.set_ticks(number=4, color='#657b83',
+            lon.set_ticks(number=6, color='#657b83',
                           exclude_overlapping=True, size=10)
             lat.set_ticks(number=10, color='#657b83',
                           exclude_overlapping=True, size=10)
@@ -826,7 +848,7 @@ class plot_wave_observational_timelines():
             # MINOR TICKS NOT SHOWN BY DEFAULT
             lon.display_minor_ticks(True)
             lat.display_minor_ticks(True)
-            lat.set_minor_frequency(2)
+            # lat.set_minor_frequency(2)
 
             # CUSTOMISE TICK POSITIONS (l, b, r, t == left, bottom, right, or
             # top)
@@ -835,9 +857,6 @@ class plot_wave_observational_timelines():
             lon.set_ticklabel(size=20)
             lat.set_ticklabel(size=20)
             lon.set_axislabel_position('b')
-            lat.set_ticks_position('lr')
-            lat.set_ticklabel_position('l')
-            lat.set_axislabel_position('l')
 
             # HIDE AXES
             # lon.set_ticklabel_position('')
@@ -847,8 +866,16 @@ class plot_wave_observational_timelines():
 
             # ADD A GRID
             ax.coords.grid(color='#657b83', alpha=0.5, linestyle='dashed')
+
+            lat.set_ticks_position('both')
+            lat.set_ticklabel_position('r')
+            lat.set_axislabel_position('l')
+
             plt.gca().invert_xaxis()
-            lon.set_ticks(number=20)
+            ax = plt.gca()
+            ax.get_yaxis().set_ticks_position('both')
+            # lon.set_ticks(number=20)
+            # lat.set_ticks(number=3)
 
         else:
             self.log.error(
@@ -894,6 +921,8 @@ class plot_wave_observational_timelines():
         else:
             timeRangeLabel = ""
 
+        # timeRangeLabel = ""
+
         subTitle = "(updated %(now)s)" % locals()
         if timeLimitDay == 0 or plotType == "timeline":
             subTitle = ""
@@ -926,7 +955,7 @@ class plot_wave_observational_timelines():
             width = height / math.cos(decDeg * DEG_TO_RAD_FACTOR)
 
             # MULTIPLE CIRCLES
-            if projection in ["tan"]:
+            if projection in ["mercator"]:
                 circ = Ellipse(
                     (raDeg, decDeg), width=width, height=height, alpha=0.2, color='#859900', fill=True, transform=ax.get_transform('fk5'), zorder=3)
             else:
@@ -944,7 +973,7 @@ class plot_wave_observational_timelines():
             height = 3.5
 
             width = height / math.cos(decDeg * DEG_TO_RAD_FACTOR)
-            if projection in ["tan"]:
+            if projection in ["mercator"]:
                 circ = Ellipse(
                     (raDeg, decDeg), width=width, height=height, alpha=0.2, color='#859900', fill=True, transform=ax.get_transform('fk5'), zorder=3)
                 ax.text(
@@ -1002,7 +1031,7 @@ class plot_wave_observational_timelines():
             if decDeg < 0:
                 deltaDeg = -deltaDeg
 
-            if projection in ["tan"]:
+            if projection in ["mercator"]:
                 widthDegTop = atlasPointingSide / \
                     math.cos((decDeg + deltaDeg) * DEG_TO_RAD_FACTOR)
                 widthDegBottom = atlasPointingSide / \
@@ -1062,7 +1091,7 @@ class plot_wave_observational_timelines():
 
         # LEGEND FOR ATLAS
         if len(atlasPointings) and 1 == -1:
-            if projection in ["tan"]:
+            if projection in ["mercator"]:
                 raDeg = 88.
                 decDeg = 4.
                 atlasPointingSide = 4.5
@@ -1171,7 +1200,7 @@ class plot_wave_observational_timelines():
 
         if len(ra) > 0:
             # MULTIPLE CIRCLES
-            if projection in ["tan"]:
+            if projection in ["mercator"]:
                 ax.scatter(
                     x=np.array(ra),
                     y=np.array(dec),
@@ -1256,7 +1285,7 @@ class plot_wave_observational_timelines():
 
         if len(ra) > 0:
             # MULTIPLE CIRCLES
-            if projection in ["tan"]:
+            if projection in ["mercator"]:
                 ax.scatter(
                     x=np.array(ra),
                     y=np.array(dec),
@@ -1322,7 +1351,7 @@ class plot_wave_observational_timelines():
         fig = plt.gcf()
         fWidth, fHeight = fig.get_size_inches()
 
-        if projection == "tan":
+        if projection == "mercator":
             fig.set_size_inches(8.0, 8.0)
             plt.text(
                 xRange * (0.25 + len(timeRangeLabel) / 150.),
@@ -1382,13 +1411,15 @@ class plot_wave_observational_timelines():
         if timeLimitDay == 0:
             figureName = """%(plotTitle)s""" % locals(
             )
+        if allSky:
+            figureName = figureName + "_" + projection.title()
         if plotDir != ".":
             for f in fileFormats:
                 if not os.path.exists("%(plotDir)s/%(folderName)s/%(f)s" % locals()):
                     os.makedirs("%(plotDir)s/%(folderName)s/%(f)s" % locals())
                 figurePath = "%(plotDir)s/%(folderName)s/%(f)s/%(figureName)s_%(projection)s.%(f)s" % locals()
-                # savefig(figurePath, bbox_inches='tight', dpi=300)
-                savefig(figurePath, dpi=300)
+                savefig(figurePath, bbox_inches='tight', dpi=300)
+                #savefig(figurePath, dpi=300)
 
             # if not os.path.exists("%(plotDir)s/%(folderName)s/fits" % locals()):
             #     os.makedirs("%(plotDir)s/%(folderName)s/fits" % locals())
@@ -1401,7 +1432,8 @@ class plot_wave_observational_timelines():
         else:
             for f in fileFormats:
                 figurePath = "%(plotDir)s/%(figureName)s.%(f)s" % locals()
-                savefig(figurePath, dpi=300)
+                savefig(figurePath, bbox_inches='tight', dpi=300)
+                # savefig(figurePath, dpi=300)
 
             # pathToExportFits = "%(plotDir)s/%(gwid)s_skymap.fits" % locals()
             # try:
@@ -1439,7 +1471,7 @@ class plot_wave_observational_timelines():
                        settings=settings,
                        plotType="history",
                        gwid="G184098",
-                       projection="tan"
+                       projection="mercator"
                 )
                 plotter.get()
         """
@@ -1512,7 +1544,7 @@ class plot_wave_observational_timelines():
                        settings=settings,
                        plotType="timeline",
                        gwid="G184098",
-                       projection="tan"
+                       projection="mercator"
                 )
                 plotter.get()
         """
@@ -1540,6 +1572,27 @@ class plot_wave_observational_timelines():
                     gwid=gwid,
                     inPastDays=False,
                     inFirstDays=tday)
+
+                # ps1Transients, ps1Pointings, atlasPointings, atlasTransients = [], [], [], []
+
+                # testPoints = [
+                #     (175.0, 76.0),
+                #     (165.0, 73.0),
+                #     (155.0, 70.0),
+                #     (147.0, 65.0),
+                #     (140.0, 59.0),
+                #     (133.0, 51.0)
+
+                # ]
+
+                # for p in testPoints:
+                #     ps1Transients.append(
+                #         {'local_designation': None,
+                #          'ps1_designation': str(p[0]) + ", " + str(p[1]),
+                #          'ra_psf': p[0],
+                #          'dec_psf': p[1]
+                #          }
+                #     )
 
                 pathToProbMap = self.settings[
                     "gravitational waves"][gwid]["mapPath"]
@@ -1639,6 +1692,7 @@ class plot_wave_observational_timelines():
         # FROM THE PIXEL GRID (xRange, yRange), GENERATE A MAP TO LAT (pi to 0) AND LONG (-pi to pi) THAT CAN THEN MAPS TO HEALPIX SKYMAP
         # RA FROM -pi to pi
         phi = x2long(np.arange(xRange), xRange)
+
         # DEC FROM pi to 0
         theta = y2lat(np.arange(yRange), xRange, yRange)
 

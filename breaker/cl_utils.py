@@ -16,7 +16,7 @@ Usage:
     breaker plot (timeline|history|sources) [-w <gwid>] [-s <pathToSettingsFile>]
     breaker plot comparison <gwid> <pathToMapDirectory> [-s <pathToSettingsFile>]
     breaker faker <ps1ExpId> [-s <pathToSettingsFile>]
-    breaker stats <gwid> [-s <pathToSettingsFile>]
+    breaker stats <gwid> [<telescope>] [-s <pathToSettingsFile>]
     breaker listen <far> (<mjdStart> <mjdEnd> | <inLastNMins>) [-s <pathToSettingsFile>]
     breaker listen -d <far> [<sec>] [-s <pathToSettingsFile>]
 
@@ -46,6 +46,7 @@ Usage:
     inLastNMins           in the last N number of minutes
     pathToLVMap           path to the LV likelihood map
     sec                   time in seconds
+    telescope             select an individual telescope to provide stats for (default is all telescopes) [ps1|atlas]
 
     FLAGS
     -----
@@ -178,7 +179,8 @@ def main(arguments=None):
         s = survey_footprint(
             log=log,
             settings=settings,
-            gwid=gwid
+            gwid=gwid,
+            telescope=telescope
         )
         s.get()
     if listen and inLastNMins:
@@ -231,10 +233,33 @@ def main(arguments=None):
             pathToProbMap=pathToLVMap,
             fileFormats=["pdf", "png"],
             outputDirectory=".",
+            projection="mercator",
+            plotType="timeline",
+            fitsImage=False,
+            allSky=True
+        )
+
+        plotter.generate_probability_plot(
+            gwid=gwid,
+            pathToProbMap=pathToLVMap,
+            fileFormats=["pdf", "png"],
+            outputDirectory=".",
             projection="mollweide",
             plotType="timeline",
-            fitsImage=True
+            fitsImage=True,
+            allSky=True
         )
+
+        # plotter.generate_probability_plot(
+        #     gwid=gwid,
+        #     pathToProbMap=pathToLVMap,
+        #     fileFormats=["pdf", "png"],
+        #     outputDirectory=".",
+        #     projection="molleweide",
+        #     plotType="timeline",
+        #     fitsImage=True,
+        #     allSky=True
+        # )
 
     if "dbConn" in locals() and dbConn:
         dbConn.commit()
