@@ -387,11 +387,11 @@ class plot_wave_observational_timelines():
                 gwid]["time"]["mjdEnd"]
 
         sqlQuery = u"""
-            SELECT raDeg, decDeg, mjd FROM ps1_pointings where gw_id = "%(gwid)s" and mjd between %(mjdStart)s and %(mjdEnd)s
+            SELECT raDeg, decDeg, mjd FROM ps1_pointings where gw_id like "%%%(gwid)s%%" and mjd between %(mjdStart)s and %(mjdEnd)s
         """ % locals()
 
         sqlQuery = u"""
-            SELECT raDeg, decDeg, mjd_registered as mjd FROM ps1_nightlogs where gw_id = "%(gwid)s" and mjd_registered between %(mjdStart)s and %(mjdEnd)s
+            SELECT raDeg, decDeg, mjd_registered as mjd FROM ps1_nightlogs where gw_id like "%%%(gwid)s%%" and mjd_registered between %(mjdStart)s and %(mjdEnd)s
         """ % locals()
 
         ps1Pointings = readquery(
@@ -446,7 +446,7 @@ class plot_wave_observational_timelines():
                 gwid]["time"]["mjdEnd"]
 
         sqlQuery = u"""
-            SELECT atlas_object_id, raDeg, decDeg, mjd FROM atlas_pointings where gw_id = "%(gwid)s" and mjd between %(mjdStart)s and %(mjdEnd)s group by atlas_object_id;
+            SELECT atlas_object_id, raDeg, decDeg, mjd FROM atlas_pointings where gw_id like "%%%(gwid)s%%" and mjd between %(mjdStart)s and %(mjdEnd)s group by atlas_object_id;
         """ % locals()
 
         atlasPointings = readquery(
@@ -728,8 +728,8 @@ class plot_wave_observational_timelines():
             xRange = int(raRange / pixelSizeDeg)
             yRange = int(decRange / pixelSizeDeg)
             if projection == "mercator" and allSky:
-                yRange = yRange
-                # yRange = yRange * 2
+                # yRange = yRange
+                yRange = yRange * 2
             largest = max(xRange, yRange)
             # xRange = largest
             # yRange = largest
@@ -935,7 +935,7 @@ class plot_wave_observational_timelines():
         from matplotlib.patches import Circle
         from matplotlib.patches import Rectangle
 
-        for psp in ps1Pointings:
+        for psp in ps1Pointings
             raDeg = psp["raDeg"]
             decDeg = psp["decDeg"]
 
