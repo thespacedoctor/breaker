@@ -31,6 +31,7 @@ class survey_footprint():
         - ``log`` -- logger
         - ``settings`` -- the settings dictionary
         - ``gwid`` -- the unique wave id
+        - ``telescope`` -- select a single telescope. The default is to select all telescopes. Default *False* [False|ps1|atlas]
 
     **Usage:**
 
@@ -42,7 +43,8 @@ class survey_footprint():
             stats = survey_footprint(
                 log=log,
                 settings=settings,
-                gwid="G184098"
+                gwid="G184098",
+                telescope=False
             )
             stats.get()
     """
@@ -52,13 +54,14 @@ class survey_footprint():
             self,
             log,
             settings=False,
-            gwid=False
-
+            gwid=False,
+            telescope=False
     ):
         self.log = log
         log.debug("instansiating a new 'survey_footprint' object")
         self.settings = settings
         self.gwid = gwid
+        self.telescope = telescope
 
         # INITIAL ACTIONS - CONNECT TO THE DATABASE REQUIRED
         from breaker import database
@@ -83,8 +86,13 @@ class survey_footprint():
         from breaker.plots import plot_wave_observational_timelines
         this = plot_wave_observational_timelines(
             log=self.log, settings=self.settings)
-        plotParameters, ps1Transients, ps1Pointings, altasPointings = this.get_gw_parameters_from_settings(
+        plotParameters, ps1Transients, ps1Pointings, altasPointings, atlasTransients = this.get_gw_parameters_from_settings(
             gwid=self.gwid)
+
+        if self.telescope == "atlas":
+            ps1Pointings = []
+        if self.telescope == "ps1":
+            altasPointings = []
 
         # GET THE PROBABILITY MAP FOR THE GIVEN GWID
         pathToProbMap = self.settings[
@@ -220,8 +228,17 @@ class survey_footprint():
         finalAreas = []
         finalProbs = []
 
-        for pti, pt in enumerate(allPointings):
+        from HMpTy import Matcher
+        # USE THIS COORDINATE SET MATCHER TO MATCH OTHER COORDINATE SETS
+        # AGAINST
+        coordinateSet = Matcher(
+            log=self.log,
+            ra=wr,
+            dec=wd,
+            depth=12
+        )
 
+        for pti, pt in enumerate(allPointings):
             pra = pt["raDeg"]
             pdec = pt["decDeg"]
             pmjd = pt["mjd"]
@@ -231,32 +248,23 @@ class survey_footprint():
             coveredPixels = []
 
             covered = -1
-            for r, d, c in zip(wr, wd, cumCoveredArray):
-                if psurvey == "ps1":
-                    if c == 0:
+
+            if psurvey == "ps1":
+                coveredPixels = np.zeros(healpixIds.size)
+                matchIndices1, matchIndices2, seps = coordinateSet.match(
+                    ra=pra,
+                    dec=pdec,
+                    radius=ps1exposureRadius,
+                    maxmatch=0  # 1 = closest, 0 = all
+                )
+
+                for m2 in matchIndices2:
+                    if cumCoveredArray[m2] == 1:
+                        coveredPixels[m2] = 1
                         # WE HAVE COVERED THIS PIXEL BEFORE -- MOVE ON
-                        covered = 0
-                    elif (((pra - r) * decFactor)**2)**0.5 > ps1exposureRadius:
-                        covered = 0
-                    elif ((pdec - d)**2)**0.5 > ps1exposureRadius:
-                        covered = 0
-                    else:
-                        # CALCULATE SEPARATION IN ARCSEC
 
-                        calculator = separations(
-                            log=self.log,
-                            ra1=pra,
-                            dec1=pdec,
-                            ra2=r,
-                            dec2=d,
-                        )
-                        angularSeparation, northSep, eastSep = calculator.get()
-                        if angularSeparation < ps1exposureRadius * 60 * 60:
-                            covered = 1
-                        else:
-                            covered = 0
-
-                elif psurvey == "atlas":
+            if psurvey == "atlas":
+                for r, d, c in zip(wr, wd, cumCoveredArray):
                     atDecFactor = math.cos(d * DEG_TO_RAD_FACTOR)
                     if c == 0:
                         # WE HAVE COVERED THIS PIXEL BEFORE -- MOVE ON
@@ -267,28 +275,30 @@ class survey_footprint():
                         covered = 0
                     else:
                         covered = 1
-                coveredPixels.append(covered)
+                    coveredPixels.append(covered)
 
             # APPEND TO CUMMULATIVE COVERED ARRAY - SPEED THINGS UP!
-            cumCoveredArray = cumCoveredArray * (1 - np.array(coveredPixels))
+            cumCoveredArray = cumCoveredArray * \
+                (1 - np.array(coveredPixels))
 
             # RESHAPE THE ARRAY AS BITMAP
             coveredPixelGrid = np.reshape(
                 np.array(coveredPixels), (yRange, xRange))
 
             # GRAB THE WCS FROM HEADER GENERATED EARLIER
-            from wcsaxes import datasets, WCS
-            wcs = WCS(hdu.header)
+            # from wcsaxes import datasets
+            # from astropy.wcs import WCS
+            # wcs = WCS(hdu.header)
 
-            # PLOT MAP WITH PROJECTION IN HEADER
-            import matplotlib.pyplot as plt
-            fig = plt.figure()
-            ax = fig.add_axes([0.15, 0.1, 0.8, 0.8], projection=wcs)
-            im = ax.imshow(coveredPixelGrid,
-                           cmap="YlOrRd", origin='lower', alpha=0.7, zorder=1)
+            # # PLOT MAP WITH PROJECTION IN HEADER
+            # import matplotlib.pyplot as plt
+            # fig = plt.figure()
+            # ax = fig.add_axes([0.15, 0.1, 0.8, 0.8], projection=wcs)
+            # im = ax.imshow(coveredPixelGrid,
+            # cmap="YlOrRd", origin='lower', alpha=0.7, zorder=1)
 
-            coveredHealPixels = coveredPixels * healpixIds
-            coveredProbabilities = coveredPixels * probs
+            coveredHealPixels = np.array(coveredPixels) * healpixIds
+            coveredProbabilities = np.array(coveredPixels) * probs
 
             for cx, cp in zip(coveredHealPixels, coveredProbabilities):
                 if cx != 0:
@@ -301,7 +311,7 @@ class survey_footprint():
             finalAreas.append(cumArea)
             finalProbs.append(cumProb)
 
-            print "%(pti)s/%(totalPointings)s.  MJD: %(pmjd)s. AREA: %(cumArea)0.2f. PROB: %(cumProb)0.5f. SURVEY: %(psurvey)s" % locals()
+            print "%(pti)s/%(totalPointings)s.  MJD: %(pmjd)s. RA: %(pra)s. DEC: %(pdec)s.  AREA: %(cumArea)0.2f. PROB: %(cumProb)0.5f. SURVEY: %(psurvey)s" % locals()
 
         gwid = self.gwid
         import codecs
