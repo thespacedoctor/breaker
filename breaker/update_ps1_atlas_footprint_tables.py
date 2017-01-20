@@ -341,7 +341,24 @@ class update_ps1_atlas_footprint_tables():
                 dbConn=self.ligo_virgo_wavesDbConn,
             )
             sqlQuery = u"""
+                update ps1_pointings set gw_id = CONCAT(gw_id, " %(wave)s") where %(raWhere)s and %(decWhere)s and %(mjdWhere)s and gw_id is not null and gw_id not like "%%%(wave)s%%";
+            """ % locals()
+            writequery(
+                log=self.log,
+                sqlQuery=sqlQuery,
+                dbConn=self.ligo_virgo_wavesDbConn,
+            )
+
+            sqlQuery = u"""
                 update atlas_pointings set gw_id = "%(wave)s" where %(raWhere)s and %(decWhere)s and %(mjdWhere)s and gw_id is null
+            """ % locals()
+            writequery(
+                log=self.log,
+                sqlQuery=sqlQuery,
+                dbConn=self.ligo_virgo_wavesDbConn,
+            )
+            sqlQuery = u"""
+                update atlas_pointings set gw_id = CONCAT(gw_id, " %(wave)s") where %(raWhere)s and %(decWhere)s and %(mjdWhere)s and gw_id is not null and gw_id not like "%%%(wave)s%%";
             """ % locals()
             writequery(
                 log=self.log,
@@ -352,6 +369,14 @@ class update_ps1_atlas_footprint_tables():
             mjdWhere = mjdWhere.replace("mjd", "mjd_registered")
             sqlQuery = u"""
                 update ps1_nightlogs set gw_id = "%(wave)s" where %(raWhere)s and %(decWhere)s and %(mjdWhere)s and gw_id is null and type = "OBJECT"
+            """ % locals()
+            writequery(
+                log=self.log,
+                sqlQuery=sqlQuery,
+                dbConn=self.ligo_virgo_wavesDbConn,
+            )
+            sqlQuery = u"""
+                update ps1_nightlogs set gw_id = CONCAT(gw_id, " %(wave)s") where %(raWhere)s and %(decWhere)s and %(mjdWhere)s and gw_id is not null and type = "OBJECT" and gw_id not like "%%%(wave)s%%";
             """ % locals()
             writequery(
                 log=self.log,
