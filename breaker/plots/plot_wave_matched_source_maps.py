@@ -726,8 +726,6 @@ class plot_wave_matched_source_maps():
                 dbConn=self.ligo_virgo_wavesDbConn
             )
 
-        print sqlQuery
-
         ra = []
         dec = []
         ra[:] = [row["raDeg"] for row in rows]

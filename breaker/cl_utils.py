@@ -16,7 +16,7 @@ Usage:
     breaker plot (timeline|history|sources) [-w <gwid>] [-s <pathToSettingsFile>]
     breaker plot comparison <gwid> <pathToMapDirectory> [-s <pathToSettingsFile>]
     breaker faker <ps1ExpId> [-s <pathToSettingsFile>]
-    breaker stats <gwid> [-s <pathToSettingsFile>]
+    breaker stats <gwid> [<telescope>] [-s <pathToSettingsFile>]
     breaker listen <far> (<mjdStart> <mjdEnd> | <inLastNMins>) [-s <pathToSettingsFile>]
     breaker listen -d <far> [<sec>] [-s <pathToSettingsFile>]
 
@@ -46,6 +46,7 @@ Usage:
     inLastNMins           in the last N number of minutes
     pathToLVMap           path to the LV likelihood map
     sec                   time in seconds
+    telescope             select an individual telescope to provide stats for (default is all telescopes) [ps1|atlas]
 
     FLAGS
     -----
@@ -66,7 +67,7 @@ import pickle
 from docopt import docopt
 from fundamentals import tools, times
 from breaker.update_ps1_atlas_footprint_tables import update_ps1_atlas_footprint_tables
-from breaker.plots.plot_wave_observational_timelines import plot_wave_observational_timelines
+from breaker.plots.plot_wave_observational_timelines2 import plot_wave_observational_timelines
 from breaker.plots.plot_wave_matched_source_maps import plot_wave_matched_source_maps
 from breaker.fakers.generate_faker_catalogue import generate_faker_catalogue
 from breaker.stats.survey_footprint import survey_footprint
@@ -178,7 +179,8 @@ def main(arguments=None):
         s = survey_footprint(
             log=log,
             settings=settings,
-            gwid=gwid
+            gwid=gwid,
+            telescope=telescope
         )
         s.get()
     if listen and inLastNMins:
@@ -231,10 +233,33 @@ def main(arguments=None):
             pathToProbMap=pathToLVMap,
             fileFormats=["pdf", "png"],
             outputDirectory=".",
-            projection="mollweide",
+            projection="mercator",
             plotType="timeline",
-            fitsImage=True
+            fitsImage=False,
+            allSky=True
         )
+
+        # plotter.generate_probability_plot(
+        #     gwid=gwid,
+        #     pathToProbMap=pathToLVMap,
+        #     fileFormats=["pdf", "png"],
+        #     outputDirectory=".",
+        #     projection="mollweide",
+        #     plotType="timeline",
+        #     fitsImage=False,
+        #     allSky=True
+        # )
+
+        # plotter.generate_probability_plot(
+        #     gwid=gwid,
+        #     pathToProbMap=pathToLVMap,
+        #     fileFormats=["pdf", "png"],
+        #     outputDirectory=".",
+        #     projection="molleweide",
+        #     plotType="timeline",
+        #     fitsImage=True,
+        #     allSky=True
+        # )
 
     if "dbConn" in locals() and dbConn:
         dbConn.commit()
