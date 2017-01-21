@@ -228,12 +228,23 @@ def main(arguments=None):
             databaseConnRequired=False
         )
 
+        # plotter.generate_probability_plot(
+        #     gwid=gwid,
+        #     pathToProbMap=pathToLVMap,
+        #     fileFormats=["pdf", "png"],
+        #     outputDirectory=".",
+        #     projection="mercator",
+        #     plotType="timeline",
+        #     fitsImage=False,
+        #     allSky=True
+        # )
+
         plotter.generate_probability_plot(
             gwid=gwid,
             pathToProbMap=pathToLVMap,
             fileFormats=["pdf", "png"],
             outputDirectory=".",
-            projection="mercator",
+            projection="mollweide",
             plotType="timeline",
             fitsImage=False,
             allSky=True
@@ -244,22 +255,11 @@ def main(arguments=None):
             pathToProbMap=pathToLVMap,
             fileFormats=["pdf", "png"],
             outputDirectory=".",
-            projection="mollweide",
+            projection="molleweide",
             plotType="timeline",
             fitsImage=True,
             allSky=True
         )
-
-        # plotter.generate_probability_plot(
-        #     gwid=gwid,
-        #     pathToProbMap=pathToLVMap,
-        #     fileFormats=["pdf", "png"],
-        #     outputDirectory=".",
-        #     projection="molleweide",
-        #     plotType="timeline",
-        #     fitsImage=True,
-        #     allSky=True
-        # )
 
     if "dbConn" in locals() and dbConn:
         dbConn.commit()

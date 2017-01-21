@@ -1553,6 +1553,8 @@ class plot_wave_observational_timelines():
                            "Between 3-10 Days", "Between 10-17 Days", "Between 17-24 Days", "Between 24-31 Days", "> 31 Days", "no limit"]
         timeLimitDays = [(-21, 0), (0, 3), (3, 10), (10, 17),
                          (17, 24), (24, 31), (31, 0), (0, 0)]
+        timeLimitLabels = ["in First 3 Days"]
+        timeLimitDays = [(0, 3)]
         raLimits = [134.25, 144.75, 152.25, 159.50, 167.0, 174.5]
         raLimits = [False, False, False, False, False, False, False, False]
 
@@ -1674,6 +1676,194 @@ class plot_wave_observational_timelines():
 
         # X, Y PIXEL COORDINATE GRID
         xRange = 10000
+        yRange = xRange / 2
+
+        # PIXELSIZE AS MAPPED TO THE FULL SKY
+        pixelSizeDeg = 360. / xRange
+
+        # READ HEALPIX MAPS FROM FITS FILE
+        # THIS FILE IS A ONE COLUMN FITS BINARY, WITH EACH CELL CONTAINING AN
+        # ARRAY OF PROBABILITIES (3,072 ROWS)
+        # READ IN THE HEALPIX FITS FILE
+        aMap, mapHeader = hp.read_map(pathToProbMap, 0, h=True, verbose=False)
+        # DETERMINE THE SIZE OF THE HEALPIXELS
+        nside = hp.npix2nside(len(aMap))
+
+        # FROM THE PIXEL GRID (xRange, yRange), GENERATE A MAP TO LAT (pi to 0) AND LONG (-pi to pi) THAT CAN THEN MAPS TO HEALPIX SKYMAP
+        # RA FROM -pi to pi
+
+        # FITS convention for fractional pixels is that the center of the lower left pixel is at (1,1), the lower left corner of the
+        # lower left pixel is at (0.5,0.5). [1-index pix] refers to this
+        # convention. arange index starts at 0 so we need to fix for this
+
+        # FULL-SKY MAP SO PLOT FULL RA AND DEC RANGES
+        # DEC FROM 180 to 0
+        theta = np.linspace(np.pi - pixelSizeDeg / 2, +
+                            pixelSizeDeg / 2, yRange)
+        print theta[0], theta[-1]
+        print theta.shape
+        latitude = np.radians(np.linspace(-90 + pixelSizeDeg, 90, yRange))
+
+        # RA FROM -180 to +180
+        phi = np.linspace(-np.pi + pixelSizeDeg / 2,
+                          np.pi - pixelSizeDeg / 2, xRange)
+        print phi[0], phi[-1]
+        print phi.shape
+        longitude = np.radians(np.linspace(-180 + pixelSizeDeg, 180, xRange))
+        X, Y = np.meshgrid(longitude, latitude)
+
+        # PROJECT THE MAP TO A RECTANGULAR MATRIX xRange X yRange
+        PHI, THETA = np.meshgrid(phi, theta)
+        healpixIds = hp.ang2pix(nside, THETA, PHI)
+        # GIVEN A HIGH ENOUGH RESOLUTION IN THE PIXEL GRID WE WILL HAVE
+        # DUPLICATES - LET COUNT THEM ADD DIVIDE PROBABILITY EQUALLY
+        unique, counts = np.unique(healpixIds, return_counts=True)
+
+        # countDict has healpixid as keys and count rates as values (e.g. the
+        # ID XXXX occurs in 78 pixels)
+        countDict = dict(zip(unique, counts))
+
+        # PROB SHAPE IS (5000, 10000) .. indexing measured from top left in
+        # matrix.
+        probs = aMap[healpixIds]
+
+        # NOTE i = -y-direction, shape[0] is the y-axis range
+        # j = x-direction, shape[1] is the x-axis range
+        weightedProb = np.array([
+            [probs[i, j] / countDict[healpixIds[i, j]]
+                for j in xrange(probs.shape[1])]
+            for i in xrange(probs.shape[0])
+        ])
+
+        if rebin == True:
+            rebinSize = 4
+            # resize by getting rid of extra columns/rows
+            # xedge and yedge find the pixels we need to trim is rebinSize does
+            # divide evenly into image
+            yedge = np.shape(weightedProb)[0] % rebinSize
+            xedge = np.shape(weightedProb)[1] % rebinSize
+            weightedProb = weightedProb[yedge:, xedge:]
+
+            # put image array into arrays of rebinSize x rebinSize - so (1250,
+            # 4, 2500, 4)
+            weightedProb = np.reshape(weightedProb, (np.shape(weightedProb)[
+                                      0] / rebinSize, rebinSize, np.shape(weightedProb)[1] / rebinSize, rebinSize))
+
+            # average each rebinSize x rebinSize array
+            weightedProb = np.mean(weightedProb, axis=3) * rebinSize
+            weightedProb = np.mean(weightedProb, axis=1) * rebinSize
+
+            pixelSizeDeg = pixelSizeDeg * rebinSize
+            xRange = int(xRange / rebinSize)
+            yRange = int(yRange / rebinSize)
+
+        # CREATE A NEW WCS OBJECT
+        w = awcs.WCS(naxis=2)
+        # SET THE REQUIRED PIXEL SIZE
+        w.wcs.cdelt = np.array([pixelSizeDeg, pixelSizeDeg])
+        # WORLD COORDINATES AT REFERENCE PIXEL
+        centralCoordinate = [pixelSizeDeg, pixelSizeDeg]
+        centralCoordinate = [0, 0]
+        w.wcs.crval = centralCoordinate
+        cx = xRange / 2. + 0.5
+        cy = yRange / 2. + 0.5
+        # SET THE REFERENCE PIXEL TO THE CENTRE PIXEL
+        w.wcs.crpix = [cx, cy]
+
+        unweightedImageProb = np.sum(probs)
+        self.log.info(
+            "The total unweighted probability flux in the FITS images added to %(unweightedImageProb)s" % locals())
+
+        totalImageProb = np.sum(weightedProb)
+        self.log.info(
+            "The total probability flux in the FITS images added to %(totalImageProb)s" % locals())
+
+        # CTYPE FOR THE FITS HEADER
+        w.wcs.ctype = ["RA---CAR" %
+                       locals(), "DEC--CAR" % locals()]
+
+        header = w.to_header()
+        # CREATE THE FITS FILE
+        hdu = fits.PrimaryHDU(header=header, data=weightedProb)
+
+        # Recursively create missing directories
+        if self.settings and not outputDirectory:
+            plotDir = self.settings["output directory"] + "/" + gwid
+        elif outputDirectory:
+            plotDir = outputDirectory
+
+        if not os.path.exists(plotDir):
+            os.makedirs(plotDir)
+
+        if plotDir != ".":
+            if not os.path.exists("%(plotDir)s/%(folderName)s/fits" % locals()):
+                os.makedirs("%(plotDir)s/%(folderName)s/fits" % locals())
+            pathToExportFits = "%(plotDir)s/%(folderName)s/fits/%(gwid)s_skymap.fits" % locals()
+            try:
+                os.remove(pathToExportFits)
+            except:
+                pass
+            hdu.writeto(pathToExportFits)
+        else:
+            pathToExportFits = "%(plotDir)s/%(gwid)s_skymap.fits" % locals()
+            try:
+                os.remove(pathToExportFits)
+            except:
+                pass
+            hdu.writeto(pathToExportFits)
+
+        self.log.info('completed the ``generate_fits_image_map`` method')
+        return None
+
+    def generate_fits_image_map_old(
+            self,
+            gwid,
+            pathToProbMap,
+            folderName="",
+            outputDirectory=False,
+            rebin=True):
+        """*generate fits image map from the LV-skymap (FITS binary table)*
+
+        **Key Arguments:**
+            - ``pathToProbMap`` -- path to the FITS file containing the probability map of the wave
+            - ``outputDirectory`` -- can be used to override the output destination in the settings file
+            - ``gwid`` -- the unique ID of the gravitational wave to plot
+            - ``folderName`` -- the name of the folder to add the plots to
+            - ``rebin`` -- rebin the final image to reduce size
+
+        **Return:**
+            - None
+
+        **Usage:**
+
+            To generate an all-sky image from the LV FITS binary table healpix map run the following code:
+
+                from breaker.plots import plot_wave_observational_timelines
+                plotter = plot_wave_observational_timelines(
+                    log=log,
+                    settings=settings,
+                    databaseConnRequired=False
+                )
+                plotter.generate_fits_image_map(
+                    gwid="G211117",
+                    pathToProbMap="/path/to/LV/healpix_map.fits",
+                    outputDirectory="/path/to/output",
+                    rebin=True
+                )
+
+        The size of the final FITS image map is ~1.1GB so it's probably best to rebin the image (~80MB) unless you really need the resolution.
+        """
+        self.log.info('starting the ``generate_fits_image_map`` method')
+
+        import healpy as hp
+        # HEALPY REQUIRES RA, DEC IN RADIANS AND AS TWO SEPERATE ARRAYS
+        import math
+        pi = (4 * math.atan(1.0))
+        DEG_TO_RAD_FACTOR = pi / 180.0
+        RAD_TO_DEG_FACTOR = 180.0 / pi
+
+        # X, Y PIXEL COORDINATE GRID
+        xRange = 10000
         yRange = xRange * 1.7
 
         # PIXELSIZE AS MAPPED TO THE FULL SKY
@@ -1691,9 +1881,11 @@ class plot_wave_observational_timelines():
         # FROM THE PIXEL GRID (xRange, yRange), GENERATE A MAP TO LAT (pi to 0) AND LONG (-pi to pi) THAT CAN THEN MAPS TO HEALPIX SKYMAP
         # RA FROM -pi to pi
         phi = x2long(np.arange(xRange), xRange)
+        print phi[0], phi[-1]
 
         # DEC FROM pi to 0
         theta = y2lat(np.arange(yRange), xRange, yRange)
+        print theta[0], theta[-1]
 
         # PROJECT THE MAP TO A RECTANGULAR MATRIX xRange X yRange
         PHI, THETA = np.meshgrid(phi, theta)

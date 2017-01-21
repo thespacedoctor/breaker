@@ -707,7 +707,7 @@ CREATE TABLE `ps1_nightlogs` (
                 if mjdUpper < mjdNow - 7.:
                     continue
                 if mjdUpper > mjdNow:
-                    mjdUpper = int(mjdNow)
+                    mjdUpper = int(mjdNow) + 3
                 if mjdLower < mjdNow - 7.:
                     mjdLower = int(mjdNow - 7.)
 
