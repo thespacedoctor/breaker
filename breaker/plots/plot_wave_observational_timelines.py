@@ -64,6 +64,7 @@ class plot_wave_observational_timelines():
         - ``projection`` -- projection for the plot. Default *mercator*
         - ``probabilityCut`` -- remove footprints where probability assigned to the healpix pixel found at the center of the exposure is ~0.0. Default *False*
         - ``databaseConnRequired`` -- are the database connections going to be required? Default *True*
+        - ``allPlots`` -- plot all timeline plot (including the CPU intensive -21-0 days and all transients/footprints plots). Default *False*
 
     **Usage:**
 
@@ -116,7 +117,8 @@ class plot_wave_observational_timelines():
             gwid=False,
             projection="mercator",
             probabilityCut=False,
-            databaseConnRequired=True
+            databaseConnRequired=True,
+            allPlots=False
     ):
         self.log = log
         log.debug("instantiating a new 'plot_wave_observational_timelines' object")
@@ -125,6 +127,7 @@ class plot_wave_observational_timelines():
         self.gwid = gwid
         self.projection = projection
         self.probabilityCut = probabilityCut
+        self.allPlots = allPlots
 
         # xt-self-arg-tmpx
 
@@ -1549,10 +1552,16 @@ class plot_wave_observational_timelines():
         """
         self.log.info('starting the ``get_timeline_plots`` method')
 
-        timeLimitLabels = ["21 days pre-detection", "in First 3 Days",
-                           "Between 3-10 Days", "Between 10-17 Days", "Between 17-24 Days", "Between 24-31 Days", "> 31 Days", "no limit"]
-        timeLimitDays = [(-21, 0), (0, 3), (3, 10), (10, 17),
-                         (17, 24), (24, 31), (31, 0), (0, 0)]
+        if self.allPlots:
+            timeLimitLabels = ["21 days pre-detection", "in First 3 Days",
+                               "Between 3-10 Days", "Between 10-17 Days", "Between 17-24 Days", "Between 24-31 Days", "> 31 Days", "no limit"]
+            timeLimitDays = [(-21, 0), (0, 3), (3, 10), (10, 17),
+                             (17, 24), (24, 31), (31, 0), (0, 0)]
+        else:
+            timeLimitLabels = ["in First 3 Days",
+                               "Between 3-10 Days", "Between 10-17 Days", "Between 17-24 Days", "Between 24-31 Days", "> 31 Days", "no limit"]
+            timeLimitDays = [(0, 3), (3, 10), (10, 17),
+                             (17, 24), (24, 31), (31, 0), (0, 0)]
         # timeLimitLabels = ["in First 3 Days"]
         # timeLimitDays = [(0, 3)]
         raLimits = [134.25, 144.75, 152.25, 159.50, 167.0, 174.5]
