@@ -707,14 +707,14 @@ CREATE TABLE `ps1_nightlogs` (
                 if mjdUpper < mjdNow - 7.:
                     continue
                 if mjdUpper > mjdNow:
-                    mjdUpper = int(mjdNow) + 3
+                    mjdUpper = int(mjdNow)
                 if mjdLower < mjdNow - 7.:
                     mjdLower = int(mjdNow - 7.)
 
             # METRIC NIGHT LOGS FOR EACH NIGHT FOUND AT A URL SIMILAR TO :
             # "http://ipp0022.ifa.hawaii.edu/ps1sc/metrics/2016-12-14/index.html"
             urls = []
-            for i in range(mjdUpper - mjdLower):
+            for i in range(mjdUpper - mjdLower + 3):
                 mjd = i + mjdLower
                 utDate = converter.mjd_to_ut_datetime(
                     mjd=mjd,
