@@ -184,7 +184,8 @@ class update_ps1_atlas_footprint_tables():
             dbTableName="ps1_pointings",
             uniqueKeyList=["raDeg", "decDeg", "mjd"],
             dateModified=False,
-            batchSize=2500
+            batchSize=2500,
+            replace=True
         )
 
         # APPEND HTMIDs TO THE ps1_pointings TABLE
@@ -232,7 +233,7 @@ class update_ps1_atlas_footprint_tables():
                 `filter`,
                 `mjd_obs` as `mjd`,
                 `ra` as `raDeg`,
-                `object` as `atlas_object_id` from atlas_metadata;
+                `object` as `atlas_object_id` from atlas_metadata order by mjd_obs desc;
         """ % locals()
         rows = readquery(
             log=self.log,
@@ -242,7 +243,7 @@ class update_ps1_atlas_footprint_tables():
         )
 
         # TIDY RESULTS BEFORE IMPORT
-        entries = rows
+        entries = list(rows)
 
         # ADD THE NEW RESULTS TO THE ps1_pointings TABLE
         insert_list_of_dictionaries_into_database_tables(
@@ -252,7 +253,8 @@ class update_ps1_atlas_footprint_tables():
             dbTableName="atlas_pointings",
             uniqueKeyList=["raDeg", "decDeg", "mjd"],
             dateModified=False,
-            batchSize=2500
+            batchSize=2500,
+            replace=True
         )
 
         # APPEND HTMIDs TO THE ps1_pointings TABLE
@@ -471,7 +473,8 @@ class update_ps1_atlas_footprint_tables():
                 dbTableName="ps1_pointings_subdisks",
                 uniqueKeyList=["ps1_exp_id", "circleId"],
                 dateModified=False,
-                batchSize=2500
+                batchSize=2500,
+                replace=True
             )
 
             # UPDATE POINTINGS TABLE TO INDICATE SUBDISKS HAVE BEEN CALCULATED

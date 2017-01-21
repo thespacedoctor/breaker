@@ -867,13 +867,12 @@ class plot_wave_observational_timelines():
             # ADD A GRID
             ax.coords.grid(color='#657b83', alpha=0.5, linestyle='dashed')
 
-            lat.set_ticks_position('both')
-            lat.set_ticklabel_position('r')
+            lat.set_ticks_position('l')
+            lat.set_ticklabel_position('l')
             lat.set_axislabel_position('l')
 
             plt.gca().invert_xaxis()
-            ax = plt.gca()
-            ax.get_yaxis().set_ticks_position('both')
+
             # lon.set_ticks(number=20)
             # lat.set_ticks(number=3)
 
@@ -921,8 +920,6 @@ class plot_wave_observational_timelines():
         else:
             timeRangeLabel = ""
 
-        # timeRangeLabel = ""
-
         subTitle = "(updated %(now)s)" % locals()
         if timeLimitDay == 0 or plotType == "timeline":
             subTitle = ""
@@ -935,7 +932,8 @@ class plot_wave_observational_timelines():
         from matplotlib.patches import Circle
         from matplotlib.patches import Rectangle
 
-        for psp in ps1Pointings
+        #ps1Pointings = []
+        for psp in ps1Pointings:
             raDeg = psp["raDeg"]
             decDeg = psp["decDeg"]
 
@@ -1006,6 +1004,7 @@ class plot_wave_observational_timelines():
 
         # ADD ATLAS POINTINGS
         atlasPointingSide = 5.46
+        #atlasPointings = []
         for atp in atlasPointings:
             # add a path patch
             atlasExpId = atp["atlas_object_id"]
@@ -1182,7 +1181,7 @@ class plot_wave_observational_timelines():
         decRad = []
         texts = []
 
-        # ps1Transients = []
+        #ps1Transients = []
         for trans in ps1Transients:
             # if trans["ps1_designation"] in ["PS15dpg", "PS15dpp", "PS15dpq", "PS15don", "PS15dpa", "PS15dom"]:
             #     continue
@@ -1269,7 +1268,7 @@ class plot_wave_observational_timelines():
         raRad = []
         decRad = []
         texts = []
-        # atlasTransients = []
+        #atlasTransients = []
         for trans in atlasTransients:
             # if trans["ps1_designation"] in ["PS15dpg", "PS15dpp", "PS15dpq", "PS15don", "PS15dpa", "PS15dom"]:
             #     continue
