@@ -13,7 +13,7 @@ Usage:
     breaker init
     breaker update [-n] [-s <pathToSettingsFile>]
     breaker skymap <gwid> <pathToLVMap>
-    breaker plot (timeline|history|sources) [-w <gwid>] [-s <pathToSettingsFile>]
+    breaker plot [-a] (timeline|history|sources) [-w <gwid>] [-s <pathToSettingsFile>]
     breaker plot comparison <gwid> <pathToMapDirectory> [-s <pathToSettingsFile>]
     breaker faker <ps1ExpId> [-s <pathToSettingsFile>]
     breaker stats <gwid> [<telescope>] [-s <pathToSettingsFile>]
@@ -55,6 +55,7 @@ Usage:
     -n, --updateNed       update the NED database steam
     -d, --daemon          listen in daemon mode
     -w, --waveId          a gravitational wave ID
+    -a, --all             plot all timeline plot (including the CPU intensive -21-0 days and all transients/footprints plots)
 
 """
 ################# GLOBAL IMPORTS ####################
@@ -149,7 +150,8 @@ def main(arguments=None):
             log=log,
             settings=settings,
             gwid=gwid,
-            plotType="timeline"
+            plotType="timeline",
+            allPlots=allFlag
         )
         p.get()
     if plot and sources:
