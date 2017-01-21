@@ -1553,8 +1553,8 @@ class plot_wave_observational_timelines():
                            "Between 3-10 Days", "Between 10-17 Days", "Between 17-24 Days", "Between 24-31 Days", "> 31 Days", "no limit"]
         timeLimitDays = [(-21, 0), (0, 3), (3, 10), (10, 17),
                          (17, 24), (24, 31), (31, 0), (0, 0)]
-        timeLimitLabels = ["in First 3 Days"]
-        timeLimitDays = [(0, 3)]
+        # timeLimitLabels = ["in First 3 Days"]
+        # timeLimitDays = [(0, 3)]
         raLimits = [134.25, 144.75, 152.25, 159.50, 167.0, 174.5]
         raLimits = [False, False, False, False, False, False, False, False]
 
