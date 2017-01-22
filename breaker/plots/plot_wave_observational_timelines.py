@@ -910,21 +910,21 @@ class plot_wave_observational_timelines():
         now = now.strftime("%Y-%m-%d")
         timeRangeLabel = "NULL"
         if plotType == "history":
-            plotTitle = "%(gwid)s Probability Map, PS1 Footprints & Transients\nDiscovered in Last %(timeLimitDay)02d Days" % locals()
+            plotTitle = "%(gwid)s Probability Map, Footprints & Transients\nDiscovered in Last %(timeLimitDay)02d Days" % locals()
             timeRangeLabel = "Past %(timeLimitDay)02d days (updated %(now)s)" % locals(
             )
             if timeLimitDay == 0:
-                plotTitle = "%(gwid)s Probability Map, PS1 Footprints & Transients\nDiscovered Since MJD %(mjdStart)s" % locals(
+                plotTitle = "%(gwid)s Probability Map, Footprints & Transients\nDiscovered Since MJD %(mjdStart)s" % locals(
                 )
                 timeRangeLabel = "MJD > %(mjdStart)s" % locals()
         elif plotType == "timeline" and timeLimitDay:
             start = timeLimitDay[0]
             end = timeLimitDay[1]
-            plotTitle = "%(gwid)s Probability Map, PS1 Footprints & Transients\nDiscovered %(timeLimitLabel)s of Wave Detection" % locals()
+            plotTitle = "%(gwid)s Probability Map, Footprints & Transients\nDiscovered %(timeLimitLabel)s of Wave Detection" % locals()
             timeRangeLabel = timeLimitLabel.lower().replace(
                 "in", "").replace("between", "").strip()
             if timeLimitLabel == "no limit":
-                plotTitle = "%(gwid)s Probability Map, PS1 Footprints\n& All Transients Discovered" % locals(
+                plotTitle = "%(gwid)s Probability Map, Footprints\n& All Transients Discovered" % locals(
                 )
                 timeRangeLabel = "all transients"
         elif plotType == "timeline":
@@ -1569,12 +1569,12 @@ class plot_wave_observational_timelines():
             timeLimitLabels = ["21 days pre-detection", "in First 3 Days",
                                "Between 3-10 Days", "Between 10-17 Days", "Between 17-24 Days", "Between 24-31 Days", "> 31 Days", "no limit"]
             timeLimitDays = [(-21, 0), (0, 3), (3, 10), (10, 17),
-                             (17, 24), (24, 31), (31, 0)]
+                             (17, 24), (24, 31), (31, 0), (0, 0)]
         else:
             timeLimitLabels = ["in First 3 Days",
                                "Between 3-10 Days", "Between 10-17 Days", "Between 17-24 Days", "Between 24-31 Days", "> 31 Days"]
             timeLimitDays = [(0, 3), (3, 10), (10, 17),
-                             (17, 24), (24, 31), (31, 0), (0, 0)]
+                             (17, 24), (24, 31), (31, 0)]
         # timeLimitLabels = ["in First 3 Days"]
         # timeLimitDays = [(0, 3)]
         raLimits = [134.25, 144.75, 152.25, 159.50, 167.0, 174.5]
