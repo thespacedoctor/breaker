@@ -1426,6 +1426,8 @@ class plot_wave_observational_timelines():
             )
         if allSky:
             figureName = figureName + "_" + projection.title()
+        if self.telescope:
+            figureName = figureName + "_" + self.telescope
         if plotDir != ".":
             for f in fileFormats:
                 if not os.path.exists("%(plotDir)s/%(folderName)s/%(f)s" % locals()):
