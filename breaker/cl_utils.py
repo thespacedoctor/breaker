@@ -13,7 +13,7 @@ Usage:
     breaker init
     breaker update [-n] [-s <pathToSettingsFile>]
     breaker skymap <gwid> <pathToLVMap>
-    breaker plot [-a] (timeline|history|sources) [-w <gwid>] [-s <pathToSettingsFile>]
+    breaker plot [-a] (timeline|history|sources) [-w <gwid>] [-t <telescope>] [-s <pathToSettingsFile>]
     breaker plot comparison <gwid> <pathToMapDirectory> [-s <pathToSettingsFile>]
     breaker faker <ps1ExpId> [-s <pathToSettingsFile>]
     breaker stats <gwid> [<telescope>] [-s <pathToSettingsFile>]
@@ -46,7 +46,7 @@ Usage:
     inLastNMins           in the last N number of minutes
     pathToLVMap           path to the LV likelihood map
     sec                   time in seconds
-    telescope             select an individual telescope to provide stats for (default is all telescopes) [ps1|atlas]
+    telescope             select an individual telescope (default is all telescopes) [ps1|atlas]
 
     FLAGS
     -----
@@ -151,7 +151,8 @@ def main(arguments=None):
             settings=settings,
             gwid=gwid,
             plotType="timeline",
-            allPlots=allFlag
+            allPlots=allFlag,
+            telescope=telescope
         )
         p.get()
     if plot and sources:

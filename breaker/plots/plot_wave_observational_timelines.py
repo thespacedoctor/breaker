@@ -65,6 +65,7 @@ class plot_wave_observational_timelines():
         - ``probabilityCut`` -- remove footprints where probability assigned to the healpix pixel found at the center of the exposure is ~0.0. Default *False*
         - ``databaseConnRequired`` -- are the database connections going to be required? Default *True*
         - ``allPlots`` -- plot all timeline plot (including the CPU intensive -21-0 days and all transients/footprints plots). Default *False*
+        - ``telescope`` -- select an individual telescope. Default *False*. [ps1|atlas]
 
     **Usage:**
 
@@ -118,7 +119,8 @@ class plot_wave_observational_timelines():
             projection="mercator",
             probabilityCut=False,
             databaseConnRequired=True,
-            allPlots=False
+            allPlots=False,
+            telescope=False
     ):
         self.log = log
         log.debug("instantiating a new 'plot_wave_observational_timelines' object")
@@ -128,6 +130,7 @@ class plot_wave_observational_timelines():
         self.projection = projection
         self.probabilityCut = probabilityCut
         self.allPlots = allPlots
+        self.telescope = telescope
 
         # xt-self-arg-tmpx
 
@@ -275,6 +278,14 @@ class plot_wave_observational_timelines():
 
         self.log.info(
             'completed the ``get_gw_parameters_from_settings`` method')
+
+        if self.telescope == "ps1":
+            atlasPointings = []
+            atlasTransients = []
+        elif self.telescope == "atlas":
+            ps1Transients = []
+            ps1Pointings = []
+
         return plotParameters, ps1Transients, ps1Pointings, atlasPointings, atlasTransients
 
     def _get_ps1_transient_candidates(
