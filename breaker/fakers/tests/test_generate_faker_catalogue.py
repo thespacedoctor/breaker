@@ -30,7 +30,7 @@ log, dbConn, pathToInputDir, pathToOutputDir = utKit.setupModule()
 utKit.tearDownModule()
 
 
-class test_generate_faker_catalogue():
+class test_generate_faker_catalogue(unittest.TestCase):
 
     def test_generate_faker_catalogue_function(self):
         kwargs = {}

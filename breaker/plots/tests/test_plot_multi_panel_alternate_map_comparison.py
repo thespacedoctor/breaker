@@ -29,7 +29,7 @@ log, dbConn, pathToInputDir, pathToOutputDir = utKit.setupModule()
 utKit.tearDownModule()
 
 
-class test_plot_multi_panel_alternate_map_comparison():
+class test_plot_multi_panel_alternate_map_comparison(unittest.TestCase):
 
     def test_plot_multi_panel_alternate_map_comparison_function(self):
         p = plot_multi_panel_alternate_map_comparison(
