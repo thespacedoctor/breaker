@@ -30,7 +30,7 @@ log, dbConn, pathToInputDir, pathToOutputDir = utKit.setupModule()
 utKit.tearDownModule()
 
 
-class test_survey_footprint():
+class test_survey_footprint(unittest.TestCase):
 
     def test_survey_footprint_function(self):
 

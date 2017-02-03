@@ -1,7 +1,7 @@
 Installation
 ============
 
-The easiest way to install breaker us to use ``pip``:
+The easiest way to install breaker is to use ``pip``:
 
 .. code:: bash
 
