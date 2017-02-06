@@ -30,7 +30,7 @@ settings = yaml.load(stream)
 stream.close()
 
 
-class test_listen():
+class test_listen(unittest.TestCase):
 
     def test_listen_function(self):
 

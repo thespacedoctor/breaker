@@ -29,7 +29,7 @@ log, dbConn, pathToInputDir, pathToOutputDir = utKit.setupModule()
 utKit.tearDownModule()
 
 
-class test_update_ps1_atlas_footprint_tables():
+class test_update_ps1_atlas_footprint_tables(unittest.TestCase):
 
     # def test_update_ps1_atlas_footprint_tables_function(self):
     #     testObject = update_ps1_atlas_footprint_tables(

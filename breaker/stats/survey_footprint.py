@@ -13,14 +13,20 @@ os.environ['TERM'] = 'vt100'
 import healpy as hp
 import numpy as np
 import math
+from operator import itemgetter
 import matplotlib
 import matplotlib.cm as cm
 import matplotlib.pyplot as plt
 from matplotlib.path import Path
 from matplotlib.pyplot import savefig
 import matplotlib.patches as patches
+import numpy
+from astropy import wcs as awcs
+from astropy.io import fits
+from HMpTy import Matcher
 from fundamentals import tools, times
 from astrocalc.coords import separations
+from breaker.plots import plot_wave_observational_timelines
 
 
 class survey_footprint():
@@ -83,7 +89,6 @@ class survey_footprint():
         self.log.info('starting the ``get`` method')
 
         # GRAB METADATA FROM THE DATABASES
-        from breaker.plots import plot_wave_observational_timelines
         this = plot_wave_observational_timelines(
             log=self.log, settings=self.settings)
         plotParameters, ps1Transients, ps1Pointings, altasPointings, atlasTransients = this.get_gw_parameters_from_settings(
@@ -120,9 +125,6 @@ class survey_footprint():
         yRange = int(decRange / pixelSizeDeg)
 
         # CREATE A NEW WCS OBJECT
-        import numpy
-        from astropy import wcs as awcs
-        from astropy.io import fits
         w = awcs.WCS(naxis=2)
 
         # SET THE REFERENCE PIXEL TO THE CENTRE PIXEL
@@ -153,7 +155,6 @@ class survey_footprint():
         # READ HEALPIX MAPS FROM FITS FILE
         # THIS FILE IS A ONE COLUMN FITS BINARY, WITH EACH CELL CONTAINING AN
         # ARRAY OF PROBABILITIES (3,072 ROWS)
-        import healpy as hp
         aMap, mapHeader = hp.read_map(pathToProbMap, h=True)
         nside = hp.pixelfunc.get_nside(aMap)
         hpixArea = hp.nside2pixarea(nside, "degrees")
@@ -164,7 +165,6 @@ class survey_footprint():
         # plt.show()
 
         # HEALPY REQUIRES RA, DEC IN RADIANS AND AS TWO SEPERATE ARRAYS
-        import math
         pi = (4 * math.atan(1.0))
         DEG_TO_RAD_FACTOR = pi / 180.0
         RAD_TO_DEG_FACTOR = 180.0 / pi
@@ -187,22 +187,19 @@ class survey_footprint():
         hdu = fits.PrimaryHDU(header=header, data=probs)
 
         # SORT ALL POINTINGS VIA MJD
-        from operator import itemgetter
-        ps1Pointings = list(ps1Pointings)
-        for pt in ps1Pointings:
-            pt["survey"] = "ps1"
 
-        altasPointings = list(altasPointings)
-        for at in altasPointings:
-            at["survey"] = "atlas"
+        ps1Pointings = sorted(list(ps1Pointings),
+                              key=itemgetter('mjd'), reverse=False)
+        altasPointings = sorted(list(altasPointings),
+                                key=itemgetter('mjd'), reverse=False)
 
-        allPointings = ps1Pointings + altasPointings
-        allPointings = sorted(
-            allPointings, key=itemgetter('mjd'), reverse=False)
-
-        # ONLY KEEP NON-ZERO PROB FOTTPRINTS
+        # ONLY KEEP NON-ZERO PROB FOOTPRINTS
         tmpPointings = []
-        for pt in allPointings:
+        ps1exposureRadius = 1.4
+        moveBy = (ps1exposureRadius / 2)**0.5
+        atlasPointingSide = 5.46
+        fivePoints = [(0, 0), (1, 1), (-1, -1), (-1, 1), (1, -1)]
+        for pt in ps1Pointings:
             pra = pt["raDeg"]
             pdec = pt["decDeg"]
             # REMOVE LOWER PROBABILITY FOOTPRINTS
@@ -210,25 +207,46 @@ class survey_footprint():
             if phi > 180.:
                 phi = phi - 360.
             theta = -pdec + 90.
-            # CONVERT WORLD TO HEALPIX INDICES (NON-UNIQUE IDS!)
-            healpixId = hp.ang2pix(nside, theta=theta * DEG_TO_RAD_FACTOR,
-                                   phi=phi * DEG_TO_RAD_FACTOR)
-            thisProb = aMap[healpixId]
-            thisProb = float("%0.*f" % (7, thisProb))
-            if thisProb != 0.:
-                tmpPointings.append(pt)
-        allPointings = tmpPointings
 
-        ps1exposureRadius = 1.4
-        atlasPointingSide = 5.46
+            # CONVERT WORLD TO HEALPIX INDICES (NON-UNIQUE IDS!)
+            for m in fivePoints:
+                healpixId = hp.ang2pix(nside, theta=(theta + m[0] * moveBy) * DEG_TO_RAD_FACTOR,
+                                       phi=(phi + m[1] * moveBy) * DEG_TO_RAD_FACTOR)
+                thisProb = aMap[healpixId]
+                thisProb = float("%0.*f" % (7, thisProb))
+                if thisProb != 0.:
+                    tmpPointings.append(pt)
+                    break
+        ps1Pointings = tmpPointings
+
+        tmpPointings = []
+        moveBy = (atlasPointingSide / 2)**0.5
+        for pt in altasPointings:
+            pra = pt["raDeg"]
+            pdec = pt["decDeg"]
+            # REMOVE LOWER PROBABILITY FOOTPRINTS
+            phi = pra
+            if phi > 180.:
+                phi = phi - 360.
+            theta = -pdec + 90.
+
+            # CONVERT WORLD TO HEALPIX INDICES (NON-UNIQUE IDS!)
+            for m in fivePoints:
+                healpixId = hp.ang2pix(nside, theta=(theta + m[0] * moveBy) * DEG_TO_RAD_FACTOR,
+                                       phi=(phi + m[1] * moveBy) * DEG_TO_RAD_FACTOR)
+                thisProb = aMap[healpixId]
+                thisProb = float("%0.*f" % (7, thisProb))
+                if thisProb != 0.:
+                    tmpPointings.append(pt)
+                    break
+        altasPointings = tmpPointings
+
         healpixDictionary = {}
-        totalPointings = len(allPointings)
         cumCoveredArray = np.ones(healpixIds.size)
         finalMJDs = []
         finalAreas = []
         finalProbs = []
 
-        from HMpTy import Matcher
         # USE THIS COORDINATE SET MATCHER TO MATCH OTHER COORDINATE SETS
         # AGAINST
         coordinateSet = Matcher(
@@ -238,94 +256,61 @@ class survey_footprint():
             depth=12
         )
 
-        for pti, pt in enumerate(allPointings):
+        ps1RAs = []
+        ps1RAs[:] = [pt["raDeg"] for pt in ps1Pointings]
+        ps1DECs = []
+        ps1DECs[:] = [pt["decDeg"] for pt in ps1Pointings]
+        ps1mjds = []
+        ps1mjds[:] = [pt["mjd"] for pt in ps1Pointings]
+
+        # MATCH THE PS1 POINTINGS AGAINST EVERY PIXEL IN THE SKY
+        matchIndices1, matchIndices2, seps = coordinateSet.match(
+            ra=np.array(ps1RAs),
+            dec=np.array(ps1DECs),
+            radius=ps1exposureRadius,
+            maxmatch=0  # 1 = closest, 0 = all
+        )
+        # WHAT ARE ALL OF THE UNIQUE HEALPIXELS COVERED BY THE POINTINGS
+        healpixIDIndices = np.unique(matchIndices2)
+
+        # GENERATE DICTIONARY OF PIXEL/PROBABILITIES
+        for i in healpixIDIndices:
+            if i not in healpixDictionary:
+                healpixDictionary[healpixIds[i]] = aMap[healpixIds[i]]
+
+        atlasRAs = []
+        atlasRAs[:] = [pt["raDeg"] for pt in altasPointings]
+        atlasDECs = []
+        atlasDECs[:] = [pt["decDeg"] for pt in altasPointings]
+        atlasmjds = []
+        atlasmjds[:] = [pt["mjd"] for pt in altasPointings]
+
+        allHealpixIds = np.array([])
+        for pti, pt in enumerate(altasPointings):
             pra = pt["raDeg"]
             pdec = pt["decDeg"]
             pmjd = pt["mjd"]
-            psurvey = pt["survey"]
 
-            decFactor = math.cos(pdec * DEG_TO_RAD_FACTOR)
-            coveredPixels = []
+            pointingHealpixIds = healpixIds[(((pdec - wd)**2)**0.5 < atlasPointingSide / 2) & (
+                (((pra - wr) * np.cos(wd * DEG_TO_RAD_FACTOR))**2)**0.5 < atlasPointingSide / 2)]
 
-            covered = -1
+            # pointingHealpixIds = []
+            # pointingHealpixIds[:] = [h for r, d, h in zip(wr, wd, healpixIds) if (
+            #     ((pdec - d)**2)**0.5 < atlasPointingSide / 2) and ((((pra - r) * math.cos(d * DEG_TO_RAD_FACTOR))**2)**0.5 < atlasPointingSide / 2)]
+            allHealpixIds = np.append(allHealpixIds, pointingHealpixIds)
 
-            if psurvey == "ps1":
-                coveredPixels = np.zeros(healpixIds.size)
-                matchIndices1, matchIndices2, seps = coordinateSet.match(
-                    ra=pra,
-                    dec=pdec,
-                    radius=ps1exposureRadius,
-                    maxmatch=0  # 1 = closest, 0 = all
-                )
+        allHealpixIds = np.unique(allHealpixIds)
 
-                for m2 in matchIndices2:
-                    if cumCoveredArray[m2] == 1:
-                        coveredPixels[m2] = 1
-                        # WE HAVE COVERED THIS PIXEL BEFORE -- MOVE ON
+        # GENERATE DICTIONARY OF PIXEL/PROBABILITIES
+        for hid in allHealpixIds:
+            if i not in healpixDictionary:
+                healpixDictionary[hid] = aMap[hid]
 
-            if psurvey == "atlas":
-                for r, d, c in zip(wr, wd, cumCoveredArray):
-                    atDecFactor = math.cos(d * DEG_TO_RAD_FACTOR)
-                    if c == 0:
-                        # WE HAVE COVERED THIS PIXEL BEFORE -- MOVE ON
-                        covered = 0
-                    elif ((pdec - d)**2)**0.5 > atlasPointingSide / 2:
-                        covered = 0
-                    elif (((pra - r) * atDecFactor)**2)**0.5 > atlasPointingSide / 2:
-                        covered = 0
-                    else:
-                        covered = 1
-                    coveredPixels.append(covered)
+        # NOW CALCULATE THE TOTAL AREA AND PROBABILITY COVERAGE
+        cumArea = len(healpixDictionary) * hpixArea
+        cumProb = sum(healpixDictionary.values())
 
-            # APPEND TO CUMMULATIVE COVERED ARRAY - SPEED THINGS UP!
-            cumCoveredArray = cumCoveredArray * \
-                (1 - np.array(coveredPixels))
-
-            # RESHAPE THE ARRAY AS BITMAP
-            coveredPixelGrid = np.reshape(
-                np.array(coveredPixels), (yRange, xRange))
-
-            # GRAB THE WCS FROM HEADER GENERATED EARLIER
-            # from wcsaxes import datasets
-            # from astropy.wcs import WCS
-            # wcs = WCS(hdu.header)
-
-            # # PLOT MAP WITH PROJECTION IN HEADER
-            # import matplotlib.pyplot as plt
-            # fig = plt.figure()
-            # ax = fig.add_axes([0.15, 0.1, 0.8, 0.8], projection=wcs)
-            # im = ax.imshow(coveredPixelGrid,
-            # cmap="YlOrRd", origin='lower', alpha=0.7, zorder=1)
-
-            coveredHealPixels = np.array(coveredPixels) * healpixIds
-            coveredProbabilities = np.array(coveredPixels) * probs
-
-            for cx, cp in zip(coveredHealPixels, coveredProbabilities):
-                if cx != 0:
-                    healpixDictionary[cx] = cp
-
-            cumArea = len(healpixDictionary) * hpixArea
-            cumProb = sum(healpixDictionary.values())
-
-            finalMJDs.append(pmjd)
-            finalAreas.append(cumArea)
-            finalProbs.append(cumProb)
-
-            print "%(pti)s/%(totalPointings)s.  MJD: %(pmjd)s. RA: %(pra)s. DEC: %(pdec)s.  AREA: %(cumArea)0.2f. PROB: %(cumProb)0.5f. SURVEY: %(psurvey)s" % locals()
-
-        gwid = self.gwid
-        import codecs
-        from datetime import datetime, date, time
-        now = datetime.now()
-        now = now.strftime("%Y%m%dt%H%M%S")
-        pathToWriteFile = "/Users/Dave/Desktop/%(now)s_%(gwid)s_%(mapName)s.csv" % locals(
-        )
-        writeFile = codecs.open(pathToWriteFile, encoding='utf-8', mode='w')
-        writeFile.write(
-            "MJD,Cummulative Area (degrees),Cummulative Probability Covered\n" % locals())
-        for m, a, p in zip(finalMJDs, finalAreas, finalProbs):
-            writeFile.write("%(m)0.3f,%(a)0.2f,%(p)0.5f\n" % locals())
-        writeFile.close()
+        print "AREA: %(cumArea)0.2f. PROB: %(cumProb)0.5f" % locals()
 
         self.log.info('completed the ``get`` method')
         return None

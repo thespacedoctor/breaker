@@ -30,7 +30,7 @@ log, dbConn, pathToInputDir, pathToOutputDir = utKit.setupModule()
 utKit.tearDownModule()
 
 
-class test_plot_wave_observational_timelines():
+class test_plot_wave_observational_timelines(unittest.TestCase):
 
     # def test_plot_wave_observational_timelines_function(self):
 

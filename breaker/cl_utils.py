@@ -13,7 +13,7 @@ Usage:
     breaker init
     breaker update [-n] [-s <pathToSettingsFile>]
     breaker skymap <gwid> <pathToLVMap>
-    breaker plot [-a] (timeline|history|sources) [-w <gwid>] [-t <telescope>] [-s <pathToSettingsFile>]
+    breaker plot [-a] (timeline|history|sources) [-w <gwid>] [-t <telescope>] [-p <projection>] [-s <pathToSettingsFile>]
     breaker plot comparison <gwid> <pathToMapDirectory> [-s <pathToSettingsFile>]
     breaker faker <ps1ExpId> [-s <pathToSettingsFile>]
     breaker stats <gwid> [<telescope>] [-s <pathToSettingsFile>]
@@ -37,7 +37,7 @@ Usage:
     ARGUMENTS
     ---------
     far                   false alarm rate limit in Hz (1e-7 Hz ~= 3.2 per year)
-    gwid                  the gravitational wave ID
+    -w <gwid>             the gravitational wave ID
     pathToSettingsFile    path to the yaml settings file
     pathToMapDirectory    path to a directory containing localisation maps
     ps1ExpId              a panstarrs exposure ID
@@ -46,7 +46,8 @@ Usage:
     inLastNMins           in the last N number of minutes
     pathToLVMap           path to the LV likelihood map
     sec                   time in seconds
-    telescope             select an individual telescope (default is all telescopes) [ps1|atlas]
+    -t <telescope>        select an individual telescope (default is all telescopes) [ps1|atlas]
+    -p <projection>       skymap projection. Default *mercator*. [mercator|gnomonic|mollweide]
 
     FLAGS
     -----
@@ -54,7 +55,6 @@ Usage:
     -s, --settings        the settings file
     -n, --updateNed       update the NED database steam
     -d, --daemon          listen in daemon mode
-    -w, --waveId          a gravitational wave ID
     -a, --all             plot all timeline plot (including the CPU intensive -21-0 days and all transients/footprints plots)
 
 """
@@ -146,13 +146,18 @@ def main(arguments=None):
         )
         p.get()
     if plot and timeline:
+
+        if not pFlag:
+            pFlag = "mercator"
+
         p = plot_wave_observational_timelines(
             log=log,
             settings=settings,
-            gwid=gwid,
+            gwid=wFlag,
             plotType="timeline",
             allPlots=allFlag,
-            telescope=telescope
+            telescope=tFlag,
+            projection=pFlag
         )
         p.get()
     if plot and sources:
@@ -258,7 +263,7 @@ def main(arguments=None):
             pathToProbMap=pathToLVMap,
             fileFormats=["pdf", "png"],
             outputDirectory=".",
-            projection="molleweide",
+            projection="mercator",
             plotType="timeline",
             fitsImage=True,
             allSky=True

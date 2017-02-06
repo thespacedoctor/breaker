@@ -61,7 +61,7 @@ class plot_wave_observational_timelines():
         - ``settings`` -- the settings dictionary
         - ``plotType`` -- history (looking back from now) or timeline (looking forward from date of GW detection)
         - ``gwid`` -- a given graviational wave ID. If given only maps for this wave shall be plotted. Default *False* (i.e. plot all waves)
-        - ``projection`` -- projection for the plot. Default *mercator*
+        - ``projection`` -- projection for the plot. Default *mercator* [mercator|gnomonic|mollweide]
         - ``probabilityCut`` -- remove footprints where probability assigned to the healpix pixel found at the center of the exposure is ~0.0. Default *False*
         - ``databaseConnRequired`` -- are the database connections going to be required? Default *True*
         - ``allPlots`` -- plot all timeline plot (including the CPU intensive -21-0 days and all transients/footprints plots). Default *False*
@@ -616,7 +616,7 @@ class plot_wave_observational_timelines():
 
         projectionDict = {
             "mollweide": "MOL",
-            "gnomonic": "mercator",
+            "gnomonic": "MER",
             "mercator": "MER"
         }
 
@@ -723,7 +723,7 @@ class plot_wave_observational_timelines():
 
             plt.grid(True)
 
-        elif projection in ["mercator", "gnomonic"]:
+        elif projection in ["mercator"]:
 
             if allSky:
                 raRange = 360.
@@ -890,6 +890,155 @@ class plot_wave_observational_timelines():
             # lon.set_ticks(number=20)
             # lat.set_ticks(number=3)
 
+        elif projection == "gnomonic":
+            # UNPACK THE PLOT PARAMETERS
+            raRange = plotParameters["raRange"]
+            decRange = plotParameters["decRange"]
+
+            raMax = centralCoordinate[0] + raRange / 2.
+            raMin = centralCoordinate[0] - raRange / 2.
+            decMax = centralCoordinate[1] + decRange / 2.
+            decMin = centralCoordinate[1] - decRange / 2.
+
+            # DETERMINE THE PIXEL GRID X,Y RANGES
+            xRange = int(raRange / pixelSizeDeg)
+            yRange = int(decRange / pixelSizeDeg)
+            largest = max(xRange, yRange)
+            # xRange = largest
+            # yRange = largest
+
+            # SET THE REFERENCE PIXEL TO THE CENTRE PIXEL
+            w.wcs.crpix = [xRange / 2., yRange / 2.]
+
+            # USE THE "GNOMONIC" PROJECTION ("COORDINATESYS---PROJECTION")
+            w.wcs.ctype = ["RA---TAN", "DEC--TAN"]
+
+            # CREATE A PIXEL GRID - 2 ARRAYS OF X, Y
+            columns = []
+            px = np.tile(np.arange(0, xRange), yRange)
+            py = np.repeat(np.arange(0, yRange), xRange)
+
+            # CONVERT THE PIXELS TO WORLD COORDINATES
+            wr, wd = w.wcs_pix2world(px, py, 1)
+
+            # MAKE SURE RA IS +VE
+            nr = []
+            nr[:] = [r if r > 0 else r + 360. for r in wr]
+            wr = np.array(nr)
+
+            # THETA: IS THE POLAR ANGLE, RANGING FROM 0 AT THE NORTH POLE TO PI AT THE SOUTH POLE.
+            # PHI: THE AZIMUTHAL ANGLE ON THE SPHERE FROM 0 TO 2PI
+            # CONVERT DEC TO THE REQUIRED HEALPIX FORMAT
+            nd = -wd + 90.
+
+            # CONVERT WORLD TO HEALPIX INDICES
+            healpixIds = hp.ang2pix(nside, theta=nd * DEG_TO_RAD_FACTOR,
+                                    phi=wr * DEG_TO_RAD_FACTOR)
+
+            # NOW READ THE VALUES OF THE MAP AT THESE HEALPIX INDICES
+            uniqueHealpixIds = np.unique(healpixIds)
+            probs = []
+            probs[:] = [aMap[i] for i in healpixIds]
+
+            uniProb = []
+            uniProb[:] = [aMap[i] for i in uniqueHealpixIds]
+
+            stampProb = np.sum(uniProb)
+            print "Probability for the plot stamp is %(stampProb)s" % locals()
+
+            # RESHAPE THE ARRAY AS BITMAP
+            probs = np.reshape(np.array(probs), (yRange, xRange))
+
+            # CREATE THE FITS HEADER WITH WCS
+            header = w.to_header()
+            # CREATE THE FITS FILE
+            hdu = fits.PrimaryHDU(header=header, data=probs)
+
+            # GRAB THE WCS FROM HEADER GENERATED EARLIER
+            from wcsaxes import datasets, WCS
+            from astropy.wcs import WCS
+            from wcsaxes import WCSAxes
+
+            wcs = WCS(hdu.header)
+            # USE WCS AS THE PROJECTION
+            ax = WCSAxes(fig, [0.15, 0.1, 0.8, 0.8], wcs=wcs)
+            # note that the axes have to be explicitly added to the figure
+            ax = fig.add_axes(ax)
+
+            # PLOT MAP WITH PROJECTION IN HEADER
+            im = ax.imshow(probs,
+                           cmap=cmap, origin='lower', alpha=0.7, zorder=1, vmin=vmin, vmax=vmax, aspect='auto')
+
+            # CONTOURS - NEED TO ADD THE CUMMULATIVE PROBABILITY
+            i = np.flipud(np.argsort(aMap))
+            cumsum = np.cumsum(aMap[i])
+            cls = np.empty_like(aMap)
+            cls[i] = cumsum * 100 * stampProb
+
+            # EXTRACT CONTOUR VALUES AT HEALPIX INDICES
+            contours = []
+            contours[:] = [cls[i] for i in healpixIds]
+            contours = np.reshape(np.array(contours), (yRange, xRange))
+
+            # PLOT THE CONTOURS ON THE SAME PLOT
+            CS = plt.contour(contours, linewidths=1,
+                             alpha=0.3, zorder=3)
+            plt.clabel(CS, fontsize=12, inline=1,
+                       fmt='%2.1f', fontproperties=font)
+
+            # RESET THE AXES TO THE FRAME OF THE FITS FILE
+            ax.set_xlim(-0.5, hdu.data.shape[1] - 0.5)
+            ax.set_ylim(-0.5, hdu.data.shape[0] - 0.5)
+
+            # THE COORDINATES USED IN THE PLOT CAN BE ACCESSED USING THE COORDS
+            # ATTRIBUTE (NOT X AND Y)
+            lon = ax.coords[0]
+            lat = ax.coords[1]
+
+            lon.set_axislabel('RA (deg)', minpad=0.87,
+                              size=20)
+            lat.set_axislabel('DEC (deg)', minpad=0.87,
+                              size=20)
+            lon.set_major_formatter('d')
+            lat.set_major_formatter('d')
+
+            # THE SEPARATORS FOR ANGULAR COORDINATE TICK LABELS CAN ALSO BE SET BY
+            # SPECIFYING A STRING
+            lat.set_separator(':-s')
+            # SET THE APPROXIMATE NUMBER OF TICKS, WITH COLOR & PREVENT OVERLAPPING
+            # TICK LABELS FROM BEING DISPLAYED.
+            lon.set_ticks(number=4, color='#657b83',
+                          exclude_overlapping=True, size=10)
+            lat.set_ticks(number=10, color='#657b83',
+                          exclude_overlapping=True, size=10)
+
+            # MINOR TICKS NOT SHOWN BY DEFAULT
+            lon.display_minor_ticks(True)
+            lat.display_minor_ticks(True)
+            lat.set_minor_frequency(2)
+
+            # CUSTOMISE TICK POSITIONS (l, b, r, t == left, bottom, right, or
+            # top)
+            lon.set_ticks_position('bt')
+            lon.set_ticklabel_position('b')
+            lon.set_ticklabel(size=20)
+            lat.set_ticklabel(size=20)
+            lon.set_axislabel_position('b')
+            lat.set_ticks_position('lr')
+            lat.set_ticklabel_position('l')
+            lat.set_axislabel_position('l')
+
+            # HIDE AXES
+            # lon.set_ticklabel_position('')
+            # lat.set_ticklabel_position('')
+            # lon.set_axislabel('', minpad=0.5, fontsize=12)
+            # lat.set_axislabel('', minpad=0.5, fontsize=12)
+
+            # ADD A GRID
+            ax.coords.grid(color='#657b83', alpha=0.5, linestyle='dashed')
+            plt.gca().invert_xaxis()
+            lon.set_ticks(number=20)
+
         else:
             self.log.error(
                 'please give a valid projection. The projection given was `%(projection)s`.' % locals())
@@ -967,7 +1116,7 @@ class plot_wave_observational_timelines():
             width = height / math.cos(decDeg * DEG_TO_RAD_FACTOR)
 
             # MULTIPLE CIRCLES
-            if projection in ["mercator"]:
+            if projection in ["mercator", "gnomonic"]:
                 circ = Ellipse(
                     (raDeg, decDeg), width=width, height=height, alpha=0.2, color='#859900', fill=True, transform=ax.get_transform('fk5'), zorder=3)
             else:
@@ -985,7 +1134,7 @@ class plot_wave_observational_timelines():
             height = 3.5
 
             width = height / math.cos(decDeg * DEG_TO_RAD_FACTOR)
-            if projection in ["mercator"]:
+            if projection in ["mercator", "gnomonic"]:
                 circ = Ellipse(
                     (raDeg, decDeg), width=width, height=height, alpha=0.2, color='#859900', fill=True, transform=ax.get_transform('fk5'), zorder=3)
                 ax.text(
@@ -1044,7 +1193,7 @@ class plot_wave_observational_timelines():
             if decDeg < 0:
                 deltaDeg = -deltaDeg
 
-            if projection in ["mercator"]:
+            if projection in ["mercator", "gnomonic"]:
                 widthDegTop = atlasPointingSide / \
                     math.cos((decDeg + deltaDeg) * DEG_TO_RAD_FACTOR)
                 widthDegBottom = atlasPointingSide / \
@@ -1104,7 +1253,7 @@ class plot_wave_observational_timelines():
 
         # LEGEND FOR ATLAS
         if len(atlasPointings) and 1 == -1:
-            if projection in ["mercator"]:
+            if projection in ["mercator", "gnomonic"]:
                 raDeg = 88.
                 decDeg = 4.
                 atlasPointingSide = 4.5
@@ -1213,7 +1362,7 @@ class plot_wave_observational_timelines():
 
         if len(ra) > 0:
             # MULTIPLE CIRCLES
-            if projection in ["mercator"]:
+            if projection in ["mercator", "gnomonic"]:
                 ax.scatter(
                     x=np.array(ra),
                     y=np.array(dec),
@@ -1298,7 +1447,7 @@ class plot_wave_observational_timelines():
 
         if len(ra) > 0:
             # MULTIPLE CIRCLES
-            if projection in ["mercator"]:
+            if projection in ["mercator", "gnomonic"]:
                 ax.scatter(
                     x=np.array(ra),
                     y=np.array(dec),
@@ -1364,7 +1513,7 @@ class plot_wave_observational_timelines():
         fig = plt.gcf()
         fWidth, fHeight = fig.get_size_inches()
 
-        if projection == "mercator":
+        if projection in ["mercator", "gnomonic"]:
             fig.set_size_inches(8.0, 8.0)
             plt.text(
                 xRange * (0.25 + len(timeRangeLabel) / 150.),
@@ -1575,13 +1724,9 @@ class plot_wave_observational_timelines():
                                "Between 3-10 Days", "Between 10-17 Days", "Between 17-24 Days", "Between 24-31 Days", "> 31 Days"]
             timeLimitDays = [(0, 3), (3, 10), (10, 17),
                              (17, 24), (24, 31), (31, 0)]
-        # timeLimitLabels = ["in First 3 Days"]
-        # timeLimitDays = [(0, 3)]
+
         raLimits = [134.25, 144.75, 152.25, 159.50, 167.0, 174.5]
         raLimits = [False, False, False, False, False, False, False, False]
-
-        # timeLimitLabels = ["in First 3 Days"]
-        # timeLimitDays = [(2, 5)]
 
         if self.gwid:
             theseIds = [self.gwid]
@@ -1595,27 +1740,6 @@ class plot_wave_observational_timelines():
                     gwid=gwid,
                     inPastDays=False,
                     inFirstDays=tday)
-
-                # ps1Transients, ps1Pointings, atlasPointings, atlasTransients = [], [], [], []
-
-                # testPoints = [
-                #     (175.0, 76.0),
-                #     (165.0, 73.0),
-                #     (155.0, 70.0),
-                #     (147.0, 65.0),
-                #     (140.0, 59.0),
-                #     (133.0, 51.0)
-
-                # ]
-
-                # for p in testPoints:
-                #     ps1Transients.append(
-                #         {'local_designation': None,
-                #          'ps1_designation': str(p[0]) + ", " + str(p[1]),
-                #          'ra_psf': p[0],
-                #          'dec_psf': p[1]
-                #          }
-                #     )
 
                 pathToProbMap = self.settings[
                     "gravitational waves"][gwid]["mapPath"]
@@ -1994,9 +2118,6 @@ class plot_wave_observational_timelines():
 
         self.log.info('completed the ``generate_fits_image_map`` method')
         return None
-
-    # use the tab-trigger below for new method
-    # xt-class-method
 
 
 def y2lat(
