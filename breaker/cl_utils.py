@@ -39,6 +39,7 @@ Usage:
     far                   false alarm rate limit in Hz (1e-7 Hz ~= 3.2 per year)
     -w <gwid>             the gravitational wave ID
     pathToSettingsFile    path to the yaml settings file
+    -c <centerDeg>        the central longitude line (deg)
     pathToMapDirectory    path to a directory containing localisation maps
     ps1ExpId              a panstarrs exposure ID
     mjdStart              start of an MJD range
@@ -236,6 +237,11 @@ def main(arguments=None):
             databaseConnRequired=False
         )
 
+        if not cFlag:
+            cFlag = 0.
+        else:
+            cFlag = float(cFlag)
+
         plotter.generate_probability_plot(
             gwid=gwid,
             pathToProbMap=pathToLVMap,
@@ -244,7 +250,8 @@ def main(arguments=None):
             projection="mollweide",
             plotType="timeline",
             fitsImage=False,
-            allSky=True
+            allSky=True,
+            center=cFlag
         )
 
         plotter.generate_probability_plot(
@@ -255,7 +262,8 @@ def main(arguments=None):
             projection="mercator",
             plotType="timeline",
             fitsImage=True,
-            allSky=True
+            allSky=True,
+            center=cFlag
         )
 
     if "dbConn" in locals() and dbConn:
