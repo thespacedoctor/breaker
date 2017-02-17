@@ -1,5 +1,6 @@
 import os
 import nose
+import unittest
 import shutil
 import yaml
 from breaker import cl_utils

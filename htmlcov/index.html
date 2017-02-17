@@ -1,0 +1,347 @@
+
+
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>Coverage report</title>
+    <link rel="stylesheet" href="style.css" type="text/css">
+    
+    <script type="text/javascript" src="jquery.min.js"></script>
+    <script type="text/javascript" src="jquery.ba-throttle-debounce.min.js"></script>
+    <script type="text/javascript" src="jquery.tablesorter.min.js"></script>
+    <script type="text/javascript" src="jquery.hotkeys.js"></script>
+    <script type="text/javascript" src="coverage_html.js"></script>
+    <script type="text/javascript">
+        jQuery(document).ready(coverage.index_ready);
+    </script>
+</head>
+<body class="indexfile">
+
+<div id="header">
+    <div class="content">
+        <h1>Coverage report:
+            <span class="pc_cov">14%</span>
+        </h1>
+
+        <img id="keyboard_icon" src="keybd_closed.png" alt="Show keyboard shortcuts" />
+
+        <form id="filter_container">
+            <input id="filter" type="text" value="" placeholder="filter..." />
+        </form>
+    </div>
+</div>
+
+<div class="help_panel">
+    <img id="panel_icon" src="keybd_open.png" alt="Hide keyboard shortcuts" />
+    <p class="legend">Hot-keys on this page</p>
+    <div>
+    <p class="keyhelp">
+        <span class="key">n</span>
+        <span class="key">s</span>
+        <span class="key">m</span>
+        <span class="key">x</span>
+        
+        <span class="key">c</span> &nbsp; change column sorting
+    </p>
+    </div>
+</div>
+
+<div id="index">
+    <table class="index">
+        <thead>
+            
+            <tr class="tablehead" title="Click to sort">
+                <th class="name left headerSortDown shortkey_n">Module</th>
+                <th class="shortkey_s">statements</th>
+                <th class="shortkey_m">missing</th>
+                <th class="shortkey_x">excluded</th>
+                
+                <th class="right shortkey_c">coverage</th>
+            </tr>
+        </thead>
+        
+        <tfoot>
+            <tr class="total">
+                <td class="name left">Total</td>
+                <td>2500</td>
+                <td>2152</td>
+                <td>0</td>
+                
+                <td class="right" data-ratio="348 2500">14%</td>
+            </tr>
+        </tfoot>
+        <tbody>
+            
+            <tr class="file">
+                <td class="name left"><a href="breaker___init___py.html">breaker/__init__.py</a></td>
+                <td>8</td>
+                <td>0</td>
+                <td>0</td>
+                
+                <td class="right" data-ratio="8 8">100%</td>
+            </tr>
+            
+            <tr class="file">
+                <td class="name left"><a href="breaker___version___py.html">breaker/__version__.py</a></td>
+                <td>1</td>
+                <td>1</td>
+                <td>0</td>
+                
+                <td class="right" data-ratio="0 1">0%</td>
+            </tr>
+            
+            <tr class="file">
+                <td class="name left"><a href="breaker__database_py.html">breaker/_database.py</a></td>
+                <td>126</td>
+                <td>108</td>
+                <td>0</td>
+                
+                <td class="right" data-ratio="18 126">14%</td>
+            </tr>
+            
+            <tr class="file">
+                <td class="name left"><a href="breaker_cl_utils_py.html">breaker/cl_utils.py</a></td>
+                <td>97</td>
+                <td>77</td>
+                <td>0</td>
+                
+                <td class="right" data-ratio="20 97">21%</td>
+            </tr>
+            
+            <tr class="file">
+                <td class="name left"><a href="breaker_commonutils___init___py.html">breaker/commonutils/__init__.py</a></td>
+                <td>0</td>
+                <td>0</td>
+                <td>0</td>
+                
+                <td class="right" data-ratio="0 0">100%</td>
+            </tr>
+            
+            <tr class="file">
+                <td class="name left"><a href="breaker_commonutils_getpackagepath_py.html">breaker/commonutils/getpackagepath.py</a></td>
+                <td>6</td>
+                <td>6</td>
+                <td>0</td>
+                
+                <td class="right" data-ratio="0 6">0%</td>
+            </tr>
+            
+            <tr class="file">
+                <td class="name left"><a href="breaker_fakers___init___py.html">breaker/fakers/__init__.py</a></td>
+                <td>1</td>
+                <td>0</td>
+                <td>0</td>
+                
+                <td class="right" data-ratio="1 1">100%</td>
+            </tr>
+            
+            <tr class="file">
+                <td class="name left"><a href="breaker_fakers_generate_faker_catalogue_py.html">breaker/fakers/generate_faker_catalogue.py</a></td>
+                <td>163</td>
+                <td>147</td>
+                <td>0</td>
+                
+                <td class="right" data-ratio="16 163">10%</td>
+            </tr>
+            
+            <tr class="file">
+                <td class="name left"><a href="breaker_fakers_tests_test_generate_faker_catalogue_py.html">breaker/fakers/tests/test_generate_faker_catalogue.py</a></td>
+                <td>26</td>
+                <td>8</td>
+                <td>0</td>
+                
+                <td class="right" data-ratio="18 26">69%</td>
+            </tr>
+            
+            <tr class="file">
+                <td class="name left"><a href="breaker_gracedb___init___py.html">breaker/gracedb/__init__.py</a></td>
+                <td>1</td>
+                <td>0</td>
+                <td>0</td>
+                
+                <td class="right" data-ratio="1 1">100%</td>
+            </tr>
+            
+            <tr class="file">
+                <td class="name left"><a href="breaker_gracedb_listen_py.html">breaker/gracedb/listen.py</a></td>
+                <td>230</td>
+                <td>208</td>
+                <td>0</td>
+                
+                <td class="right" data-ratio="22 230">10%</td>
+            </tr>
+            
+            <tr class="file">
+                <td class="name left"><a href="breaker_gracedb_tests___init___py.html">breaker/gracedb/tests/__init__.py</a></td>
+                <td>0</td>
+                <td>0</td>
+                <td>0</td>
+                
+                <td class="right" data-ratio="0 0">100%</td>
+            </tr>
+            
+            <tr class="file">
+                <td class="name left"><a href="breaker_gracedb_tests_test_listen_py.html">breaker/gracedb/tests/test_listen.py</a></td>
+                <td>20</td>
+                <td>4</td>
+                <td>0</td>
+                
+                <td class="right" data-ratio="16 20">80%</td>
+            </tr>
+            
+            <tr class="file">
+                <td class="name left"><a href="breaker_plots___init___py.html">breaker/plots/__init__.py</a></td>
+                <td>3</td>
+                <td>0</td>
+                <td>0</td>
+                
+                <td class="right" data-ratio="3 3">100%</td>
+            </tr>
+            
+            <tr class="file">
+                <td class="name left"><a href="breaker_plots_plot_multi_panel_alternate_map_comparison_py.html">breaker/plots/plot_multi_panel_alternate_map_comparison.py</a></td>
+                <td>183</td>
+                <td>160</td>
+                <td>0</td>
+                
+                <td class="right" data-ratio="23 183">13%</td>
+            </tr>
+            
+            <tr class="file">
+                <td class="name left"><a href="breaker_plots_plot_wave_matched_source_maps_py.html">breaker/plots/plot_wave_matched_source_maps.py</a></td>
+                <td>311</td>
+                <td>282</td>
+                <td>0</td>
+                
+                <td class="right" data-ratio="29 311">9%</td>
+            </tr>
+            
+            <tr class="file">
+                <td class="name left"><a href="breaker_plots_plot_wave_observational_timelines_py.html">breaker/plots/plot_wave_observational_timelines.py</a></td>
+                <td>808</td>
+                <td>768</td>
+                <td>0</td>
+                
+                <td class="right" data-ratio="40 808">5%</td>
+            </tr>
+            
+            <tr class="file">
+                <td class="name left"><a href="breaker_plots_tests___init___py.html">breaker/plots/tests/__init__.py</a></td>
+                <td>0</td>
+                <td>0</td>
+                <td>0</td>
+                
+                <td class="right" data-ratio="0 0">100%</td>
+            </tr>
+            
+            <tr class="file">
+                <td class="name left"><a href="breaker_plots_tests_test_plot_multi_panel_alternate_map_comparison_py.html">breaker/plots/tests/test_plot_multi_panel_alternate_map_comparison.py</a></td>
+                <td>20</td>
+                <td>3</td>
+                <td>0</td>
+                
+                <td class="right" data-ratio="17 20">85%</td>
+            </tr>
+            
+            <tr class="file">
+                <td class="name left"><a href="breaker_plots_tests_test_plot_wave_observational_timelines_py.html">breaker/plots/tests/test_plot_wave_observational_timelines.py</a></td>
+                <td>21</td>
+                <td>3</td>
+                <td>0</td>
+                
+                <td class="right" data-ratio="18 21">86%</td>
+            </tr>
+            
+            <tr class="file">
+                <td class="name left"><a href="breaker_stats___init___py.html">breaker/stats/__init__.py</a></td>
+                <td>1</td>
+                <td>0</td>
+                <td>0</td>
+                
+                <td class="right" data-ratio="1 1">100%</td>
+            </tr>
+            
+            <tr class="file">
+                <td class="name left"><a href="breaker_stats_survey_footprint_py.html">breaker/stats/survey_footprint.py</a></td>
+                <td>161</td>
+                <td>135</td>
+                <td>0</td>
+                
+                <td class="right" data-ratio="26 161">16%</td>
+            </tr>
+            
+            <tr class="file">
+                <td class="name left"><a href="breaker_stats_tests_test_survey_footprint_py.html">breaker/stats/tests/test_survey_footprint.py</a></td>
+                <td>22</td>
+                <td>4</td>
+                <td>0</td>
+                
+                <td class="right" data-ratio="18 22">82%</td>
+            </tr>
+            
+            <tr class="file">
+                <td class="name left"><a href="breaker_tests___init___py.html">breaker/tests/__init__.py</a></td>
+                <td>0</td>
+                <td>0</td>
+                <td>0</td>
+                
+                <td class="right" data-ratio="0 0">100%</td>
+            </tr>
+            
+            <tr class="file">
+                <td class="name left"><a href="breaker_tests_test_update_ps1_atlas_footprint_tables_py.html">breaker/tests/test_update_ps1_atlas_footprint_tables.py</a></td>
+                <td>21</td>
+                <td>4</td>
+                <td>0</td>
+                
+                <td class="right" data-ratio="17 21">81%</td>
+            </tr>
+            
+            <tr class="file">
+                <td class="name left"><a href="breaker_update_ps1_atlas_footprint_tables_py.html">breaker/update_ps1_atlas_footprint_tables.py</a></td>
+                <td>244</td>
+                <td>217</td>
+                <td>0</td>
+                
+                <td class="right" data-ratio="27 244">11%</td>
+            </tr>
+            
+            <tr class="file">
+                <td class="name left"><a href="breaker_utKit_py.html">breaker/utKit.py</a></td>
+                <td>9</td>
+                <td>0</td>
+                <td>0</td>
+                
+                <td class="right" data-ratio="9 9">100%</td>
+            </tr>
+            
+            <tr class="file">
+                <td class="name left"><a href="setup_py.html">setup.py</a></td>
+                <td>17</td>
+                <td>17</td>
+                <td>0</td>
+                
+                <td class="right" data-ratio="0 17">0%</td>
+            </tr>
+            
+        </tbody>
+    </table>
+
+    <p id="no_rows">
+        No items found using the specified filter.
+    </p>
+</div>
+
+<div id="footer">
+    <div class="content">
+        <p>
+            <a class="nav" href="https://coverage.readthedocs.io">coverage.py v4.3.4</a>,
+            created at 2017-02-17 21:20
+        </p>
+    </div>
+</div>
+
+</body>
+</html>
