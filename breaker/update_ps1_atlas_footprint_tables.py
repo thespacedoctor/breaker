@@ -53,6 +53,7 @@ class update_ps1_atlas_footprint_tables():
         - ``log`` -- logger
         - ``settings`` -- the settings dictionary
         - ``updateNed`` -- do you want to update NED stream in database (can take a LONG time). Default *False*
+        - ``updateAll`` -- update the PS1 database up to 21 days prior to the wave detecion. Default *False*
 
     **Usage:**
 
@@ -71,12 +72,14 @@ class update_ps1_atlas_footprint_tables():
             self,
             log,
             settings=False,
-            updateNed=False
+            updateNed=False,
+            updateAll=False
     ):
         self.log = log
         log.debug("instansiating a new 'update_ps1_atlas_footprint_tables' object")
         self.settings = settings
         self.updateNed = updateNed
+        self.updateAll = updateAll
 
         # xt-self-arg-tmpx
 
@@ -111,7 +114,7 @@ class update_ps1_atlas_footprint_tables():
 
         self.import_new_ps1_pointings()
         self.import_new_atlas_pointings()
-        self.parse_panstarrs_nightlogs()
+        self.parse_panstarrs_nightlogs(updateAll=updateAll)
         self.label_pointings_with_gw_ids()
         self.populate_ps1_subdisk_table()
         if self.updateNed:
@@ -302,10 +305,10 @@ class update_ps1_atlas_footprint_tables():
             # UNPACK THE PLOT PARAMETERS FROM THE SETTINGS FILE
             centralCoordinate = self.settings["gravitational waves"][
                 wave]["plot"]["centralCoordinate"]
-            raRange = self.settings["gravitational waves"][
-                wave]["plot"]["raRange"]
-            decRange = self.settings["gravitational waves"][
-                wave]["plot"]["decRange"]
+            raRange = float(self.settings["gravitational waves"][
+                wave]["plot"]["raRange"])
+            decRange = float(self.settings["gravitational waves"][
+                wave]["plot"]["decRange"])
 
             raMax = (centralCoordinate[0] + raRange / 2.) + 5.
             raMin = (centralCoordinate[0] - raRange / 2.) - 5.
