@@ -1,6 +1,10 @@
 breaker
 =======
 
+[![Documentation Status](https://readthedocs.org/projects/breaker/badge/)](http://breaker.readthedocs.io/en/latest/?badge)
+
+[![Coverage Status](https://cdn.rawgit.com/thespacedoctor/breaker/master/coverage.svg)](https://cdn.rawgit.com/thespacedoctor/breaker/master/htmlcov/index.html)
+
 *A python package and command-line tools for the PanSTARRS & ATLAS
 LIGO-VIRGO (PSAT) group to aid surveys of the likely sky-locations of
 LIGO-VIRGO discovered Gravitational Waves*.
@@ -22,12 +26,12 @@ Command-Line Usage
         breaker init
         breaker update [-n] [-s <pathToSettingsFile>]
         breaker skymap <gwid> <pathToLVMap>
-        breaker plot (timeline|history|sources) [-w <gwid>] [-s <pathToSettingsFile>]
+        breaker plot [-a] (timeline|history|sources) [-w <gwid>] [-t <telescope>] [-p <projection>] [-s <pathToSettingsFile>]
         breaker plot comparison <gwid> <pathToMapDirectory> [-s <pathToSettingsFile>]
         breaker faker <ps1ExpId> [-s <pathToSettingsFile>]
-        breaker stats <gwid> [-s <pathToSettingsFile>]
+        breaker stats <gwid> [<telescope>] [-s <pathToSettingsFile>]
         breaker listen <far> (<mjdStart> <mjdEnd> | <inLastNMins>) [-s <pathToSettingsFile>]
-        breaker listen -d <far> [-s <pathToSettingsFile>]
+        breaker listen -d <far> [<sec>] [-s <pathToSettingsFile>]
 
         COMMANDS
         --------
@@ -46,7 +50,7 @@ Command-Line Usage
         ARGUMENTS
         ---------
         far                   false alarm rate limit in Hz (1e-7 Hz ~= 3.2 per year)
-        gwid                  the gravitational wave ID
+        -w <gwid>             the gravitational wave ID
         pathToSettingsFile    path to the yaml settings file
         pathToMapDirectory    path to a directory containing localisation maps
         ps1ExpId              a panstarrs exposure ID
@@ -54,6 +58,9 @@ Command-Line Usage
         mjdEnd                end of the MJD range
         inLastNMins           in the last N number of minutes
         pathToLVMap           path to the LV likelihood map
+        sec                   time in seconds
+        -t <telescope>        select an individual telescope (default is all telescopes) [ps1|atlas]
+        -p <projection>       skymap projection. Default *mercator*. [mercator|gnomonic|mollweide]
 
         FLAGS
         -----
@@ -61,7 +68,7 @@ Command-Line Usage
         -s, --settings        the settings file
         -n, --updateNed       update the NED database steam
         -d, --daemon          listen in daemon mode
-        -w, --waveId          a gravitational wave ID
+        -a, --all             plot all timeline plot (including the CPU intensive -21-0 days and all transients/footprints plots)
 
 Documentation
 -------------
@@ -74,7 +81,7 @@ version](http://breaker.readthedocs.org/en/latest/)).
 Installation
 ------------
 
-The easiest way to install breaker us to use `pip`:
+The easiest way to install breaker is to use `pip`:
 
     pip install breaker
 
