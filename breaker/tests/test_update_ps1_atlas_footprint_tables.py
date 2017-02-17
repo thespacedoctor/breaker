@@ -1,6 +1,7 @@
 import os
 import nose
 import shutil
+import unittest
 import yaml
 from breaker import update_ps1_atlas_footprint_tables, cl_utils
 from breaker.utKit import utKit
