@@ -146,7 +146,6 @@ def main(arguments=None):
         )
         p.get()
     if plot and timeline:
-
         if not pFlag:
             pFlag = "mercator"
 
@@ -235,17 +234,6 @@ def main(arguments=None):
             settings=settings,
             databaseConnRequired=False
         )
-
-        # plotter.generate_probability_plot(
-        #     gwid=gwid,
-        #     pathToProbMap=pathToLVMap,
-        #     fileFormats=["pdf", "png"],
-        #     outputDirectory=".",
-        #     projection="mercator",
-        #     plotType="timeline",
-        #     fitsImage=False,
-        #     allSky=True
-        # )
 
         plotter.generate_probability_plot(
             gwid=gwid,
