@@ -15,6 +15,7 @@ breaker.plots.plot_wave_observational_timelines (*class*)
    
       ~plot_wave_observational_timelines.__init__
       ~plot_wave_observational_timelines.generate_fits_image_map
+      ~plot_wave_observational_timelines.generate_fits_image_map_old
       ~plot_wave_observational_timelines.generate_probability_plot
       ~plot_wave_observational_timelines.get
       ~plot_wave_observational_timelines.get_gw_parameters_from_settings
