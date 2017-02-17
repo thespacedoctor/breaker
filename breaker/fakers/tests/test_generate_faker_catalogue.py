@@ -2,6 +2,7 @@ import os
 import nose
 import shutil
 import yaml
+import unittest
 from breaker import cl_utils
 from breaker.fakers import generate_faker_catalogue
 from breaker.utKit import utKit

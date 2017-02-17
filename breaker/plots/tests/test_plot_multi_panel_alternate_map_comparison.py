@@ -1,6 +1,7 @@
 import os
 import nose
 import shutil
+import unittest
 import yaml
 from breaker.plots import plot_multi_panel_alternate_map_comparison
 from breaker.utKit import utKit
