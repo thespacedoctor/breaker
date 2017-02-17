@@ -286,6 +286,13 @@ class plot_wave_observational_timelines():
             ps1Transients = []
             ps1Pointings = []
 
+        keep = []
+        for a in atlasTransients:
+            if a["atlas_designation"] == "ATLAS17aeu":
+                keep.append(a)
+        atlasTransients = keep
+        ps1Transients = []
+
         return plotParameters, ps1Transients, ps1Pointings, atlasPointings, atlasTransients
 
     def _get_ps1_transient_candidates(
@@ -1509,6 +1516,29 @@ class plot_wave_observational_timelines():
                     zorder=4
                 )
 
+        # # GRB CIRCLES
+        # raDeg = 129.749
+        # decDeg = +27.904
+        # height = 34.255 * 2
+        # width = height / math.cos(decDeg * DEG_TO_RAD_FACTOR)
+        # circ = Ellipse(
+        #     (raDeg, decDeg), width=width, height=height, alpha=0.7, color='black', fill=False, lw=0.7, transform=ax.get_transform('fk5'), zorder=3)
+        # ax.add_patch(circ)
+
+        # # GRB CIRCLES
+        # height = 19.423 * 2
+        # width = height / math.cos(decDeg * DEG_TO_RAD_FACTOR)
+        # circ = Ellipse(
+        #     (raDeg, decDeg), width=width, height=height, alpha=0.7, color='black', linestyle="dashed", lw=0.7, fill=False, transform=ax.get_transform('fk5'), zorder=3)
+        # ax.add_patch(circ)
+
+        # # GRB CIRCLES
+        # height = 36.067 * 2
+        # width = height / math.cos(decDeg * DEG_TO_RAD_FACTOR)
+        # circ = Ellipse(
+        #     (raDeg, decDeg), width=width, height=height, alpha=0.7, color='black', linestyle="dashed", lw=0.7, fill=False, transform=ax.get_transform('fk5'), zorder=3)
+        # ax.add_patch(circ)
+
         # TIME-RANGE LABEL
         fig = plt.gcf()
         fWidth, fHeight = fig.get_size_inches()
@@ -1516,7 +1546,7 @@ class plot_wave_observational_timelines():
         if projection in ["mercator", "gnomonic"]:
             fig.set_size_inches(8.0, 8.0)
             plt.text(
-                xRange * (0.25 + len(timeRangeLabel) / 150.),
+                xRange * (0.15 + len(timeRangeLabel) / 150.),
                 # xRange * 0.95,
                 yRange * 0.93,
                 timeRangeLabel,
@@ -1724,6 +1754,9 @@ class plot_wave_observational_timelines():
                                "Between 3-10 Days", "Between 10-17 Days", "Between 17-24 Days", "Between 24-31 Days", "> 31 Days"]
             timeLimitDays = [(0, 3), (3, 10), (10, 17),
                              (17, 24), (24, 31), (31, 0)]
+
+        timeLimitLabels = ["in First 3 Days"]
+        timeLimitDays = [(0, 3)]
 
         raLimits = [134.25, 144.75, 152.25, 159.50, 167.0, 174.5]
         raLimits = [False, False, False, False, False, False, False, False]
