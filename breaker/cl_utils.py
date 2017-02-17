@@ -11,8 +11,8 @@
 
 Usage:
     breaker init
-    breaker update [-n] [-s <pathToSettingsFile>]
-    breaker skymap <gwid> <pathToLVMap>
+    breaker update [-na] [-s <pathToSettingsFile>]
+    breaker skymap <gwid> <pathToLVMap> [-c <centerDeg>]
     breaker plot [-a] (timeline|history|sources) [-w <gwid>] [-t <telescope>] [-p <projection>] [-s <pathToSettingsFile>]
     breaker plot comparison <gwid> <pathToMapDirectory> [-s <pathToSettingsFile>]
     breaker faker <ps1ExpId> [-s <pathToSettingsFile>]
@@ -135,7 +135,8 @@ def main(arguments=None):
         u = update_ps1_atlas_footprint_tables(
             log=log,
             settings=settings,
-            updateNed=updateNedFlag
+            updateNed=updateNedFlag,
+            updateAll=allFlag
         )
         u.get()
     if plot and history:
