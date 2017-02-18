@@ -314,8 +314,8 @@ class plot_wave_observational_timelines():
 
         # UNPACK THE PLOT PARAMETERS
         centralCoordinate = plotParameters["centralCoordinate"]
-        raRange = plotParameters["raRange"]
-        decRange = plotParameters["decRange"]
+        raRange = float(plotParameters["raRange"])
+        decRange = float(plotParameters["decRange"])
 
         raMax = centralCoordinate[0] + raRange / 2.
         raMin = centralCoordinate[0] - raRange / 2.
