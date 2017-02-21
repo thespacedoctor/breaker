@@ -114,7 +114,7 @@ class update_ps1_atlas_footprint_tables():
 
         self.import_new_ps1_pointings()
         self.import_new_atlas_pointings()
-        self.parse_panstarrs_nightlogs(updateAll=updateAll)
+        self.parse_panstarrs_nightlogs(updateAll=self.updateAll)
         self.label_pointings_with_gw_ids()
         self.populate_ps1_subdisk_table()
         if self.updateNed:

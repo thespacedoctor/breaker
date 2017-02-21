@@ -111,7 +111,7 @@ class listen():
 
         # VARIABLES
         fileorder = ['LALInference_skymap.fits.gz',
-                     'bayestar.fits.gz', 'LIB_skymap.fits.gz', 'skymap.fits.gz', 'skyprobcc_cWB.fits', 'LALInference3d.fits.gz', 'bayestar3d.fits.gz']
+                     'bayestar.fits.gz', 'LIB_skymap.fits.gz', 'skymap.fits.gz', 'skyprobcc_cWB.fits', 'LALInference3d.fits.gz', 'bayestar3d.fits.gz', 'BW_skymap.fit']
         stop = False
 
         # INPUT TIME-VALUES CAN BE SCALAR OR AN ARRAY
