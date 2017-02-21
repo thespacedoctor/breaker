@@ -492,7 +492,8 @@ class plot_wave_observational_timelines():
             probabilityCut=False,
             outputDirectory=False,
             fitsImage=False,
-            allSky=False):
+            allSky=False,
+            center=0.):
         """
         *Generate a single probability map plot for a given gravitational wave and save it to file*
 
@@ -516,6 +517,7 @@ class plot_wave_observational_timelines():
             - ``outputDirectory`` -- can be used to override the output destination in the settings file
             - ``fitsImage`` -- generate a FITS image file of map
             - ``allSky`` -- generate an all-sky map (do not use the ra, dec window in the breaker settings file). Default *False*
+            - ``center`` -- central longitude in degrees. Default *0*. 
 
 
         **Return:**
@@ -605,7 +607,7 @@ class plot_wave_observational_timelines():
         if plotParameters:
             centralCoordinate = plotParameters["centralCoordinate"]
         else:
-            centralCoordinate = [0, 0]
+            centralCoordinate = [center, 0]
 
         # CREATE A NEW WCS OBJECT
         w = awcs.WCS(naxis=2)
@@ -635,7 +637,8 @@ class plot_wave_observational_timelines():
             latitude = np.radians(np.linspace(-90, 90, yRange))
             # RA FROM -180 to +180
             phi = np.linspace(-np.pi, np.pi, xRange)
-            longitude = np.radians(np.linspace(-180, 180, xRange))
+            longitude = np.radians(
+                np.linspace(-180, 180, xRange))
             X, Y = np.meshgrid(longitude, latitude)
 
             # PROJECT THE MAP TO A RECTANGULAR MATRIX xRange X yRange
@@ -1611,7 +1614,8 @@ class plot_wave_observational_timelines():
                 gwid=gwid,
                 pathToProbMap=pathToProbMap,
                 folderName=folderName,
-                outputDirectory=outputDirectory
+                outputDirectory=outputDirectory,
+                center=center
             )
 
         self.log.info('completed the ``generate_probability_plot`` method')
@@ -1779,7 +1783,8 @@ class plot_wave_observational_timelines():
             pathToProbMap,
             folderName="",
             outputDirectory=False,
-            rebin=True):
+            rebin=True,
+            center=0.):
         """*generate fits image map from the LV-skymap (FITS binary table)*
 
         **Key Arguments:**
@@ -1788,6 +1793,7 @@ class plot_wave_observational_timelines():
             - ``gwid`` -- the unique ID of the gravitational wave to plot
             - ``folderName`` -- the name of the folder to add the plots to
             - ``rebin`` -- rebin the final image to reduce size
+            - ``center`` -- central longitude in degrees. Default *0*. 
 
         **Return:**
             - None
@@ -1851,8 +1857,10 @@ class plot_wave_observational_timelines():
         latitude = np.radians(np.linspace(-90 + pixelSizeDeg, 90, yRange))
 
         # RA FROM -180 to +180
-        phi = np.linspace(-np.pi + pixelSizeDeg / 2,
-                          np.pi - pixelSizeDeg / 2, xRange)
+        centralRa = center
+        centralRaRad = centralRa * DEG_TO_RAD_FACTOR
+        phi = np.linspace(-np.pi + centralRaRad + pixelSizeDeg / 2,
+                          np.pi + centralRaRad - pixelSizeDeg / 2, xRange)
         print phi[0], phi[-1]
         print phi.shape
         longitude = np.radians(np.linspace(-180 + pixelSizeDeg, 180, xRange))
@@ -1908,8 +1916,7 @@ class plot_wave_observational_timelines():
         # SET THE REQUIRED PIXEL SIZE
         w.wcs.cdelt = np.array([pixelSizeDeg, pixelSizeDeg])
         # WORLD COORDINATES AT REFERENCE PIXEL
-        centralCoordinate = [pixelSizeDeg, pixelSizeDeg]
-        centralCoordinate = [0, 0]
+        centralCoordinate = [centralRa, 0]
         w.wcs.crval = centralCoordinate
         cx = xRange / 2. + 0.5
         cy = yRange / 2. + 0.5
