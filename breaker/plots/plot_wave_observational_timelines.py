@@ -636,7 +636,6 @@ class plot_wave_observational_timelines():
 
             latitude = np.radians(np.linspace(-90, 90, yRange))
             # RA FROM -180 to +180
-            centerRad = center * DEG_TO_RAD_FACTOR
             phi = np.linspace(-np.pi, np.pi, xRange)
             longitude = np.radians(
                 np.linspace(-180, 180, xRange))
@@ -1615,7 +1614,8 @@ class plot_wave_observational_timelines():
                 gwid=gwid,
                 pathToProbMap=pathToProbMap,
                 folderName=folderName,
-                outputDirectory=outputDirectory
+                outputDirectory=outputDirectory,
+                center=center
             )
 
         self.log.info('completed the ``generate_probability_plot`` method')
@@ -1783,7 +1783,8 @@ class plot_wave_observational_timelines():
             pathToProbMap,
             folderName="",
             outputDirectory=False,
-            rebin=True):
+            rebin=True,
+            center=0.):
         """*generate fits image map from the LV-skymap (FITS binary table)*
 
         **Key Arguments:**
@@ -1792,6 +1793,7 @@ class plot_wave_observational_timelines():
             - ``gwid`` -- the unique ID of the gravitational wave to plot
             - ``folderName`` -- the name of the folder to add the plots to
             - ``rebin`` -- rebin the final image to reduce size
+            - ``center`` -- central longitude in degrees. Default *0*. 
 
         **Return:**
             - None
@@ -1855,7 +1857,7 @@ class plot_wave_observational_timelines():
         latitude = np.radians(np.linspace(-90 + pixelSizeDeg, 90, yRange))
 
         # RA FROM -180 to +180
-        centralRa = 180.
+        centralRa = center
         centralRaRad = centralRa * DEG_TO_RAD_FACTOR
         phi = np.linspace(-np.pi + centralRaRad + pixelSizeDeg / 2,
                           np.pi + centralRaRad - pixelSizeDeg / 2, xRange)
