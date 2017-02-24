@@ -1719,18 +1719,19 @@ class plot_wave_observational_timelines():
         self.log.info('starting the ``get_timeline_plots`` method')
 
         if self.allPlots:
-            timeLimitLabels = ["21 days pre-detection", "in First 3 Days",
+            timeLimitLabels = ["21 days pre-detection", "in First 6 Hrs", "in First 3 Days",
                                "Between 3-10 Days", "Between 10-17 Days", "Between 17-24 Days", "Between 24-31 Days", "> 31 Days", "no limit"]
-            timeLimitDays = [(-21, 0), (0, 3), (3, 10), (10, 17),
+            timeLimitDays = [(-21, 0), (0, 0.25), (0, 3), (3, 10), (10, 17),
                              (17, 24), (24, 31), (31, 0), (0, 0)]
         else:
-            timeLimitLabels = ["in First 3 Days",
+            timeLimitLabels = ["in First 3 Days", "in First 6 Hrs"
                                "Between 3-10 Days", "Between 10-17 Days", "Between 17-24 Days", "Between 24-31 Days", "> 31 Days"]
-            timeLimitDays = [(0, 3), (3, 10), (10, 17),
+            timeLimitDays = [(0, 3), (0, 0.25), (3, 10), (10, 17),
                              (17, 24), (24, 31), (31, 0)]
 
         raLimits = [134.25, 144.75, 152.25, 159.50, 167.0, 174.5]
-        raLimits = [False, False, False, False, False, False, False, False]
+        raLimits = [False, False, False, False,
+                    False, False, False, False, False]
 
         if self.gwid:
             theseIds = [self.gwid]
