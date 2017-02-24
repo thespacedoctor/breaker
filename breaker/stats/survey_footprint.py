@@ -303,8 +303,8 @@ class survey_footprint():
 
         # GENERATE DICTIONARY OF PIXEL/PROBABILITIES
         for hid in allHealpixIds:
-            if i not in healpixDictionary:
-                healpixDictionary[hid] = aMap[hid]
+            if int(hid) not in healpixDictionary:
+                healpixDictionary[int(hid)] = aMap[int(hid)]
 
         # NOW CALCULATE THE TOTAL AREA AND PROBABILITY COVERAGE
         cumArea = len(healpixDictionary) * hpixArea
