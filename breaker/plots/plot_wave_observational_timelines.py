@@ -888,6 +888,10 @@ class plot_wave_observational_timelines():
             lat.set_ticklabel_position('l')
             lat.set_axislabel_position('l')
 
+            lat.set_ticks_position('r')
+            lat.set_ticklabel_position('r')
+            lat.set_axislabel_position('r')
+
             plt.gca().invert_xaxis()
 
             # lon.set_ticks(number=20)
