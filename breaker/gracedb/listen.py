@@ -19,6 +19,7 @@ import codecs
 import json
 import collections
 import numpy as np
+from datetime import datetime, timedelta
 from ligo.gracedb.rest import GraceDb, HTTPError
 from ligo.gracedb.rest import GraceDbBasic
 from astrocalc.times import conversions
@@ -35,7 +36,7 @@ class listen():
         - ``log`` -- logger
         - ``settings`` -- the settings dictionary
         - ``label`` -- filter wave event by label. Default *ADVOK & EM_READY*
-        - ``farThreshold`` -- the false alarm rate threshold. Default *1e-7*
+        - ``farThreshold`` -- the false alarm rate threshold. Default *1e-5* (i.e. ~1 per day)
         - ``startMJD`` -- startMJD. Default *57266.0 (2015-09-01)*
         - ``endMJD`` -- endMJD. Default *69807.0 (2050-01-01)*
         - ``daemon`` -- run in daemon mode. Set to 'True' to run every 30 sec, or pass in an integer to set a custom time frequency
@@ -47,7 +48,7 @@ class listen():
             log,
             settings=False,
             label="ADVOK & EM_READY",
-            farThreshold=1e-7,
+            farThreshold=1e-5,
             startMJD=57266.0,
             endMJD=False,
             daemon=False
@@ -110,9 +111,11 @@ class listen():
         self.log.info('starting the ``get_maps`` method')
 
         # VARIABLES
-        fileorder = ['LALInference_skymap.fits.gz',
+        fileorder = ['LALInference_skymap.fits.gz', 'LALInference.fits.gz',
                      'bayestar.fits.gz', 'LIB_skymap.fits.gz', 'skymap.fits.gz', 'skyprobcc_cWB.fits', 'LALInference3d.fits.gz', 'bayestar3d.fits.gz', 'BW_skymap.fits']
         stop = False
+
+        farDays = 1 / (float(self.farThreshold) * 60. * 60. * 24.)
 
         # INPUT TIME-VALUES CAN BE SCALAR OR AN ARRAY
         # GET TIME FOR THE VERY START OF LV OPERATIONS
@@ -254,9 +257,20 @@ class listen():
                     readFile.close()
 
             if stop == False:
+
+                startUTC = startUTC[0:16]
+
                 freq = self.daemon
-                print "%(oldEvents)s archived and %(newEvents)s events found, will try again in %(freq)s secs" % locals()
+                print "%(oldEvents)s archived and %(newEvents)s new events found since %(startUTC)s UTC (with FAR of 1 per %(farDays)0.2f days), will try again in %(freq)s secs" % locals()
                 time.sleep(freq)
+
+                threeDaysAgo = datetime.utcnow() - timedelta(3)
+                threeDaysAgo = threeDaysAgo.strftime("%Y-%m-%dT%H:%M:%S")
+                startOfLV = Time(
+                    threeDaysAgo,
+                    format='isot',
+                    scale='utc'
+                )
 
         self.log.info('completed the ``get_maps`` method')
         return None

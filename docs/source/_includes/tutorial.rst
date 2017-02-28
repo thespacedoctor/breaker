@@ -235,11 +235,11 @@ Breaker will first check its own settings file for the GraceDB credentials and t
         
 The ``listen`` command is used to connect to `graceDB <https://gracedb.ligo.org>`_ and download the maps from recently detected waves. You can connect either once and download all maps within a time range, or connect in daemon mode to ping graceDB every 60 secs for new maps.
 
-To connect and download maps between MJDs 57382. and 57384. with a false alarm rate lower limit of 1e-7 Hz:
+To connect and download maps between MJDs 57382. and 57384. with a false alarm rate lower limit of 1e-5 Hz:
 
 .. code-block:: bash 
  
-    > breaker listen 1e-7 57382. 57384.
+    > breaker listen 1e-5 57382. 57384.
     NEW GRAVITATIONAL WAVE EVENT FOUND ...
         GraceDB ID: G211117
     NEW MAP FOUND FOR GW EVENT G211117 ...
@@ -274,13 +274,13 @@ Or to download maps within the last 15 mins:
 
 .. code-block:: bash 
  
-    > breaker listen 1e-7 15
+    > breaker listen 1e-5 15
     
 To connect in daemon mode:
 
 .. code-block:: bash 
 
-    > breaker listen -d 1e-7
+    > breaker listen -d 1e-5
     NEW GRAVITATIONAL WAVE EVENT FOUND ...
         GraceDB ID: G211117
     NEW MAP FOUND FOR GW EVENT G211117 ...

@@ -18,7 +18,7 @@ Usage:
     breaker faker <ps1ExpId> [-s <pathToSettingsFile>]
     breaker stats <gwid> [<telescope>] [-s <pathToSettingsFile>]
     breaker listen <far> (<mjdStart> <mjdEnd> | <inLastNMins>) [-s <pathToSettingsFile>]
-    breaker listen -d <far> [<sec>] [-s <pathToSettingsFile>]
+    breaker listen -d [<far> <sec>] [-s <pathToSettingsFile>]
 
     COMMANDS
     --------
@@ -36,7 +36,7 @@ Usage:
 
     ARGUMENTS
     ---------
-    far                   false alarm rate limit in Hz (1e-7 Hz ~= 3.2 per year)
+    far                   false alarm rate limit in Hz. Default *1e-5* (~= 1 per day)
     -w <gwid>             the gravitational wave ID
     pathToSettingsFile    path to the yaml settings file
     -c <centerDeg>        the central longitude line (deg)
@@ -130,6 +130,9 @@ def main(arguments=None):
             p = Popen(cmd, stdout=PIPE, stderr=PIPE, shell=True)
         except:
             pass
+
+    if not far:
+        far = 1e-5
 
     # CALL FUNCTIONS/OBJECTS
     if update:
