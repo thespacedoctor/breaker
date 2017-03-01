@@ -15,7 +15,7 @@ install_requires = [
     'requests',
     'numpy',
     'astropy',
-    'healpy',
+    'healpy<=1.10.3',
     'crowdedText',
     'qub-sherlock',
     'neddy',
