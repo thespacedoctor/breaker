@@ -693,8 +693,8 @@
 <p id="t303" class="pln"><span class="strut">&nbsp;</span></p>
 <p id="t304" class="pln">        <span class="com"># GENERATE DICTIONARY OF PIXEL/PROBABILITIES</span><span class="strut">&nbsp;</span></p>
 <p id="t305" class="stm mis">        <span class="key">for</span> <span class="nam">hid</span> <span class="key">in</span> <span class="nam">allHealpixIds</span><span class="op">:</span><span class="strut">&nbsp;</span></p>
-<p id="t306" class="stm mis">            <span class="key">if</span> <span class="nam">i</span> <span class="key">not</span> <span class="key">in</span> <span class="nam">healpixDictionary</span><span class="op">:</span><span class="strut">&nbsp;</span></p>
-<p id="t307" class="stm mis">                <span class="nam">healpixDictionary</span><span class="op">[</span><span class="nam">hid</span><span class="op">]</span> <span class="op">=</span> <span class="nam">aMap</span><span class="op">[</span><span class="nam">hid</span><span class="op">]</span><span class="strut">&nbsp;</span></p>
+<p id="t306" class="stm mis">            <span class="key">if</span> <span class="nam">int</span><span class="op">(</span><span class="nam">hid</span><span class="op">)</span> <span class="key">not</span> <span class="key">in</span> <span class="nam">healpixDictionary</span><span class="op">:</span><span class="strut">&nbsp;</span></p>
+<p id="t307" class="stm mis">                <span class="nam">healpixDictionary</span><span class="op">[</span><span class="nam">int</span><span class="op">(</span><span class="nam">hid</span><span class="op">)</span><span class="op">]</span> <span class="op">=</span> <span class="nam">aMap</span><span class="op">[</span><span class="nam">int</span><span class="op">(</span><span class="nam">hid</span><span class="op">)</span><span class="op">]</span><span class="strut">&nbsp;</span></p>
 <p id="t308" class="pln"><span class="strut">&nbsp;</span></p>
 <p id="t309" class="pln">        <span class="com"># NOW CALCULATE THE TOTAL AREA AND PROBABILITY COVERAGE</span><span class="strut">&nbsp;</span></p>
 <p id="t310" class="stm mis">        <span class="nam">cumArea</span> <span class="op">=</span> <span class="nam">len</span><span class="op">(</span><span class="nam">healpixDictionary</span><span class="op">)</span> <span class="op">*</span> <span class="nam">hpixArea</span><span class="strut">&nbsp;</span></p>
@@ -716,7 +716,7 @@
     <div class="content">
         <p>
             <a class="nav" href="index.html">&#xab; index</a> &nbsp; &nbsp; <a class="nav" href="https://coverage.readthedocs.io">coverage.py v4.3.4</a>,
-            created at 2017-02-17 20:52
+            created at 2017-03-01 10:50
         </p>
     </div>
 </div>

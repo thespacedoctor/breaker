@@ -20,6 +20,7 @@ os.environ['TERM'] = 'vt100'
 import healpy as hp
 import numpy as np
 import math
+from datetime import datetime
 import matplotlib
 import matplotlib.cm as cm
 import matplotlib.pyplot as plt
@@ -66,6 +67,7 @@ class plot_wave_observational_timelines():
         - ``databaseConnRequired`` -- are the database connections going to be required? Default *True*
         - ``allPlots`` -- plot all timeline plot (including the CPU intensive -21-0 days and all transients/footprints plots). Default *False*
         - ``telescope`` -- select an individual telescope. Default *False*. [ps1|atlas]
+        - ``timestamp`` -- add a timestamp to the plot to show when it was created. Default *True*
 
     **Usage:**
 
@@ -120,7 +122,8 @@ class plot_wave_observational_timelines():
             probabilityCut=False,
             databaseConnRequired=True,
             allPlots=False,
-            telescope=False
+            telescope=False,
+            timestamp=True
     ):
         self.log = log
         log.debug("instantiating a new 'plot_wave_observational_timelines' object")
@@ -131,6 +134,7 @@ class plot_wave_observational_timelines():
         self.probabilityCut = probabilityCut
         self.allPlots = allPlots
         self.telescope = telescope
+        self.timestamp = timestamp
 
         # xt-self-arg-tmpx
 
@@ -517,7 +521,7 @@ class plot_wave_observational_timelines():
             - ``outputDirectory`` -- can be used to override the output destination in the settings file
             - ``fitsImage`` -- generate a FITS image file of map
             - ``allSky`` -- generate an all-sky map (do not use the ra, dec window in the breaker settings file). Default *False*
-            - ``center`` -- central longitude in degrees. Default *0*. 
+            - ``center`` -- central longitude in degrees. Default *0*.
 
 
         **Return:**
@@ -888,6 +892,10 @@ class plot_wave_observational_timelines():
             lat.set_ticklabel_position('l')
             lat.set_axislabel_position('l')
 
+            lat.set_ticks_position('r')
+            lat.set_ticklabel_position('r')
+            lat.set_axislabel_position('r')
+
             plt.gca().invert_xaxis()
 
             # lon.set_ticks(number=20)
@@ -1098,7 +1106,7 @@ class plot_wave_observational_timelines():
         from matplotlib.patches import Circle
         from matplotlib.patches import Rectangle
 
-        #ps1Pointings = []
+        # ps1Pointings = []
         for psp in ps1Pointings:
             raDeg = psp["raDeg"]
             decDeg = psp["decDeg"]
@@ -1170,7 +1178,7 @@ class plot_wave_observational_timelines():
 
         # ADD ATLAS POINTINGS
         atlasPointingSide = 5.46
-        #atlasPointings = []
+        # atlasPointings = []
         for atp in atlasPointings:
             # add a path patch
             atlasExpId = atp["atlas_object_id"]
@@ -1347,7 +1355,7 @@ class plot_wave_observational_timelines():
         decRad = []
         texts = []
 
-        #ps1Transients = []
+        # ps1Transients = []
         for trans in ps1Transients:
             # if trans["ps1_designation"] in ["PS15dpg", "PS15dpp", "PS15dpq", "PS15don", "PS15dpa", "PS15dom"]:
             #     continue
@@ -1434,7 +1442,7 @@ class plot_wave_observational_timelines():
         raRad = []
         decRad = []
         texts = []
-        #atlasTransients = []
+        # atlasTransients = []
         for trans in atlasTransients:
             # if trans["ps1_designation"] in ["PS15dpg", "PS15dpp", "PS15dpq", "PS15don", "PS15dpa", "PS15dom"]:
             #     continue
@@ -1518,49 +1526,37 @@ class plot_wave_observational_timelines():
 
         if projection in ["mercator", "gnomonic"]:
             fig.set_size_inches(8.0, 8.0)
-            plt.text(
-                xRange * (0.25 + len(timeRangeLabel) / 150.),
-                # xRange * 0.95,
-                yRange * 0.93,
-                timeRangeLabel,
-                fontsize=16,
-                zorder=4,
-                color="#dc322f",
-                fontproperties=font
-            )
-            plt.text(
-                xRange * 0.1,
-                # xRange * 0.95,
-                yRange * 0.93,
-                "",
-                fontsize=20,
-                zorder=4,
-                color="black",
-                fontproperties=font
-            )
-        else:
-            plt.text(
-                fWidth * 0.7,
-                # xRange * 0.95,
-                fHeight * 0.95,
-                timeRangeLabel,
-                fontsize=16,
-                zorder=4,
-                color="#dc322f",
-                fontproperties=font
-            )
-            plt.text(
-                fWidth * 0.87,
-                # xRange * 0.95,
-                fHeight * 0.315,
-                "",
-                fontsize=20,
-                zorder=4,
-                color="black",
-                fontproperties=font
-            )
+            ax.text(0.95, 0.95, timeRangeLabel,
+                    horizontalalignment='right',
+                    verticalalignment='top',
+                    transform=ax.transAxes,
+                    color="#dc322f",
+                    fontproperties=font,
+                    fontsize=16,
+                    zorder=4)
 
-        # Recursively create missing directories
+        else:
+            ax.text(0.95, 0.95, timeRangeLabel,
+                    horizontalalignment='right',
+                    verticalalignment='top',
+                    transform=ax.transAxes,
+                    color="#dc322f",
+                    fontproperties=font,
+                    fontsize=16,
+                    zorder=4)
+
+        if self.timestamp:
+            utcnow = datetime.utcnow()
+            utcnow = utcnow.strftime("%Y-%m-%d %H:%M.%S UTC")
+            ax.text(0, 1.02, utcnow,
+                    horizontalalignment='left',
+                    verticalalignment='top',
+                    transform=ax.transAxes,
+                    color="#657b83",
+                    fontproperties=font,
+                    fontsize=6)
+
+        # RECURSIVELY CREATE MISSING DIRECTORIES
         if self.settings and not outputDirectory:
             plotDir = self.settings["output directory"] + "/" + gwid
         elif outputDirectory:
@@ -1586,7 +1582,7 @@ class plot_wave_observational_timelines():
                     os.makedirs("%(plotDir)s/%(folderName)s/%(f)s" % locals())
                 figurePath = "%(plotDir)s/%(folderName)s/%(f)s/%(figureName)s_%(projection)s.%(f)s" % locals()
                 savefig(figurePath, bbox_inches='tight', dpi=300)
-                #savefig(figurePath, dpi=300)
+                # savefig(figurePath, dpi=300)
 
             # if not os.path.exists("%(plotDir)s/%(folderName)s/fits" % locals()):
             #     os.makedirs("%(plotDir)s/%(folderName)s/fits" % locals())
@@ -1745,6 +1741,11 @@ class plot_wave_observational_timelines():
                     gwid=gwid,
                     inPastDays=False,
                     inFirstDays=tday)
+
+                ps1Transients = []
+                ps1Pointings = []
+                atlasPointings = []
+                atlasTransients = []
 
                 pathToProbMap = self.settings[
                     "gravitational waves"][gwid]["mapPath"]
