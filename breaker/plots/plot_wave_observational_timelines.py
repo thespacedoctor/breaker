@@ -1742,11 +1742,6 @@ class plot_wave_observational_timelines():
                     inPastDays=False,
                     inFirstDays=tday)
 
-                ps1Transients = []
-                ps1Pointings = []
-                atlasPointings = []
-                atlasTransients = []
-
                 pathToProbMap = self.settings[
                     "gravitational waves"][gwid]["mapPath"]
                 if not os.path.exists(pathToProbMap):
