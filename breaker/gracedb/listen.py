@@ -379,8 +379,6 @@ class listen():
                     'single_ifo_times'].split(",")
                 ifos = eventinfo['burst']['ifos'].split(",")
 
-                print event['extra_attributes']['MultiBurst']
-
                 ifo1 = ifos[0]
                 if not len(single_ifo_times[0]):
                     self.log.warning(
