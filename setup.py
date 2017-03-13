@@ -12,10 +12,10 @@ def readme():
 install_requires = [
     'pyyaml',
     'fundamentals',
-    'requests',
+    'requests<=2.11.1',
     'numpy',
     'astropy',
-    'healpy',
+    'healpy<=1.10.3',
     'crowdedText',
     'qub-sherlock',
     'neddy',
@@ -25,8 +25,7 @@ install_requires = [
     'HMpTy',
     'cython',
     'scipy',
-    'Tornado',
-    'astropy'
+    'Tornado'
 ]
 
 # READ THE DOCS SERVERS

@@ -354,6 +354,8 @@ class listen():
         if 'extra_attributes' in event:
             # LOOK UP THE EXTRA-ATTRIBUTES VALUE (NEED TO BE LV-MEMBER TO VIEW)
             if 'SingleInspiral' in event['extra_attributes']:
+                self.log.info(
+                    "SingleInspiral table found - lifting wave detection timings from here")
                 eventinfo['singles'] = {}
                 for single in event['extra_attributes']['SingleInspiral']:
                     eventinfo['singles'][single['ifo']] = single
@@ -368,53 +370,91 @@ class listen():
                     mjds = t.mjd
                     timediff = eventinfo["H1_L1_difference"]
 
-            try:
-                self.log.debug("Looking for cWB file for the event %s" %
-                               (eventinfo['graceid'],))
-                # READ THIS TRIGGER FILE FROM GRACEDB
-                r = self.client.files(eventinfo['graceid'],
-                                      "trigger_%.4f.txt" % eventinfo['gpstime'])
-                exists = True
-            except Exception, e:
-                self.log.info("No cWB file found for the event %s" %
-                              (eventinfo['graceid'],))
-                exists = False
+            elif 'MultiBurst' in event['extra_attributes']:
+                self.log.info(
+                    "MultiBurst table found - lifting burst detection timings from here")
+                eventinfo['burst'] = event['extra_attributes']['MultiBurst']
 
-            if exists:
-                cwbfile = open('/tmp/trigger.txt', 'w')
-                cwbfile.write(r.read())
-                cwbfile.close()
+                single_ifo_times = eventinfo['burst'][
+                    'single_ifo_times'].split(",")
+                ifos = eventinfo['burst']['ifos'].split(",")
 
-                eventinfo['burst'] = {}
-                lines = [line.rstrip('\n')
-                         for line in open('/tmp/trigger.txt')]
-                for line in lines:
-                    lineSplit = line.split(":")
-                    if len(lineSplit) < 2:
-                        continue
-                    key = lineSplit[0]
-                    value = filter(None, lineSplit[1].split(" "))
-                    eventinfo['burst'][lineSplit[0]] = value
+                print event['extra_attributes']['MultiBurst']
 
-                ifo1 = eventinfo['burst']['ifo'][0]
-                gps1 = float(eventinfo['burst']['time'][0])
+                ifo1 = ifos[0]
+                if not len(single_ifo_times[0]):
+                    self.log.warning(
+                        "MultiBurst table found but `single_ifo_times` times is empty")
+                else:
+                    gps1 = float(single_ifo_times[0])
 
-                ifo2 = eventinfo['burst']['ifo'][1]
-                gps2 = float(eventinfo['burst']['time'][1])
+                    ifo2 = ifos[1]
+                    gps2 = float(single_ifo_times[1])
 
-                eventinfo['burst'][ifo1] = {}
-                eventinfo['burst'][ifo1]['gpstime'] = gps1
+                    eventinfo['burst'][ifo1] = {}
+                    eventinfo['burst'][ifo1]['gpstime'] = gps1
 
-                eventinfo['burst'][ifo2] = {}
-                eventinfo['burst'][ifo2]['gpstime'] = gps2
+                    eventinfo['burst'][ifo2] = {}
+                    eventinfo['burst'][ifo2]['gpstime'] = gps2
 
-                if ("H1" in eventinfo['burst']) and ("L1" in eventinfo['burst']):
-                    eventinfo["H1_L1_difference"] = eventinfo['burst']['H1'][
-                        "gpstime"] - eventinfo['burst']['L1']["gpstime"]
-                    t = Time([eventinfo['burst']['H1']["gpstime"], eventinfo[
-                        'burst']['L1']["gpstime"]], format='gps', scale='utc')
-                    mjds = t.mjd
-                    timediff = eventinfo["H1_L1_difference"]
+                    if ("H1" in eventinfo['burst']) and ("L1" in eventinfo['burst']):
+                        eventinfo["H1_L1_difference"] = eventinfo['burst']['H1'][
+                            "gpstime"] - eventinfo['burst']['L1']["gpstime"]
+                        t = Time([eventinfo['burst']['H1']["gpstime"], eventinfo[
+                                 'burst']['L1']["gpstime"]], format='gps', scale='utc')
+                        mjds = t.mjd
+                        timediff = eventinfo["H1_L1_difference"]
+
+            else:
+                try:
+                    self.log.debug("Looking for cWB file for the event %s" %
+                                   (eventinfo['graceid'],))
+                    # READ THIS TRIGGER FILE FROM GRACEDB
+                    r = self.client.files(eventinfo['graceid'],
+                                          "trigger_%.4f.txt" % eventinfo['gpstime'])
+                    self.log.info(
+                        "cWB trigger txt file found - lifting detection timings from here")
+                    exists = True
+                except Exception, e:
+                    self.log.info("No cWB file found for the event %s" %
+                                  (eventinfo['graceid'],))
+                    exists = False
+
+                if exists:
+                    cwbfile = open('/tmp/trigger.txt', 'w')
+                    cwbfile.write(r.read())
+                    cwbfile.close()
+
+                    eventinfo['burst'] = {}
+                    lines = [line.rstrip('\n')
+                             for line in open('/tmp/trigger.txt')]
+                    for line in lines:
+                        lineSplit = line.split(":")
+                        if len(lineSplit) < 2:
+                            continue
+                        key = lineSplit[0]
+                        value = filter(None, lineSplit[1].split(" "))
+                        eventinfo['burst'][lineSplit[0]] = value
+
+                    ifo1 = eventinfo['burst']['ifo'][0]
+                    gps1 = float(eventinfo['burst']['time'][0])
+
+                    ifo2 = eventinfo['burst']['ifo'][1]
+                    gps2 = float(eventinfo['burst']['time'][1])
+
+                    eventinfo['burst'][ifo1] = {}
+                    eventinfo['burst'][ifo1]['gpstime'] = gps1
+
+                    eventinfo['burst'][ifo2] = {}
+                    eventinfo['burst'][ifo2]['gpstime'] = gps2
+
+                    if ("H1" in eventinfo['burst']) and ("L1" in eventinfo['burst']):
+                        eventinfo["H1_L1_difference"] = eventinfo['burst']['H1'][
+                            "gpstime"] - eventinfo['burst']['L1']["gpstime"]
+                        t = Time([eventinfo['burst']['H1']["gpstime"], eventinfo[
+                            'burst']['L1']["gpstime"]], format='gps', scale='utc')
+                        mjds = t.mjd
+                        timediff = eventinfo["H1_L1_difference"]
 
         # FILL IN META DICTIONARY
         meta = {}
