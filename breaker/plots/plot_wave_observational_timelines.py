@@ -119,7 +119,7 @@ class plot_wave_observational_timelines():
             plotType=False,
             gwid=False,
             projection="mercator",
-            probabilityCut=False,
+            probabilityCut=True,
             databaseConnRequired=True,
             allPlots=False,
             telescope=False,
@@ -1197,8 +1197,8 @@ class plot_wave_observational_timelines():
             if probabilityCut and probs == 0.:
                 continue
             elif probabilityCut:
+                # print atp["mjd"], atlasExpId, raDeg, decDeg
                 pass
-                # print atlasExpId
 
             deltaDeg = atlasPointingSide / 2
             if decDeg < 0:
