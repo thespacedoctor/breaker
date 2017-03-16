@@ -110,15 +110,10 @@ class survey_footprint():
             raise IOError(message)
 
         # UNPACK THE PLOT PARAMETERS
-        pixelSizeDeg = 0.066667
+        pixelSizeDeg = 0.01
         centralCoordinate = plotParameters["centralCoordinate"]
         raRange = plotParameters["raRange"]
         decRange = plotParameters["decRange"]
-
-        raMax = centralCoordinate[0] + raRange / 2.
-        raMin = centralCoordinate[0] - raRange / 2.
-        decMax = centralCoordinate[1] + decRange / 2.
-        decMin = centralCoordinate[1] - decRange / 2.
 
         # DETERMINE THE PIXEL GRID X,Y RANGES
         xRange = int(raRange / pixelSizeDeg)
@@ -221,6 +216,7 @@ class survey_footprint():
 
         tmpPointings = []
         moveBy = (atlasPointingSide / 2)**0.5
+
         for pt in altasPointings:
             pra = pt["raDeg"]
             pdec = pt["decDeg"]
@@ -236,6 +232,7 @@ class survey_footprint():
                                        phi=(phi + m[1] * moveBy) * DEG_TO_RAD_FACTOR)
                 thisProb = aMap[healpixId]
                 thisProb = float("%0.*f" % (7, thisProb))
+
                 if thisProb != 0.:
                     tmpPointings.append(pt)
                     break

@@ -343,17 +343,17 @@ class plot_wave_observational_timelines():
 
         if raMin > 0 and raMax < 360.:
             sqlQuery = u"""
-                SELECT ps1_designation, local_designation, ra_psf, dec_psf FROM tcs_transient_objects o, tcs_latest_object_stats where o.detection_list_id in (1,2) and o.id=s.id and (s.earliest_mjd between %(mjdStart)s and %(mjdEnd)s) and (ra_psf between %(raMin)s and %(raMax)s) and (dec_psf between %(decMin)s and %(decMax)s) ;
+                SELECT ps1_designation, local_designation, ra_psf, dec_psf FROM tcs_transient_objects o, tcs_latest_object_stats s where o.detection_list_id in (1,2) and o.id=s.id and (s.earliest_mjd between %(mjdStart)s and %(mjdEnd)s) and (ra_psf between %(raMin)s and %(raMax)s) and (`dec_psf` between %(decMin)s and %(decMax)s) ;
             """ % locals()
         elif raMin < 0.:
-            raMin = 360. + raMin
+            praMin = 360. + raMin
             sqlQuery = u"""
-                SELECT ps1_designation, local_designation, ra_psf, dec_psf FROM tcs_transient_objects o, tcs_latest_object_stats where o.detection_list_id in (1,2) and o.id=s.id and (s.earliest_mjd between %(mjdStart)s and %(mjdEnd)s) and ((ra_psf between %(raMin)s and 360.) or (ra_psf between 0. and %(raMax)s)) and (dec_psf between %(decMin)s and %(decMax)s) ;
+                SELECT ps1_designation, local_designation, ra_psf, dec_psf FROM tcs_transient_objects o, tcs_latest_object_stats s where o.detection_list_id in (1,2) and o.id=s.id and (s.earliest_mjd between %(mjdStart)s and %(mjdEnd)s) and ((ra_psf between %(praMin)s and 360.) or (ra_psf between 0. and %(raMax)s)) and (`dec_psf` between %(decMin)s and %(decMax)s) ;
             """ % locals()
         elif raMax > 360.:
-            raMax = raMax - 360.
+            praMax = raMax - 360.
             sqlQuery = u"""
-                SELECT ps1_designation, local_designation, ra_psf, dec_psf FROM tcs_transient_objects o, tcs_latest_object_stats where o.detection_list_id in (1,2) and o.id=s.id and (s.earliest_mjd between %(mjdStart)s and %(mjdEnd)s) and ((ra_psf between %(raMin)s and 360.) or (ra_psf between 0. and %(raMax)s)) and (dec_psf between %(decMin)s and %(decMax)s) ;
+                SELECT ps1_designation, local_designation, ra_psf, dec_psf FROM tcs_transient_objects o, tcs_latest_object_stats s where o.detection_list_id in (1,2) and o.id=s.id and (s.earliest_mjd between %(mjdStart)s and %(mjdEnd)s) and ((ra_psf between %(raMin)s and 360.) or (ra_psf between 0. and %(praMax)s)) and (`dec_psf` between %(decMin)s and %(decMax)s) ;
             """ % locals()
 
         ps1Transients = readquery(
@@ -367,14 +367,14 @@ class plot_wave_observational_timelines():
                 SELECT atlas_designation, ra, `dec` FROM atlas_diff_objects o, tcs_latest_object_stats s where o.detection_list_id in (1,2) and o.id=s.id and (s.earliest_mjd between %(mjdStart)s and %(mjdEnd)s) and (ra between %(raMin)s and %(raMax)s) and (`dec` between %(decMin)s and %(decMax)s) ;
             """ % locals()
         elif raMin < 0.:
-            raMin = 360. + raMin
+            araMin = 360. + raMin
             sqlQuery = u"""
-                SELECT atlas_designation, ra, `dec` FROM atlas_diff_objects o, tcs_latest_object_stats s where o.detection_list_id in (1,2) and o.id=s.id and (s.earliest_mjd between %(mjdStart)s and %(mjdEnd)s) and ((ra between %(raMin)s and 360.) or (ra between 0. and %(raMax)s)) and (`dec` between %(decMin)s and %(decMax)s) ;
+                SELECT atlas_designation, ra, `dec` FROM atlas_diff_objects o, tcs_latest_object_stats s where o.detection_list_id in (1,2) and o.id=s.id and (s.earliest_mjd between %(mjdStart)s and %(mjdEnd)s) and ((ra between %(araMin)s and 360.) or (ra between 0. and %(raMax)s)) and (`dec` between %(decMin)s and %(decMax)s) ;
             """ % locals()
         elif raMax > 360.:
-            raMax = raMax - 360.
+            araMax = raMax - 360.
             sqlQuery = u"""
-                SELECT atlas_designation, ra, `dec` FROM atlas_diff_objects o, tcs_latest_object_stats s where o.detection_list_id in (1,2) and o.id=s.id and (s.earliest_mjd between %(mjdStart)s and %(mjdEnd)s) and ((ra between %(raMin)s and 360.) or (ra between 0. and %(raMax)s)) and (`dec` between %(decMin)s and %(decMax)s) ;
+                SELECT atlas_designation, ra, `dec` FROM atlas_diff_objects o, tcs_latest_object_stats s where o.detection_list_id in (1,2) and o.id=s.id and (s.earliest_mjd between %(mjdStart)s and %(mjdEnd)s) and ((ra between %(raMin)s and 360.) or (ra between 0. and %(araMax)s)) and (`dec` between %(decMin)s and %(decMax)s) ;
             """ % locals()
 
         atlasTransients = readquery(
@@ -1235,25 +1235,14 @@ class plot_wave_observational_timelines():
                     math.cos((decDeg - deltaDeg) * DEG_TO_RAD_FACTOR)
                 heightDeg = atlasPointingSide
                 llx = (raDeg - widthDegBottom / 2)
-                if llx < 0:
-                    continue
                 lly = decDeg - (heightDeg / 2)
-                if lly < -90:
-                    continue
                 ulx = (raDeg - widthDegTop / 2)
-                if ulx < 0:
-                    continue
                 uly = decDeg + (heightDeg / 2)
-                if uly > 90:
-                    continue
                 urx = (raDeg + widthDegTop / 2)
-                if urx > 360:
-                    continue
                 ury = uly
                 lrx = (raDeg + widthDegBottom / 2)
-                if lrx > 360:
-                    continue
                 lry = lly
+
                 Path = mpath.Path
                 path_data = [
                     (Path.MOVETO, [llx, lly]),
@@ -1264,6 +1253,11 @@ class plot_wave_observational_timelines():
                 ]
                 codes, verts = zip(*path_data)
                 path = mpath.Path(verts, codes)
+
+                # EXCLUDE FOOTPRINTS THAT CROSS 360.
+                if lrx > 180. and llx < 180:
+                    continue
+
                 patch = patches.PathPatch(path, alpha=0.2,
                                           color='#6c71c4', fill=True, zorder=3, transform=ax.get_transform('fk5'))
             else:
