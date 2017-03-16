@@ -341,18 +341,42 @@ class plot_wave_observational_timelines():
             if inFirstDays[1] == 0 and inFirstDays[0] == 0:
                 mjdEnd = 10000000000
 
-        sqlQuery = u"""
-            SELECT ps1_designation, local_designation, ra_psf, dec_psf FROM tcs_transient_objects o, tcs_latest_object_stats s where o.detection_list_id in (1,2) and o.id=s.id and (s.earliest_mjd between %(mjdStart)s and %(mjdEnd)s) and (ra_psf between %(raMin)s and %(raMax)s) and (dec_psf between %(decMin)s and %(decMax)s) ;
-        """ % locals()
+        if raMin > 0 and raMax < 360.:
+            sqlQuery = u"""
+                SELECT ps1_designation, local_designation, ra_psf, dec_psf FROM tcs_transient_objects o, tcs_latest_object_stats where o.detection_list_id in (1,2) and o.id=s.id and (s.earliest_mjd between %(mjdStart)s and %(mjdEnd)s) and (ra_psf between %(raMin)s and %(raMax)s) and (dec_psf between %(decMin)s and %(decMax)s) ;
+            """ % locals()
+        elif raMin < 0.:
+            raMin = 360. + raMin
+            sqlQuery = u"""
+                SELECT ps1_designation, local_designation, ra_psf, dec_psf FROM tcs_transient_objects o, tcs_latest_object_stats where o.detection_list_id in (1,2) and o.id=s.id and (s.earliest_mjd between %(mjdStart)s and %(mjdEnd)s) and ((ra_psf between %(raMin)s and 360.) or (ra_psf between 0. and %(raMax)s)) and (dec_psf between %(decMin)s and %(decMax)s) ;
+            """ % locals()
+        elif raMax > 360.:
+            raMax = raMax - 360.
+            sqlQuery = u"""
+                SELECT ps1_designation, local_designation, ra_psf, dec_psf FROM tcs_transient_objects o, tcs_latest_object_stats where o.detection_list_id in (1,2) and o.id=s.id and (s.earliest_mjd between %(mjdStart)s and %(mjdEnd)s) and ((ra_psf between %(raMin)s and 360.) or (ra_psf between 0. and %(raMax)s)) and (dec_psf between %(decMin)s and %(decMax)s) ;
+            """ % locals()
+
         ps1Transients = readquery(
             log=self.log,
             sqlQuery=sqlQuery,
             dbConn=self.ps1gwDbConn
         )
 
-        sqlQuery = u"""
-            SELECT atlas_designation, ra, `dec` FROM atlas_diff_objects o, tcs_latest_object_stats s where o.detection_list_id in (1,2) and o.id=s.id and (s.earliest_mjd between %(mjdStart)s and %(mjdEnd)s) and (ra between %(raMin)s and %(raMax)s) and (`dec` between %(decMin)s and %(decMax)s) ;
-        """ % locals()
+        if raMin > 0 and raMax < 360.:
+            sqlQuery = u"""
+                SELECT atlas_designation, ra, `dec` FROM atlas_diff_objects o, tcs_latest_object_stats s where o.detection_list_id in (1,2) and o.id=s.id and (s.earliest_mjd between %(mjdStart)s and %(mjdEnd)s) and (ra between %(raMin)s and %(raMax)s) and (`dec` between %(decMin)s and %(decMax)s) ;
+            """ % locals()
+        elif raMin < 0.:
+            raMin = 360. + raMin
+            sqlQuery = u"""
+                SELECT atlas_designation, ra, `dec` FROM atlas_diff_objects o, tcs_latest_object_stats s where o.detection_list_id in (1,2) and o.id=s.id and (s.earliest_mjd between %(mjdStart)s and %(mjdEnd)s) and ((ra between %(raMin)s and 360.) or (ra between 0. and %(raMax)s)) and (`dec` between %(decMin)s and %(decMax)s) ;
+            """ % locals()
+        elif raMax > 360.:
+            raMax = raMax - 360.
+            sqlQuery = u"""
+                SELECT atlas_designation, ra, `dec` FROM atlas_diff_objects o, tcs_latest_object_stats s where o.detection_list_id in (1,2) and o.id=s.id and (s.earliest_mjd between %(mjdStart)s and %(mjdEnd)s) and ((ra between %(raMin)s and 360.) or (ra between 0. and %(raMax)s)) and (`dec` between %(decMin)s and %(decMax)s) ;
+            """ % locals()
+
         atlasTransients = readquery(
             log=self.log,
             sqlQuery=sqlQuery,
@@ -373,7 +397,7 @@ class plot_wave_observational_timelines():
         **Key Arguments:**
             - ``gwid`` -- the unique ID of the gravitational wave to plot
             - ``inPastDays`` -- used for the `history` plots (looking back from today)
-            - ``inFirstDays`` -- used in the `timeline` plots (looking forward from wave detection).  A tuple (start day, end day).
+            - ``inFirstDays`` -- used in the `timeline` plots (looking forward from wave detection). A tuple (start day, end day).
 
         **Return:**
             - ``ps1Pointings`` -- the pointings to place on the plot
@@ -1197,8 +1221,8 @@ class plot_wave_observational_timelines():
             if probabilityCut and probs == 0.:
                 continue
             elif probabilityCut:
+                # print atp["mjd"], atlasExpId, raDeg, decDeg
                 pass
-                # print atlasExpId
 
             deltaDeg = atlasPointingSide / 2
             if decDeg < 0:
@@ -1211,12 +1235,24 @@ class plot_wave_observational_timelines():
                     math.cos((decDeg - deltaDeg) * DEG_TO_RAD_FACTOR)
                 heightDeg = atlasPointingSide
                 llx = (raDeg - widthDegBottom / 2)
+                if llx < 0:
+                    continue
                 lly = decDeg - (heightDeg / 2)
+                if lly < -90:
+                    continue
                 ulx = (raDeg - widthDegTop / 2)
+                if ulx < 0:
+                    continue
                 uly = decDeg + (heightDeg / 2)
+                if uly > 90:
+                    continue
                 urx = (raDeg + widthDegTop / 2)
+                if urx > 360:
+                    continue
                 ury = uly
                 lrx = (raDeg + widthDegBottom / 2)
+                if lrx > 360:
+                    continue
                 lry = lly
                 Path = mpath.Path
                 path_data = [

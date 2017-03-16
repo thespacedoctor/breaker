@@ -20,6 +20,8 @@ from astrocalc.coords import unit_conversion
 from astrocalc.times import conversions
 from HMpTy.mysql import add_htm_ids_to_mysql_database_table
 from fundamentals.download import multiobject_download
+from fundamentals.renderer import list_of_dictionaries
+from datetime import datetime, date, time
 import codecs
 import csv
 import re
@@ -38,6 +40,7 @@ class update_ps1_atlas_footprint_tables():
 
         gravitational waves:
             G184098:
+                human-name: GW150914
                 time:
                     mjdStart: 57279.90
                     mjdEnd: 57369.90
@@ -119,6 +122,7 @@ class update_ps1_atlas_footprint_tables():
         self.populate_ps1_subdisk_table()
         if self.updateNed:
             self.update_ned_database_table()
+        self.update_gravity_event_annotations()
 
         self.log.info('completed the ``get`` method')
         return None
@@ -821,6 +825,181 @@ CREATE TABLE `ps1_nightlogs` (
         )
 
         self.log.info('completed the ``parse_panstarrs_nightlogs`` method')
+        return None
+
+    def update_gravity_event_annotations(
+            self):
+        """*update gravity event annotations*
+
+        **Key Arguments:**
+            # -
+
+        **Return:**
+            - None
+
+        **Usage:**
+            ..  todo::
+
+                - add usage info
+                - create a sublime snippet for usage
+                - write a command-line tool for this method
+                - update package tutorial with command-line tool info if needed
+
+            .. code-block:: python 
+
+                usage code 
+
+        """
+        self.log.info(
+            'starting the ``update_gravity_event_annotations`` method')
+
+        from breaker.transients import annotator
+
+        moduleDirectory = os.path.dirname(__file__)
+        mysql_scripts = moduleDirectory + "/resources/mysql"
+
+        for db in ["ps1gw"]:
+            directory_script_runner(
+                log=self.log,
+                pathToScriptDirectory=mysql_scripts,
+                databaseName=self.settings["database settings"][db]["db"],
+                loginPath=self.settings["database settings"][db]["loginPath"],
+                waitForResult=True,
+                successRule=False,
+                failureRule=False
+            )
+
+        sqlQuery = ""
+        for g in self.settings["gravitational waves"]:
+            h = self.settings["gravitational waves"][g]["human-name"]
+            m = self.settings["gravitational waves"][g]["time"]["mjdStart"]
+            cmd = """insert ignore into tcs_gravity_events (`gracedb_id`, `gravity_event_id`, `mjd`) VALUES ("%(g)s", "%(h)s", %(m)s) on duplicate key update mjd=%(m)s;\n""" % locals(
+            )
+            sqlQuery += cmd
+
+        from fundamentals.mysql import writequery
+        writequery(
+            log=self.log,
+            sqlQuery=sqlQuery,
+            dbConn=self.atlasDbConn
+        )
+        writequery(
+            log=self.log,
+            sqlQuery=sqlQuery,
+            dbConn=self.ps1gwDbConn
+        )
+
+        for db in ["ps1gw", "atlas"]:
+            directory_script_runner(
+                log=self.log,
+                pathToScriptDirectory=mysql_scripts,
+                databaseName=self.settings["database settings"][db]["db"],
+                loginPath=self.settings["database settings"][db]["loginPath"],
+                waitForResult=True,
+                successRule=False,
+                failureRule=False
+            )
+
+            for g in self.settings["gravitational waves"]:
+                h = self.settings["gravitational waves"][g]["human-name"]
+                print "Annotating new transients associated with gravity event %(h)s" % locals()
+                m = self.settings["gravitational waves"][g]["time"]["mjdStart"]
+                mapPath = self.settings["gravitational waves"][g]["mapPath"]
+                mapName = os.path.basename(mapPath)
+
+                if db == "ps1gw":
+
+                    sqlQuery = u"""
+                        SELECT 
+                            a.transient_object_id, a.gracedb_id, t.ra_psf, t.dec_psf
+                        FROM
+                            tcs_transient_objects t,
+                            tcs_gravity_event_annotations a
+                        WHERE
+                            a.transient_object_id = t.id
+                                AND t.detection_list_id != 0
+                                AND (a.map_name != "%(mapName)s"  or a.map_name is null)
+                                AND a.gracedb_id="%(g)s"; 
+                    """ % locals()
+                    rows = readquery(
+                        log=self.log,
+                        sqlQuery=sqlQuery,
+                        dbConn=self.ps1gwDbConn,
+                        quiet=False
+                    )
+
+                    transients = {}
+                    for r in rows:
+                        transients[r["transient_object_id"]] = (
+                            r["ra_psf"], r["dec_psf"])
+
+                else:
+                    sqlQuery = u"""
+                        SELECT 
+                            a.transient_object_id, a.gracedb_id, t.ra, t.dec
+                        FROM
+                            atlas_diff_objects t,
+                            tcs_gravity_event_annotations a
+                        WHERE
+                            a.transient_object_id = t.id
+                                AND t.detection_list_id != 0
+                                AND (a.map_name != "%(mapName)s"  or a.map_name is null)
+                                AND a.gracedb_id="%(g)s"; 
+                    """ % locals()
+                    rows = readquery(
+                        log=self.log,
+                        sqlQuery=sqlQuery,
+                        dbConn=self.atlasDbConn,
+                        quiet=False
+                    )
+
+                    transients = {}
+                    for r in rows:
+                        transients[r["transient_object_id"]] = (
+                            r["ra"], r["dec"])
+
+                an = annotator(
+                    log=self.log,
+                    settings=self.settings,
+                    gwid=g
+                )
+                transientNames, probs = an.annotate(transients)
+
+                dataList = []
+                for p, t in zip(probs, transientNames):
+                    dataList.append({
+                        "transient_object_id": t,
+                        "enclosing_contour": p,
+                        "gracedb_id": g,
+                        "map_name": mapName
+                    })
+
+                dataSet = list_of_dictionaries(
+                    log=self.log,
+                    listOfDictionaries=dataList,
+                    reDatetime=re.compile('^[0-9]{4}-[0-9]{2}-[0-9]{2}T')
+                )
+                # RECURSIVELY CREATE MISSING DIRECTORIES
+                if not os.path.exists("/tmp/mysqlinsert/%(db)s" % locals()):
+                    os.makedirs("/tmp/mysqlinsert/%(db)s" % locals())
+                now = datetime.now()
+                now = now.strftime("%Y%m%dt%H%M%S%f")
+                mysqlData = dataSet.mysql(
+                    tableName="tcs_gravity_event_annotations", filepath="/tmp/mysqlinsert/%(db)s/%(now)s.sql" % locals(), createStatement=False)
+
+        for db in ["ps1gw", "atlas"]:
+            directory_script_runner(
+                log=self.log,
+                pathToScriptDirectory="/tmp/mysqlinsert/%(db)s" % locals(),
+                databaseName=self.settings["database settings"][db]["db"],
+                loginPath=self.settings["database settings"][db]["loginPath"],
+                waitForResult=True,
+                successRule=False,
+                failureRule=False
+            )
+
+        self.log.info(
+            'completed the ``update_gravity_event_annotations`` method')
         return None
 
     # use the tab-trigger below for new method

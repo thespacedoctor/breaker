@@ -47,6 +47,14 @@ class test_update_ps1_atlas_footprint_tables(unittest.TestCase):
     #     )
     #     dbUpdater.import_new_atlas_pointings()
 
+    def test_update_gravity_event_annotations(self):
+        from breaker import update_ps1_atlas_footprint_tables
+        dbUpdater = update_ps1_atlas_footprint_tables(
+            log=log,
+            settings=settings
+        )
+        dbUpdater.update_gravity_event_annotations()
+
     def test_ps1_nightlog_parser(self):
         from breaker import update_ps1_atlas_footprint_tables
         dbUpdater = update_ps1_atlas_footprint_tables(
