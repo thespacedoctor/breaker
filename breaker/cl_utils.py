@@ -19,6 +19,7 @@ Usage:
     breaker stats <gwid> [<telescope>] [-s <pathToSettingsFile>]
     breaker listen <far> (<mjdStart> <mjdEnd> | <inLastNMins>) [-s <pathToSettingsFile>]
     breaker listen -d [<far> <sec>] [-s <pathToSettingsFile>]
+    breaker contour <gwid> <ra> <dec> 
 
     COMMANDS
     --------
@@ -33,11 +34,14 @@ Usage:
     sources               overplot map with NED sources found within the wave campaign footprint
     faker                 generate a catalogue of simulated transient sources in PS1 exposure ID footprint
     listen                connect to grace DB and download maps found within the given time range
+    contour               determine within which likelihood contour a given transient location lies (nearest 10%)
 
     ARGUMENTS
     ---------
+    ra                    right ascendsion (sexegesimal or decimal degrees)
+    dec                   declination (sexegesimal or decimal degrees)
     far                   false alarm rate limit in Hz. Default *1e-5* (~= 1 per day)
-    -w <gwid>             the gravitational wave ID
+    -w <gwid>             the gravitational wave ID (graceDB or human-readable GW forms allowed)
     pathToSettingsFile    path to the yaml settings file
     -c <centerDeg>        the central longitude line (deg)
     pathToMapDirectory    path to a directory containing localisation maps
@@ -133,6 +137,15 @@ def main(arguments=None):
 
     if not far:
         far = 1e-5
+
+    if gwid and gwid[:2] == "GW":
+        for g in settings["gravitational waves"]:
+            if settings["gravitational waves"][g]["human-name"] == gwid.strip():
+                gwid = g
+    if wFlag and wFlag[:2] == "GW":
+        for g in settings["gravitational waves"]:
+            if settings["gravitational waves"][g]["human-name"] == wFlag.strip():
+                wFlag = g
 
     # CALL FUNCTIONS/OBJECTS
     if update:
@@ -268,6 +281,30 @@ def main(arguments=None):
             allSky=True,
             center=cFlag
         )
+
+    if contour:
+        from breaker.transients import annotator
+        an = annotator(
+            log=log,
+            settings=settings,
+            gwid=gwid
+        )
+
+        from astrocalc.coords import unit_conversion
+        # ASTROCALC UNIT CONVERTER OBJECT
+        converter = unit_conversion(
+            log=log
+        )
+        ra = converter.ra_sexegesimal_to_decimal(
+            ra=ra
+        )
+        dec = converter.dec_sexegesimal_to_decimal(
+            dec=dec
+        )
+        transients = {"cl": (ra, dec)}
+        transientNames, probs = an.annotate(transients)
+        percentage = probs[0]
+        print "The transient lies within the inner %(percentage)s%% likelihood contour of event %(gwid)s" % locals()
 
     if "dbConn" in locals() and dbConn:
         dbConn.commit()

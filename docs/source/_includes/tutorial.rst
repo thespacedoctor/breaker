@@ -28,6 +28,7 @@ There are also **wave specific settings**, indicting where to find the most accu
 .. code-block:: yaml
 
     G184098:
+        human-name: GW150914    
         time:
             mjdStart: 57279.90
             mjdEnd: 57369.90
@@ -374,6 +375,27 @@ Alongside the maps you will find a ``meta.yaml`` file containing some pertinent 
       bayestar3d.fits.gz: false
       skymap.fits.gz: false
 
+
+Transient Location Likelihoods
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+To calculate which likelihood contour a transient/location lies within for a given gravity event run the command:
+
+.. code-block:: bash 
+    
+    breaker contour <gwid> <ra> <dec> 
+
+So for the event 'G211117' (GW151226) if running:
+
+.. code-block:: bash 
+    
+    breaker contour G211117 60.264 41.7032 
+
+gives the following output:
+
+.. code-block:: text
+
+    The transient lies within the inner 10% likelihood contour of event G211117 
 
 
 

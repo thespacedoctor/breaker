@@ -98,19 +98,19 @@
 <p id="n29" class="pln"><a href="#n29">29</a></p>
 <p id="n30" class="pln"><a href="#n30">30</a></p>
 <p id="n31" class="pln"><a href="#n31">31</a></p>
-<p id="n32" class="pln"><a href="#n32">32</a></p>
+<p id="n32" class="stm mis"><a href="#n32">32</a></p>
 <p id="n33" class="stm mis"><a href="#n33">33</a></p>
 <p id="n34" class="stm mis"><a href="#n34">34</a></p>
-<p id="n35" class="stm mis"><a href="#n35">35</a></p>
-<p id="n36" class="pln"><a href="#n36">36</a></p>
+<p id="n35" class="pln"><a href="#n35">35</a></p>
+<p id="n36" class="stm mis"><a href="#n36">36</a></p>
 <p id="n37" class="stm mis"><a href="#n37">37</a></p>
 <p id="n38" class="stm mis"><a href="#n38">38</a></p>
 <p id="n39" class="stm mis"><a href="#n39">39</a></p>
 <p id="n40" class="stm mis"><a href="#n40">40</a></p>
-<p id="n41" class="stm mis"><a href="#n41">41</a></p>
+<p id="n41" class="pln"><a href="#n41">41</a></p>
 <p id="n42" class="pln"><a href="#n42">42</a></p>
-<p id="n43" class="pln"><a href="#n43">43</a></p>
-<p id="n44" class="stm mis"><a href="#n44">44</a></p>
+<p id="n43" class="stm mis"><a href="#n43">43</a></p>
+<p id="n44" class="pln"><a href="#n44">44</a></p>
 <p id="n45" class="pln"><a href="#n45">45</a></p>
 <p id="n46" class="pln"><a href="#n46">46</a></p>
 <p id="n47" class="pln"><a href="#n47">47</a></p>
@@ -137,7 +137,6 @@
 <p id="n68" class="pln"><a href="#n68">68</a></p>
 <p id="n69" class="pln"><a href="#n69">69</a></p>
 <p id="n70" class="pln"><a href="#n70">70</a></p>
-<p id="n71" class="pln"><a href="#n71">71</a></p>
 
             </td>
             <td class="text">
@@ -155,10 +154,10 @@
 <p id="t12" class="stm mis"><span class="nam">install_requires</span> <span class="op">=</span> <span class="op">[</span><span class="strut">&nbsp;</span></p>
 <p id="t13" class="pln">    <span class="str">'pyyaml'</span><span class="op">,</span><span class="strut">&nbsp;</span></p>
 <p id="t14" class="pln">    <span class="str">'fundamentals'</span><span class="op">,</span><span class="strut">&nbsp;</span></p>
-<p id="t15" class="pln">    <span class="str">'requests'</span><span class="op">,</span><span class="strut">&nbsp;</span></p>
+<p id="t15" class="pln">    <span class="str">'requests&lt;=2.11.1'</span><span class="op">,</span><span class="strut">&nbsp;</span></p>
 <p id="t16" class="pln">    <span class="str">'numpy'</span><span class="op">,</span><span class="strut">&nbsp;</span></p>
 <p id="t17" class="pln">    <span class="str">'astropy'</span><span class="op">,</span><span class="strut">&nbsp;</span></p>
-<p id="t18" class="pln">    <span class="str">'healpy'</span><span class="op">,</span><span class="strut">&nbsp;</span></p>
+<p id="t18" class="pln">    <span class="str">'healpy&lt;=1.10.3'</span><span class="op">,</span><span class="strut">&nbsp;</span></p>
 <p id="t19" class="pln">    <span class="str">'crowdedText'</span><span class="op">,</span><span class="strut">&nbsp;</span></p>
 <p id="t20" class="pln">    <span class="str">'qub-sherlock'</span><span class="op">,</span><span class="strut">&nbsp;</span></p>
 <p id="t21" class="pln">    <span class="str">'neddy'</span><span class="op">,</span><span class="strut">&nbsp;</span></p>
@@ -168,50 +167,49 @@
 <p id="t25" class="pln">    <span class="str">'HMpTy'</span><span class="op">,</span><span class="strut">&nbsp;</span></p>
 <p id="t26" class="pln">    <span class="str">'cython'</span><span class="op">,</span><span class="strut">&nbsp;</span></p>
 <p id="t27" class="pln">    <span class="str">'scipy'</span><span class="op">,</span><span class="strut">&nbsp;</span></p>
-<p id="t28" class="pln">    <span class="str">'Tornado'</span><span class="op">,</span><span class="strut">&nbsp;</span></p>
-<p id="t29" class="pln">    <span class="str">'astropy'</span><span class="strut">&nbsp;</span></p>
-<p id="t30" class="pln"><span class="op">]</span><span class="strut">&nbsp;</span></p>
-<p id="t31" class="pln"><span class="strut">&nbsp;</span></p>
-<p id="t32" class="pln"><span class="com"># READ THE DOCS SERVERS</span><span class="strut">&nbsp;</span></p>
-<p id="t33" class="stm mis"><span class="nam">exists</span> <span class="op">=</span> <span class="nam">os</span><span class="op">.</span><span class="nam">path</span><span class="op">.</span><span class="nam">exists</span><span class="op">(</span><span class="str">"/home/docs/"</span><span class="op">)</span><span class="strut">&nbsp;</span></p>
-<p id="t34" class="stm mis"><span class="key">if</span> <span class="nam">exists</span><span class="op">:</span><span class="strut">&nbsp;</span></p>
-<p id="t35" class="stm mis">    <span class="nam">c_exclude_list</span> <span class="op">=</span> <span class="op">[</span><span class="str">'healpy'</span><span class="op">,</span> <span class="str">'astropy'</span><span class="op">,</span><span class="strut">&nbsp;</span></p>
-<p id="t36" class="pln">                      <span class="str">'numpy'</span><span class="op">,</span> <span class="str">'qub-sherlock'</span><span class="op">,</span> <span class="str">'wcsaxes'</span><span class="op">,</span> <span class="str">'HMpTy'</span><span class="op">,</span> <span class="str">'ligo-gracedb'</span><span class="op">]</span><span class="strut">&nbsp;</span></p>
-<p id="t37" class="stm mis">    <span class="key">for</span> <span class="nam">e</span> <span class="key">in</span> <span class="nam">c_exclude_list</span><span class="op">:</span><span class="strut">&nbsp;</span></p>
-<p id="t38" class="stm mis">        <span class="key">try</span><span class="op">:</span><span class="strut">&nbsp;</span></p>
-<p id="t39" class="stm mis">            <span class="nam">install_requires</span><span class="op">.</span><span class="nam">remove</span><span class="op">(</span><span class="nam">e</span><span class="op">)</span><span class="strut">&nbsp;</span></p>
-<p id="t40" class="stm mis">        <span class="key">except</span><span class="op">:</span><span class="strut">&nbsp;</span></p>
-<p id="t41" class="stm mis">            <span class="key">pass</span><span class="strut">&nbsp;</span></p>
+<p id="t28" class="pln">    <span class="str">'Tornado'</span><span class="strut">&nbsp;</span></p>
+<p id="t29" class="pln"><span class="op">]</span><span class="strut">&nbsp;</span></p>
+<p id="t30" class="pln"><span class="strut">&nbsp;</span></p>
+<p id="t31" class="pln"><span class="com"># READ THE DOCS SERVERS</span><span class="strut">&nbsp;</span></p>
+<p id="t32" class="stm mis"><span class="nam">exists</span> <span class="op">=</span> <span class="nam">os</span><span class="op">.</span><span class="nam">path</span><span class="op">.</span><span class="nam">exists</span><span class="op">(</span><span class="str">"/home/docs/"</span><span class="op">)</span><span class="strut">&nbsp;</span></p>
+<p id="t33" class="stm mis"><span class="key">if</span> <span class="nam">exists</span><span class="op">:</span><span class="strut">&nbsp;</span></p>
+<p id="t34" class="stm mis">    <span class="nam">c_exclude_list</span> <span class="op">=</span> <span class="op">[</span><span class="str">'healpy'</span><span class="op">,</span> <span class="str">'astropy'</span><span class="op">,</span><span class="strut">&nbsp;</span></p>
+<p id="t35" class="pln">                      <span class="str">'numpy'</span><span class="op">,</span> <span class="str">'qub-sherlock'</span><span class="op">,</span> <span class="str">'wcsaxes'</span><span class="op">,</span> <span class="str">'HMpTy'</span><span class="op">,</span> <span class="str">'ligo-gracedb'</span><span class="op">]</span><span class="strut">&nbsp;</span></p>
+<p id="t36" class="stm mis">    <span class="key">for</span> <span class="nam">e</span> <span class="key">in</span> <span class="nam">c_exclude_list</span><span class="op">:</span><span class="strut">&nbsp;</span></p>
+<p id="t37" class="stm mis">        <span class="key">try</span><span class="op">:</span><span class="strut">&nbsp;</span></p>
+<p id="t38" class="stm mis">            <span class="nam">install_requires</span><span class="op">.</span><span class="nam">remove</span><span class="op">(</span><span class="nam">e</span><span class="op">)</span><span class="strut">&nbsp;</span></p>
+<p id="t39" class="stm mis">        <span class="key">except</span><span class="op">:</span><span class="strut">&nbsp;</span></p>
+<p id="t40" class="stm mis">            <span class="key">pass</span><span class="strut">&nbsp;</span></p>
+<p id="t41" class="pln"><span class="strut">&nbsp;</span></p>
 <p id="t42" class="pln"><span class="strut">&nbsp;</span></p>
-<p id="t43" class="pln"><span class="strut">&nbsp;</span></p>
-<p id="t44" class="stm mis"><span class="nam">setup</span><span class="op">(</span><span class="nam">name</span><span class="op">=</span><span class="str">"breaker"</span><span class="op">,</span><span class="strut">&nbsp;</span></p>
-<p id="t45" class="pln">      <span class="nam">version</span><span class="op">=</span><span class="nam">__version__</span><span class="op">,</span><span class="strut">&nbsp;</span></p>
-<p id="t46" class="pln">      <span class="nam">description</span><span class="op">=</span><span class="str">"CL-tools for PanSTARRS &amp; ATLAS LIGO-VIRGO (PSAT) group to aid surveys of the likely sky-locations of LIGO-VIRGO discovered Gravitational Waves"</span><span class="op">,</span><span class="strut">&nbsp;</span></p>
-<p id="t47" class="pln">      <span class="nam">long_description</span><span class="op">=</span><span class="nam">readme</span><span class="op">(</span><span class="op">)</span><span class="op">,</span><span class="strut">&nbsp;</span></p>
-<p id="t48" class="pln">      <span class="nam">classifiers</span><span class="op">=</span><span class="op">[</span><span class="strut">&nbsp;</span></p>
-<p id="t49" class="pln">          <span class="str">'Development Status :: 4 - Beta'</span><span class="op">,</span><span class="strut">&nbsp;</span></p>
-<p id="t50" class="pln">          <span class="str">'License :: OSI Approved :: MIT License'</span><span class="op">,</span><span class="strut">&nbsp;</span></p>
-<p id="t51" class="pln">          <span class="str">'Programming Language :: Python :: 2.7'</span><span class="op">,</span><span class="strut">&nbsp;</span></p>
-<p id="t52" class="pln">          <span class="str">'Topic :: Utilities'</span><span class="op">,</span><span class="strut">&nbsp;</span></p>
-<p id="t53" class="pln">      <span class="op">]</span><span class="op">,</span><span class="strut">&nbsp;</span></p>
-<p id="t54" class="pln">      <span class="nam">keywords</span><span class="op">=</span><span class="op">[</span><span class="str">'tools, panstarrs, atlas'</span><span class="op">]</span><span class="op">,</span><span class="strut">&nbsp;</span></p>
-<p id="t55" class="pln">      <span class="nam">url</span><span class="op">=</span><span class="str">'https://github.com/thespacedoctor/breaker'</span><span class="op">,</span><span class="strut">&nbsp;</span></p>
-<p id="t56" class="pln">      <span class="nam">download_url</span><span class="op">=</span><span class="str">'https://github.com/thespacedoctor/breaker/archive/v%(__version__)s.zip'</span> <span class="op">%</span> <span class="nam">locals</span><span class="op">(</span><span class="strut">&nbsp;</span></p>
-<p id="t57" class="pln">      <span class="op">)</span><span class="op">,</span><span class="strut">&nbsp;</span></p>
-<p id="t58" class="pln">      <span class="nam">author</span><span class="op">=</span><span class="str">'David Young'</span><span class="op">,</span><span class="strut">&nbsp;</span></p>
-<p id="t59" class="pln">      <span class="nam">author_email</span><span class="op">=</span><span class="str">'davidrobertyoung@gmail.com'</span><span class="op">,</span><span class="strut">&nbsp;</span></p>
-<p id="t60" class="pln">      <span class="nam">license</span><span class="op">=</span><span class="str">'MIT'</span><span class="op">,</span><span class="strut">&nbsp;</span></p>
-<p id="t61" class="pln">      <span class="nam">packages</span><span class="op">=</span><span class="nam">find_packages</span><span class="op">(</span><span class="op">)</span><span class="op">,</span><span class="strut">&nbsp;</span></p>
-<p id="t62" class="pln">      <span class="nam">package_data</span><span class="op">=</span><span class="op">{</span><span class="str">'breaker'</span><span class="op">:</span> <span class="op">[</span><span class="strut">&nbsp;</span></p>
-<p id="t63" class="pln">          <span class="str">'resources/*/*'</span><span class="op">,</span> <span class="str">'resources/*.*'</span><span class="op">]</span><span class="op">}</span><span class="op">,</span><span class="strut">&nbsp;</span></p>
-<p id="t64" class="pln">      <span class="nam">include_package_data</span><span class="op">=</span><span class="nam">True</span><span class="op">,</span><span class="strut">&nbsp;</span></p>
-<p id="t65" class="pln">      <span class="nam">install_requires</span><span class="op">=</span><span class="nam">install_requires</span><span class="op">,</span><span class="strut">&nbsp;</span></p>
-<p id="t66" class="pln">      <span class="nam">test_suite</span><span class="op">=</span><span class="str">'nose2.collector.collector'</span><span class="op">,</span><span class="strut">&nbsp;</span></p>
-<p id="t67" class="pln">      <span class="nam">tests_require</span><span class="op">=</span><span class="op">[</span><span class="str">'nose2'</span><span class="op">,</span> <span class="str">'cov-core'</span><span class="op">]</span><span class="op">,</span><span class="strut">&nbsp;</span></p>
-<p id="t68" class="pln">      <span class="nam">entry_points</span><span class="op">=</span><span class="op">{</span><span class="strut">&nbsp;</span></p>
-<p id="t69" class="pln">          <span class="str">'console_scripts'</span><span class="op">:</span> <span class="op">[</span><span class="str">'breaker=breaker.cl_utils:main'</span><span class="op">]</span><span class="op">,</span><span class="strut">&nbsp;</span></p>
-<p id="t70" class="pln">      <span class="op">}</span><span class="op">,</span><span class="strut">&nbsp;</span></p>
-<p id="t71" class="pln">      <span class="nam">zip_safe</span><span class="op">=</span><span class="nam">False</span><span class="op">)</span><span class="strut">&nbsp;</span></p>
+<p id="t43" class="stm mis"><span class="nam">setup</span><span class="op">(</span><span class="nam">name</span><span class="op">=</span><span class="str">"breaker"</span><span class="op">,</span><span class="strut">&nbsp;</span></p>
+<p id="t44" class="pln">      <span class="nam">version</span><span class="op">=</span><span class="nam">__version__</span><span class="op">,</span><span class="strut">&nbsp;</span></p>
+<p id="t45" class="pln">      <span class="nam">description</span><span class="op">=</span><span class="str">"CL-tools for PanSTARRS &amp; ATLAS LIGO-VIRGO (PSAT) group to aid surveys of the likely sky-locations of LIGO-VIRGO discovered Gravitational Waves"</span><span class="op">,</span><span class="strut">&nbsp;</span></p>
+<p id="t46" class="pln">      <span class="nam">long_description</span><span class="op">=</span><span class="nam">readme</span><span class="op">(</span><span class="op">)</span><span class="op">,</span><span class="strut">&nbsp;</span></p>
+<p id="t47" class="pln">      <span class="nam">classifiers</span><span class="op">=</span><span class="op">[</span><span class="strut">&nbsp;</span></p>
+<p id="t48" class="pln">          <span class="str">'Development Status :: 4 - Beta'</span><span class="op">,</span><span class="strut">&nbsp;</span></p>
+<p id="t49" class="pln">          <span class="str">'License :: OSI Approved :: MIT License'</span><span class="op">,</span><span class="strut">&nbsp;</span></p>
+<p id="t50" class="pln">          <span class="str">'Programming Language :: Python :: 2.7'</span><span class="op">,</span><span class="strut">&nbsp;</span></p>
+<p id="t51" class="pln">          <span class="str">'Topic :: Utilities'</span><span class="op">,</span><span class="strut">&nbsp;</span></p>
+<p id="t52" class="pln">      <span class="op">]</span><span class="op">,</span><span class="strut">&nbsp;</span></p>
+<p id="t53" class="pln">      <span class="nam">keywords</span><span class="op">=</span><span class="op">[</span><span class="str">'tools, panstarrs, atlas'</span><span class="op">]</span><span class="op">,</span><span class="strut">&nbsp;</span></p>
+<p id="t54" class="pln">      <span class="nam">url</span><span class="op">=</span><span class="str">'https://github.com/thespacedoctor/breaker'</span><span class="op">,</span><span class="strut">&nbsp;</span></p>
+<p id="t55" class="pln">      <span class="nam">download_url</span><span class="op">=</span><span class="str">'https://github.com/thespacedoctor/breaker/archive/v%(__version__)s.zip'</span> <span class="op">%</span> <span class="nam">locals</span><span class="op">(</span><span class="strut">&nbsp;</span></p>
+<p id="t56" class="pln">      <span class="op">)</span><span class="op">,</span><span class="strut">&nbsp;</span></p>
+<p id="t57" class="pln">      <span class="nam">author</span><span class="op">=</span><span class="str">'David Young'</span><span class="op">,</span><span class="strut">&nbsp;</span></p>
+<p id="t58" class="pln">      <span class="nam">author_email</span><span class="op">=</span><span class="str">'davidrobertyoung@gmail.com'</span><span class="op">,</span><span class="strut">&nbsp;</span></p>
+<p id="t59" class="pln">      <span class="nam">license</span><span class="op">=</span><span class="str">'MIT'</span><span class="op">,</span><span class="strut">&nbsp;</span></p>
+<p id="t60" class="pln">      <span class="nam">packages</span><span class="op">=</span><span class="nam">find_packages</span><span class="op">(</span><span class="op">)</span><span class="op">,</span><span class="strut">&nbsp;</span></p>
+<p id="t61" class="pln">      <span class="nam">package_data</span><span class="op">=</span><span class="op">{</span><span class="str">'breaker'</span><span class="op">:</span> <span class="op">[</span><span class="strut">&nbsp;</span></p>
+<p id="t62" class="pln">          <span class="str">'resources/*/*'</span><span class="op">,</span> <span class="str">'resources/*.*'</span><span class="op">]</span><span class="op">}</span><span class="op">,</span><span class="strut">&nbsp;</span></p>
+<p id="t63" class="pln">      <span class="nam">include_package_data</span><span class="op">=</span><span class="nam">True</span><span class="op">,</span><span class="strut">&nbsp;</span></p>
+<p id="t64" class="pln">      <span class="nam">install_requires</span><span class="op">=</span><span class="nam">install_requires</span><span class="op">,</span><span class="strut">&nbsp;</span></p>
+<p id="t65" class="pln">      <span class="nam">test_suite</span><span class="op">=</span><span class="str">'nose2.collector.collector'</span><span class="op">,</span><span class="strut">&nbsp;</span></p>
+<p id="t66" class="pln">      <span class="nam">tests_require</span><span class="op">=</span><span class="op">[</span><span class="str">'nose2'</span><span class="op">,</span> <span class="str">'cov-core'</span><span class="op">]</span><span class="op">,</span><span class="strut">&nbsp;</span></p>
+<p id="t67" class="pln">      <span class="nam">entry_points</span><span class="op">=</span><span class="op">{</span><span class="strut">&nbsp;</span></p>
+<p id="t68" class="pln">          <span class="str">'console_scripts'</span><span class="op">:</span> <span class="op">[</span><span class="str">'breaker=breaker.cl_utils:main'</span><span class="op">]</span><span class="op">,</span><span class="strut">&nbsp;</span></p>
+<p id="t69" class="pln">      <span class="op">}</span><span class="op">,</span><span class="strut">&nbsp;</span></p>
+<p id="t70" class="pln">      <span class="nam">zip_safe</span><span class="op">=</span><span class="nam">False</span><span class="op">)</span><span class="strut">&nbsp;</span></p>
 
             </td>
         </tr>
@@ -222,7 +220,7 @@
     <div class="content">
         <p>
             <a class="nav" href="index.html">&#xab; index</a> &nbsp; &nbsp; <a class="nav" href="https://coverage.readthedocs.io">coverage.py v4.3.4</a>,
-            created at 2017-02-17 20:52
+            created at 2017-03-14 14:10
         </p>
     </div>
 </div>

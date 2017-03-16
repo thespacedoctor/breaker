@@ -112,7 +112,7 @@ class listen():
 
         # VARIABLES
         fileorder = ['LALInference_skymap.fits.gz', 'LALInference.fits.gz',
-                     'bayestar.fits.gz', 'LIB_skymap.fits.gz', 'skymap.fits.gz', 'skyprobcc_cWB.fits', 'LALInference3d.fits.gz', 'bayestar3d.fits.gz', 'BW_skymap.fits']
+                     'bayestar.fits.gz', 'LIB_skymap.fits.gz', 'skymap.fits.gz', 'skyprobcc_cWB.fits', 'LALInference3d.fits.gz', 'bayestar3d.fits.gz', 'BW_skymap.fits', 'cWB_plus_LIB.fits.gz']
         stop = False
 
         farDays = 1 / (float(self.farThreshold) * 60. * 60. * 24.)
@@ -223,6 +223,20 @@ class listen():
                                 eventId = event['graceid']
                                 self.log.error(
                                     "The %(lvfile)s path for %(eventId)s does not seem to exist yet" % locals())
+
+                files = self.client.files(event['graceid'])
+                for k, v in files.json().iteritems():
+                    if ".fits" in k.split(",")[0]:
+                        try:
+                            aMap = self.client.files(event['graceid'], k)
+                            if aMap not in allMaps:
+                                self._write_map_to_disk(
+                                    sMap=aMap,
+                                    mapName=k.split(",")[0],
+                                    waveId=event['graceid']
+                                )
+                        except:
+                            pass
 
                 if len(allMaps) == 0:
                     eventId = event['graceid']
