@@ -226,7 +226,7 @@ class listen():
 
                 files = self.client.files(event['graceid'])
                 for k, v in files.json().iteritems():
-                    if ".fits" in k.split(",")[0]:
+                    if "fits" in k.split(",")[0]:
                         try:
                             aMap = self.client.files(event['graceid'], k)
                             if aMap not in allMaps:
