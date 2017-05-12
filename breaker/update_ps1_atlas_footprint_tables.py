@@ -858,7 +858,7 @@ CREATE TABLE `ps1_nightlogs` (
         moduleDirectory = os.path.dirname(__file__)
         mysql_scripts = moduleDirectory + "/resources/mysql"
 
-        for db in ["ps1gw"]:
+        for db in ["ps1gw", "ps13pi"]:
             directory_script_runner(
                 log=self.log,
                 pathToScriptDirectory=mysql_scripts,
@@ -889,7 +889,7 @@ CREATE TABLE `ps1_nightlogs` (
             dbConn=self.ps1gwDbConn
         )
 
-        for db in ["ps1gw", "atlas"]:
+        for db in ["ps1gw", "atlas", "ps13pi"]:
             directory_script_runner(
                 log=self.log,
                 pathToScriptDirectory=mysql_scripts,
@@ -907,7 +907,7 @@ CREATE TABLE `ps1_nightlogs` (
                 mapPath = self.settings["gravitational waves"][g]["mapPath"]
                 mapName = os.path.basename(mapPath)
 
-                if db == "ps1gw":
+                if db in ["ps1gw", "ps13pi"]:
 
                     sqlQuery = u"""
                         SELECT 
@@ -987,7 +987,7 @@ CREATE TABLE `ps1_nightlogs` (
                 mysqlData = dataSet.mysql(
                     tableName="tcs_gravity_event_annotations", filepath="/tmp/mysqlinsert/%(db)s/%(now)s.sql" % locals(), createStatement=False)
 
-        for db in ["ps1gw", "atlas"]:
+        for db in ["ps1gw", "atlas", "ps13pi"]:
             directory_script_runner(
                 log=self.log,
                 pathToScriptDirectory="/tmp/mysqlinsert/%(db)s" % locals(),
