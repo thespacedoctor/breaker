@@ -110,7 +110,7 @@ class survey_footprint():
             raise IOError(message)
 
         # UNPACK THE PLOT PARAMETERS
-        pixelSizeDeg = 0.01
+        pixelSizeDeg = 0.03
         centralCoordinate = plotParameters["centralCoordinate"]
         raRange = plotParameters["raRange"]
         decRange = plotParameters["decRange"]
