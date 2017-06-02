@@ -92,7 +92,7 @@ class update_ps1_atlas_footprint_tables():
             log=self.log,
             settings=self.settings
         )
-        self.ligo_virgo_wavesDbConn, self.ps1gwDbConn, self.cataloguesDbConn, self.atlasDbConn = db.get()
+        self.ligo_virgo_wavesDbConn, self.ps1gwDbConn, self.cataloguesDbConn, self.atlasDbConn, self.ps13piDbConn = db.get()
 
         return None
 
@@ -887,6 +887,11 @@ CREATE TABLE `ps1_nightlogs` (
             log=self.log,
             sqlQuery=sqlQuery,
             dbConn=self.ps1gwDbConn
+        )
+        writequery(
+            log=self.log,
+            sqlQuery=sqlQuery,
+            dbConn=self.ps13piDbConn
         )
 
         for db in ["ps1gw", "atlas", "ps13pi"]:
