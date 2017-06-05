@@ -914,6 +914,11 @@ CREATE TABLE `ps1_nightlogs` (
 
                 if db in ["ps1gw", "ps13pi"]:
 
+                    if db == "ps1gw":
+                        thisDB = self.ps1gwDbConn
+                    else:
+                        thisDB = self.ps13piDbConn
+
                     sqlQuery = u"""
                         SELECT 
                             a.transient_object_id, a.gracedb_id, t.ra_psf, t.dec_psf
@@ -926,6 +931,7 @@ CREATE TABLE `ps1_nightlogs` (
                                 AND (a.map_name != "%(mapName)s"  or a.map_name is null)
                                 AND a.gracedb_id="%(g)s"; 
                     """ % locals()
+
                     rows = readquery(
                         log=self.log,
                         sqlQuery=sqlQuery,
