@@ -935,7 +935,7 @@ CREATE TABLE `ps1_nightlogs` (
                     rows = readquery(
                         log=self.log,
                         sqlQuery=sqlQuery,
-                        dbConn=self.ps1gwDbConn,
+                        dbConn=thisDB,
                         quiet=False
                     )
 
