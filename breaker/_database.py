@@ -17,7 +17,7 @@ import readline
 import glob
 import pickle
 import time
-import MySQLdb as ms
+import pymysql as ms
 from docopt import docopt
 from fundamentals import tools, times
 
