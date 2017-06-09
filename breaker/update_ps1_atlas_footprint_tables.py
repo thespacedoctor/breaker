@@ -26,6 +26,7 @@ import codecs
 import csv
 import re
 import io
+import pymysql
 from fundamentals.renderer import list_of_dictionaries
 from fundamentals.mysql import directory_script_runner
 
@@ -36,7 +37,7 @@ class update_ps1_atlas_footprint_tables():
 
     Metadata for each GW event should be found in the settings file and are used when associating the telescope pointings in the database with a GW event. For example, here are the metadata for the first GW burst:
 
-    .. code-block:: yaml 
+    .. code-block:: yaml
 
         gravitational waves:
             G184098:
@@ -60,11 +61,11 @@ class update_ps1_atlas_footprint_tables():
 
     **Usage:**
 
-        .. code-block:: python 
+        .. code-block:: python
 
             from breaker import update_ps1_atlas_footprint_tables
             dbUpdater = update_ps1_atlas_footprint_tables(
-                log=log, 
+                log=log,
                 settings=settings,
                 updateNed=False
             )
@@ -102,10 +103,10 @@ class update_ps1_atlas_footprint_tables():
 
         This method:
 
-            * Imports the new PS1 pointings from the PS1 database, 
-            * Imports the new ATLAS pointings from the ATLAS database, 
-            * attempts to label these pointings with the ID for an associated GW, 
-            * queries NED for new data covered by the sky-area of these pointings and 
+            * Imports the new PS1 pointings from the PS1 database,
+            * Imports the new ATLAS pointings from the ATLAS database,
+            * attempts to label these pointings with the ID for an associated GW,
+            * queries NED for new data covered by the sky-area of these pointings and
             * adds data to the NED stream database table
 
         See the ``update_ps1_atlas_footprint_tables`` class of usage info.
@@ -137,9 +138,10 @@ class update_ps1_atlas_footprint_tables():
 
          **Usage:**
 
-            .. code-block:: python 
+            .. code-block:: python
 
-                # IMPORT NEW PS1 POINTINGS FROM PS1 GW DATABASE INTO LIGO-VIRGO WAVES DATABASE
+                # IMPORT NEW PS1 POINTINGS FROM PS1 GW DATABASE INTO LIGO-VIRGO
+                # WAVES DATABASE
                 from breaker import update_ps1_atlas_footprint_tables
                 dbUpdater = update_ps1_atlas_footprint_tables(
                     log=log,
@@ -150,62 +152,202 @@ class update_ps1_atlas_footprint_tables():
         self.log.info('starting the ``import_new_ps1_pointings`` method')
 
         # SELECT ALL OF THE POINTING INFO REQUIRED FROM THE ps1gw DATABASE
-        sqlQuery = u"""
-            select imageid, m.exptime exp_time, truncate(mjd_obs, 8) mjd, m.fpa_ra as ra, m.fpa_dec as decl, fpa_filter
-              from tcs_cmf_metadata m
-              where m.fpa_ra != "NaN" and m.fpa_dec != "NaN"
-            group by exp_time, mjd, fpa_object, fpa_comment, fpa_ra, fpa_dec, fpa_filter;
-        """ % locals()
-        rows = readquery(
-            log=self.log,
-            sqlQuery=sqlQuery,
-            dbConn=self.ps1gwDbConn,
-            quiet=False
-        )
+        tables = ["ps1_warp_stack_diffs", "ps1_stack_stack_diffs"]
+        filenameMatch = ["ws", "ss"]
+        for t, f in zip(tables, filenameMatch):
 
-        # TIDY RESULTS BEFORE IMPORT
-        entries = []
-
-        converter = unit_conversion(
-            log=self.log
-        )
-        for row in rows:
-            e = {}
-            e["raDeg"] = converter.ra_sexegesimal_to_decimal(
-                ra=row["ra"]
+            sqlQuery = u"""
+                SELECT
+                    imageid,
+                    filename,
+                    m.exptime exp_time,
+                    TRUNCATE(mjd_obs, 8) mjd,
+                    m.fpa_ra AS ra,
+                    m.fpa_dec AS decl,
+                    LEFT(fpa_filter, 1) AS filter,
+                    IF(deteff_counts < 200,
+                        m.zero_pt + m.deteff_magref,
+                        m.zero_pt + m.deteff_magref + m.deteff_calculated_offset) AS limiting_mag
+                FROM
+                    tcs_cmf_metadata m
+                    where filename like "%%.%(f)s.%%";
+            """ % locals()
+            rows = readquery(
+                log=self.log,
+                sqlQuery=sqlQuery,
+                dbConn=self.ps1gwDbConn,
+                quiet=False
             )
-            e["decDeg"] = converter.dec_sexegesimal_to_decimal(
-                dec=row["decl"]
+
+            # TIDY RESULTS BEFORE IMPORT
+            entries = []
+
+            converter = unit_conversion(
+                log=self.log
             )
-            e["exp_time"] = row["exp_time"]
-            e["mjd"] = row["mjd"]
-            e["filter"] = row["fpa_filter"][0]
-            e["ps1_exp_id"] = row["imageid"]
-            entries.append(e)
+            for row in rows:
+                e = {}
+                if row["ra"].lower() == "nan":
+                    e["raDeg"] = None
+                else:
+                    e["raDeg"] = converter.ra_sexegesimal_to_decimal(
+                        ra=row["ra"]
+                    )
+                if row["decl"].lower() == "nan":
+                    e["decDeg"] = None
+                else:
+                    e["decDeg"] = converter.dec_sexegesimal_to_decimal(
+                        dec=row["decl"]
+                    )
+                e["exp_time"] = row["exp_time"]
+                e["mjd"] = row["mjd"]
+                e["filter"] = row["filter"]
+                e["ps1_exp_id"] = row["imageid"]
+                e["limiting_mag"] = row["limiting_mag"]
+                e["filename"] = row["filename"]
+                entries.append(e)
 
-        # ADD THE NEW RESULTS TO THE ps1_pointings TABLE
-        insert_list_of_dictionaries_into_database_tables(
-            dbConn=self.ligo_virgo_wavesDbConn,
+            # ADD THE NEW RESULTS TO THE ps1_pointings TABLE
+            insert_list_of_dictionaries_into_database_tables(
+                dbConn=self.ligo_virgo_wavesDbConn,
+                log=self.log,
+                dictList=entries,
+                dbTableName=t,
+                uniqueKeyList=["filename"],
+                dateModified=False,
+                batchSize=2500,
+                replace=True
+            )
+
+            # APPEND HTMIDs TO THE ps1_pointings TABLE
+            add_htm_ids_to_mysql_database_table(
+                raColName="raDeg",
+                declColName="decDeg",
+                tableName=t,
+                dbConn=self.ligo_virgo_wavesDbConn,
+                log=self.log,
+                primaryIdColumnName="primaryId"
+            )
+
+        print "PS1 pointings synced between `tcs_cmf_metadata` and `%(t)s` database tables" % locals()
+
+        # READ FROM THE WARP-STACK TABLE
+
+        self.ligo_virgo_wavesDbConn.autocommit(True)
+        cur = self.ligo_virgo_wavesDbConn.cursor(pymysql.cursors.DictCursor)
+        cur.execute(u"""
+SET @ROW_NUMBER:=0;
+SET @mjd:='';""")
+
+        cur.execute(u"""SELECT
+            a.mjd,
+            raDeg,
+            decDeg,
+            wrp_mean_lim_mag,
+            wrp_mdn_lim_mag,
+            wrp_set_count,
+            wrp_exptime,
+            filter,
+            htm10ID,
+            htm13ID,
+            htm16ID
+        FROM
+            (SELECT
+                mjd,
+                    raDeg,
+                    decDeg,
+                    htm10ID,
+                    htm13ID,
+                    htm16ID,
+                    AVG(limiting_mag) AS wrp_mdn_lim_mag,
+                    wrp_set_count,
+                    exp_time AS wrp_exptime,
+                    filter
+            FROM
+                (SELECT
+                *,
+                    @ROW_NUMBER:=CASE
+                        WHEN @mjd = mjd THEN @ROW_NUMBER + 1
+                        ELSE 1
+                    END AS count_of_group,
+                    @mjd:=mjd,
+                    (SELECT
+                            COUNT(*)
+                        FROM
+                            ps1_warp_stack_diffs
+                        WHERE
+                            a.mjd = mjd) AS wrp_set_count
+            FROM
+                (SELECT
+                *
+            FROM
+                ps1_warp_stack_diffs
+            ORDER BY mjd , limiting_mag) AS a) AS b
+            WHERE
+                count_of_group BETWEEN wrp_set_count / 2.0 AND wrp_set_count / 2.0 + 1
+            GROUP BY mjd) a,
+            (SELECT
+                mjd, AVG(limiting_mag) AS wrp_mean_lim_mag
+            FROM
+                ps1_warp_stack_diffs
+            GROUP BY mjd) b
+        WHERE
+            a.mjd = b.mjd;
+        """ % locals())
+
+        rows = cur.fetchall()
+        cur.close()
+
+        createStatement = """CREATE TABLE IF NOT EXISTS `ps1_pointings_tmp` (
+  `primaryId` bigint(20) NOT NULL AUTO_INCREMENT COMMENT 'An internal counter',
+  `dateCreated` datetime DEFAULT NULL,
+  `dateLastModified` datetime DEFAULT CURRENT_TIMESTAMP,
+  `updated` tinyint(4) DEFAULT '0',
+  `mjd` double NOT NULL,
+  `raDeg` double DEFAULT NULL,
+  `decDeg` double DEFAULT NULL,
+  `wrp_exptime` double DEFAULT NULL,
+  `wrp_mean_lim_mag` double DEFAULT NULL,
+  `wrp_mdn_lim_mag` double DEFAULT NULL,
+  `wrp_set_count` TINYINT DEFAULT NULL,
+  `filter` varchar(100) DEFAULT NULL,
+  `gw_id` varchar(45) DEFAULT NULL,
+  `subdisks_calculated` tinyint(4) DEFAULT '0',
+  `ned_match` varchar(45) DEFAULT '0',
+  `htm10ID` int(11) DEFAULT NULL,
+  `htm13ID` int(11) DEFAULT NULL,
+  `htm16ID` bigint(20) DEFAULT NULL,
+  PRIMARY KEY (`primaryId`),
+  UNIQUE KEY `primaryId_UNIQUE` (`primaryId`),
+  UNIQUE KEY `mjd` (`mjd`),
+  KEY `idx_htm16ID` (`htm16ID`),
+  KEY `idx_htm10ID` (`htm10ID`),
+  KEY `idx_htm13ID` (`htm13ID`),
+  KEY `idx_mjd` (`mjd`)
+) ENGINE=MyISAM AUTO_INCREMENT=0 DEFAULT CHARSET=latin1;"""
+
+        now = datetime.now()
+        now = now.strftime("%Y%m%dt%H%M%S")
+        dataSet = list_of_dictionaries(
             log=self.log,
-            dictList=entries,
-            dbTableName="ps1_pointings",
-            uniqueKeyList=["raDeg", "decDeg", "mjd"],
-            dateModified=False,
-            batchSize=2500,
-            replace=True
+            listOfDictionaries=list(rows),
+            reDatetime=re.compile('^[0-9]{4}-[0-9]{2}-[0-9]{2}T')
+        )
+        mysqlData = dataSet.mysql(
+            tableName="ps1_pointings_tmp", filepath="/tmp/%(now)s-ps1-pointings/%(now)s.sql" % locals(), createStatement=createStatement)
+
+        directory_script_runner(
+            log=self.log,
+            pathToScriptDirectory="/tmp/%(now)s-ps1-pointings" % locals(),
+            databaseName=self.settings["database settings"][
+                "ligo_virgo_waves"]["db"],
+            loginPath=self.settings["database settings"][
+                "ligo_virgo_waves"]["loginPath"],
+            successRule="delete",
+            failureRule="failed"
         )
 
-        # APPEND HTMIDs TO THE ps1_pointings TABLE
-        add_htm_ids_to_mysql_database_table(
-            raColName="raDeg",
-            declColName="decDeg",
-            tableName="ps1_pointings",
-            dbConn=self.ligo_virgo_wavesDbConn,
-            log=self.log,
-            primaryIdColumnName="primaryId"
-        )
-
-        print "PS1 pointings synced between `tcs_cmf_metadata` and `ps1_pointings` database tables"
+        print "New warp set metrics added to the `ps1_pointings` database table" % locals()
 
         self.log.info('completed the ``import_new_ps1_pointings`` method')
         return None
@@ -442,7 +584,7 @@ class update_ps1_atlas_footprint_tables():
 
         # SELECT THE PS1 POINTINGS NEEDING SUBDISKS CALCULATED
         sqlQuery = u"""
-            select ps1_exp_id, raDeg, decDeg from ps1_pointings where subdisks_calculated = 0
+            select ps1_exp_id, raDeg, decDeg from ps1_pointings where subdisks_calculated = 0 and raDeg is not null
         """ % locals()
 
         rows = readquery(

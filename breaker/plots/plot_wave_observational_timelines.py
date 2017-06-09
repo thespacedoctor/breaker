@@ -429,11 +429,11 @@ class plot_wave_observational_timelines():
                 gwid]["time"]["mjdEnd"]
 
         sqlQuery = u"""
-            SELECT raDeg, decDeg, mjd FROM ps1_pointings where gw_id like "%%%(gwid)s%%" and mjd between %(mjdStart)s and %(mjdEnd)s
+            SELECT raDeg, decDeg, mjd, exp_time, filter, limiting_mag FROM ps1_pointings where gw_id like "%%%(gwid)s%%" and mjd between %(mjdStart)s and %(mjdEnd)s
         """ % locals()
 
         sqlQuery = u"""
-            SELECT raDeg, decDeg, mjd_registered as mjd FROM ps1_nightlogs where gw_id like "%%%(gwid)s%%" and mjd_registered between %(mjdStart)s and %(mjdEnd)s
+            SELECT raDeg, decDeg, mjd_registered as mjd, etime as exp_time, filter FROM ps1_nightlogs where gw_id like "%%%(gwid)s%%" and mjd_registered between %(mjdStart)s and %(mjdEnd)s
         """ % locals()
 
         ps1Pointings = readquery(
@@ -488,7 +488,7 @@ class plot_wave_observational_timelines():
                 gwid]["time"]["mjdEnd"]
 
         sqlQuery = u"""
-            SELECT atlas_object_id, raDeg, decDeg, mjd FROM atlas_pointings where gw_id like "%%%(gwid)s%%" and mjd between %(mjdStart)s and %(mjdEnd)s group by atlas_object_id;
+            SELECT atlas_object_id, raDeg, decDeg, mjd, exp_time, filter FROM atlas_pointings where gw_id like "%%%(gwid)s%%" and mjd between %(mjdStart)s and %(mjdEnd)s group by atlas_object_id;
         """ % locals()
 
         atlasPointings = readquery(

@@ -244,6 +244,8 @@ class survey_footprint():
         finalAreas = []
         finalProbs = []
 
+        print "EXPID, RA, DEC, MJD, EXPTIME, FILTER, LIM-MAG, CUM-AREA, CUM-LIKELIHOOD" % locals()
+
         # USE THIS COORDINATE SET MATCHER TO MATCH OTHER COORDINATE SETS
         # AGAINST
         coordinateSet = Matcher(
@@ -287,6 +289,9 @@ class survey_footprint():
             pra = pt["raDeg"]
             pdec = pt["decDeg"]
             pmjd = pt["mjd"]
+            pexpid = pt["atlas_object_id"]
+            pexptime = pt["exp_time"]
+            pfilter = pt["filter"]
 
             pointingHealpixIds = healpixIds[(((pdec - wd)**2)**0.5 < atlasPointingSide / 2) & (
                 (((pra - wr) * np.cos(wd * DEG_TO_RAD_FACTOR))**2)**0.5 < atlasPointingSide / 2)]
@@ -296,16 +301,18 @@ class survey_footprint():
             #     ((pdec - d)**2)**0.5 < atlasPointingSide / 2) and ((((pra - r) * math.cos(d * DEG_TO_RAD_FACTOR))**2)**0.5 < atlasPointingSide / 2)]
             allHealpixIds = np.append(allHealpixIds, pointingHealpixIds)
 
-        allHealpixIds = np.unique(allHealpixIds)
+            allHealpixIds = np.unique(allHealpixIds)
 
-        # GENERATE DICTIONARY OF PIXEL/PROBABILITIES
-        for hid in allHealpixIds:
-            if int(hid) not in healpixDictionary:
-                healpixDictionary[int(hid)] = aMap[int(hid)]
+            # GENERATE DICTIONARY OF PIXEL/PROBABILITIES
+            for hid in allHealpixIds:
+                if int(hid) not in healpixDictionary:
+                    healpixDictionary[int(hid)] = aMap[int(hid)]
 
-        # NOW CALCULATE THE TOTAL AREA AND PROBABILITY COVERAGE
-        cumArea = len(healpixDictionary) * hpixArea
-        cumProb = sum(healpixDictionary.values())
+            # NOW CALCULATE THE TOTAL AREA AND PROBABILITY COVERAGE
+            cumArea = len(healpixDictionary) * hpixArea
+            cumProb = sum(healpixDictionary.values())
+
+            print "%(pexpid)s, %(pra)s, %(pdec)s, %(pmjd)s, %(pexptime)s, %(pfilter)s, NA, %(cumArea)s, %(cumProb)s" % locals()
 
         print "AREA: %(cumArea)0.2f. PROB: %(cumProb)0.5f" % locals()
 
