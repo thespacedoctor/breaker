@@ -3,6 +3,7 @@ CREATE TABLE IF NOT EXISTS `tcs_gravity_events` (
   `gracedb_id` varchar(10) COLLATE utf8_unicode_ci NOT NULL,
   `mjd` DOUBLE DEFAULT NULL,
   `dateLastModified` datetime DEFAULT NULL,
+  `dateCreated` datetime DEFAULT NULL,
   `updated` tinyint(4) DEFAULT '0',
   PRIMARY KEY (`gravity_event_id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_swedish_ci;
@@ -15,6 +16,7 @@ CREATE TABLE IF NOT EXISTS `tcs_gravity_event_annotations` (
   `gracedb_id` varchar(10) NOT NULL,
   `enclosing_contour` int(11) DEFAULT NULL,
   `map_name` varchar(30) DEFAULT NULL,
+  `dateCreated` datetime DEFAULT NULL,
   `dateLastModified` datetime DEFAULT NULL,
   `updated` tinyint(4) DEFAULT '0',
   PRIMARY KEY (`primaryId`),
