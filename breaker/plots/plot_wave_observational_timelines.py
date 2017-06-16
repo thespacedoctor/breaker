@@ -433,7 +433,7 @@ class plot_wave_observational_timelines():
         """ % locals()
 
         sqlQuery = u"""
-            SELECT raDeg, decDeg, mjd_registered as mjd, etime as exp_time, filter FROM ps1_nightlogs where gw_id like "%%%(gwid)s%%" and mjd_registered between %(mjdStart)s and %(mjdEnd)s
+            SELECT raDeg, decDeg, mjd_registered as mjd, etime as exp_time, f as filter FROM ps1_nightlogs where gw_id like "%%%(gwid)s%%" and mjd_registered between %(mjdStart)s and %(mjdEnd)s
         """ % locals()
 
         ps1Pointings = readquery(
