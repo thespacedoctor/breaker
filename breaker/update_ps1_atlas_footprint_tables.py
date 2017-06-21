@@ -467,7 +467,7 @@ WHERE
 
     def import_new_atlas_pointings(
             self,
-            recent=True):
+            recent=False):
         """
         *Import any new ATLAS GW pointings from the atlas3 database into the ``atlas_pointings`` table of the Ligo-Virgo Waves database*
 
@@ -508,6 +508,7 @@ WHERE
                 `filter`,
                 `mjd_obs` as `mjd`,
                 `ra` as `raDeg`,
+                if(mjd_obs<57860.0,mag5sig+0.75,mag5sig) as `limiting_magnitude`,
                 `object` as `atlas_object_id` from atlas_metadata where %(recent)s order by mjd_obs desc;
         """ % locals()
         rows = readquery(
