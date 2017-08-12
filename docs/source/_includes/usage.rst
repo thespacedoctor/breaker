@@ -14,14 +14,15 @@ Command-Line Usage
     
     Usage:
         breaker init
-        breaker update [-n] [-s <pathToSettingsFile>]
-        breaker skymap <gwid> <pathToLVMap>
+        breaker update [-na] [-s <pathToSettingsFile>]
+        breaker skymap <gwid> <pathToLVMap> [-c <centerDeg>]
         breaker plot [-a] (timeline|history|sources) [-w <gwid>] [-t <telescope>] [-p <projection>] [-s <pathToSettingsFile>]
         breaker plot comparison <gwid> <pathToMapDirectory> [-s <pathToSettingsFile>]
         breaker faker <ps1ExpId> [-s <pathToSettingsFile>]
         breaker stats <gwid> [<telescope>] [-s <pathToSettingsFile>]
         breaker listen <far> (<mjdStart> <mjdEnd> | <inLastNMins>) [-s <pathToSettingsFile>]
-        breaker listen -d <far> [<sec>] [-s <pathToSettingsFile>]
+        breaker listen -d [<far> <sec>] [-s <pathToSettingsFile>]
+        breaker contour <gwid> <ra> <dec> 
     
         COMMANDS
         --------
@@ -36,12 +37,16 @@ Command-Line Usage
         sources               overplot map with NED sources found within the wave campaign footprint
         faker                 generate a catalogue of simulated transient sources in PS1 exposure ID footprint
         listen                connect to grace DB and download maps found within the given time range
+        contour               determine within which likelihood contour a given transient location lies (nearest 10%)
     
         ARGUMENTS
         ---------
-        far                   false alarm rate limit in Hz (1e-5 Hz ~= 1 per day)
-        -w <gwid>             the gravitational wave ID
+        ra                    right ascendsion (sexegesimal or decimal degrees)
+        dec                   declination (sexegesimal or decimal degrees)
+        far                   false alarm rate limit in Hz. Default *1e-5* (~= 1 per day)
+        -w <gwid>             the gravitational wave ID (graceDB or human-readable GW forms allowed)
         pathToSettingsFile    path to the yaml settings file
+        -c <centerDeg>        the central longitude line (deg)
         pathToMapDirectory    path to a directory containing localisation maps
         ps1ExpId              a panstarrs exposure ID
         mjdStart              start of an MJD range
