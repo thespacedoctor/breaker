@@ -341,7 +341,7 @@ class plot_wave_observational_timelines():
             if inFirstDays[1] == 0 and inFirstDays[0] == 0:
                 mjdEnd = 10000000000
 
-        if raMin > 0 and raMax < 360.:
+        if raMin >= 0 and raMax < 360.:
             sqlQuery = u"""
                 SELECT ps1_designation, local_designation, ra_psf, dec_psf FROM tcs_transient_objects o, tcs_latest_object_stats s where o.detection_list_id in (1,2) and o.id=s.id and (s.earliest_mjd between %(mjdStart)s and %(mjdEnd)s) and (ra_psf between %(raMin)s and %(raMax)s) and (`dec_psf` between %(decMin)s and %(decMax)s) ;
             """ % locals()
@@ -436,6 +436,18 @@ class plot_wave_observational_timelines():
             SELECT raDeg, decDeg, mjd_registered as mjd, etime as exp_time, f as filter FROM ps1_nightlogs where gw_id like "%%%(gwid)s%%" and mjd_registered between %(mjdStart)s and %(mjdEnd)s
         """ % locals()
 
+        sqlQuery = u"""
+            SELECT * from (
+SELECT raDeg, decDeg, mjd, exp_time, filter, p.skycell_id, limiting_mag as limiting_magnitude, "stack" as diff_type, filename as exp_id FROM ps1_stack_stack_diff_skycells p, panstarrs_rings_v3_skycell_map s where mjd between %(mjdStart)s and %(mjdEnd)s and p.skycell_id=s.skycell_id
+UNION
+SELECT raDeg, decDeg, mjd, exp_time, filter, p.skycell_id, limiting_mag as limiting_magnitude, "warp" as diff_type, filename as exp_id FROM ps1_warp_stack_diff_skycells p, panstarrs_rings_v3_skycell_map s where mjd between %(mjdStart)s and %(mjdEnd)s and p.skycell_id=s.skycell_id) p order by mjd;
+        """ % locals()
+
+        # STACK-STACK ONLY
+        sqlQuery = u"""
+SELECT raDeg, decDeg, mjd, exp_time, filter, p.skycell_id, limiting_mag as limiting_magnitude, "stack" as diff_type, filename as exp_id FROM ps1_stack_stack_diff_skycells p, panstarrs_rings_v3_skycell_map s where mjd between %(mjdStart)s and %(mjdEnd)s and p.skycell_id=s.skycell_id order by mjd;
+        """ % locals()
+
         ps1Pointings = readquery(
             log=self.log,
             sqlQuery=sqlQuery,
@@ -488,7 +500,7 @@ class plot_wave_observational_timelines():
                 gwid]["time"]["mjdEnd"]
 
         sqlQuery = u"""
-            SELECT atlas_object_id, raDeg, decDeg, mjd, exp_time, filter FROM atlas_pointings where gw_id like "%%%(gwid)s%%" and mjd between %(mjdStart)s and %(mjdEnd)s group by atlas_object_id;
+            SELECT atlas_object_id as exp_id, raDeg, decDeg, mjd, exp_time, filter, limiting_magnitude FROM atlas_pointings where gw_id like "%%%(gwid)s%%" and mjd between %(mjdStart)s and %(mjdEnd)s group by atlas_object_id;
         """ % locals()
 
         atlasPointings = readquery(

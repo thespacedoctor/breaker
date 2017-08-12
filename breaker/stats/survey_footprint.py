@@ -27,6 +27,8 @@ from HMpTy import Matcher
 from fundamentals import tools, times
 from astrocalc.coords import separations
 from breaker.plots import plot_wave_observational_timelines
+from fundamentals.renderer import list_of_dictionaries
+import collections
 
 
 class survey_footprint():
@@ -99,98 +101,56 @@ class survey_footprint():
             gwid=self.gwid)
 
         if self.telescope == "atlas":
-            ps1Pointings = []
+            pointings = altasPointings
+            pointingSide = 5.46
         if self.telescope == "ps1":
-            altasPointings = []
+            pointings = ps1Pointings
+            pointingSide = 0.4
+        telescope = self.telescope.upper()
 
         # SORT ALL POINTINGS VIA MJD
-        ps1Pointings = sorted(list(ps1Pointings),
-                              key=itemgetter('mjd'), reverse=False)
-        altasPointings = sorted(list(altasPointings),
-                                key=itemgetter('mjd'), reverse=False)
+        pointings = sorted(list(pointings),
+                           key=itemgetter('mjd'), reverse=False)
 
         nside, hpixArea, aMap, healpixIds, wr, wd = self._create_healpixid_coordinate_grid()
 
-        # ONLY KEEP NON-ZERO PROB FOOTPRINTS
-        tmpPointings = []
-        ps1exposureRadius = 1.4
-        moveBy = (ps1exposureRadius / 2)**0.5
-        atlasPointingSide = 5.46
-        fivePoints = [(0, 0), (1, 1), (-1, -1), (-1, 1), (1, -1)]
-        for pt in ps1Pointings:
-            pra = pt["raDeg"]
-            pdec = pt["decDeg"]
-            # REMOVE LOWER PROBABILITY FOOTPRINTS
-            phi = pra
-            if phi > 180.:
-                phi = phi - 360.
-            theta = -pdec + 90.
-
-            # CONVERT WORLD TO HEALPIX INDICES (NON-UNIQUE IDS!)
-            for m in fivePoints:
-                healpixId = hp.ang2pix(nside, theta=(theta + m[0] * moveBy) * self.DEG_TO_RAD_FACTOR,
-                                       phi=(phi + m[1] * moveBy) * self.DEG_TO_RAD_FACTOR)
-                thisProb = aMap[healpixId]
-                thisProb = float("%0.*f" % (7, thisProb))
-                if thisProb != 0.:
-                    tmpPointings.append(pt)
-                    break
-        ps1Pointings = tmpPointings
-
         print "EXPID, RA, DEC, MJD, EXPTIME, FILTER, LIM-MAG, EXP-AREA, EXP-LIKELIHOOD, CUM-AREA, CUM-LIKELIHOOD" % locals()
 
-        # # USE THIS COORDINATE SET MATCHER TO MATCH OTHER COORDINATE SETS
-        # # AGAINST
-        # coordinateSet = Matcher(
-        #     log=self.log,
-        #     ra=wr,
-        #     dec=wd,
-        #     depth=12
-        # )
-
-        # ps1RAs = []
-        # ps1RAs[:] = [pt["raDeg"] for pt in ps1Pointings]
-        # ps1DECs = []
-        # ps1DECs[:] = [pt["decDeg"] for pt in ps1Pointings]
-        # ps1mjds = []
-        # ps1mjds[:] = [pt["mjd"] for pt in ps1Pointings]
-
-        # # MATCH THE PS1 POINTINGS AGAINST EVERY PIXEL IN THE SKY
-        # matchIndices1, matchIndices2, seps = coordinateSet.match(
-        #     ra=np.array(ps1RAs),
-        #     dec=np.array(ps1DECs),
-        #     radius=ps1exposureRadius,
-        #     maxmatch=0  # 1 = closest, 0 = all
-        # )
-        # # WHAT ARE ALL OF THE UNIQUE HEALPIXELS COVERED BY THE POINTINGS
-        # healpixIDIndices = np.unique(matchIndices2)
-
-        # # GENERATE DICTIONARY OF PIXEL/PROBABILITIES
-        # for i in healpixIDIndices:
-        #     if i not in healpixDictionary:
-        #         healpixDictionary[healpixIds[i]] = aMap[healpixIds[i]]
-
         allHealpixIds = np.array([])
-        for pti, pt in enumerate(altasPointings):
+        dictList = []
+        iindex = 0
+        count = len(pointings)
+        for pti, pt in enumerate(pointings):
+            pti = pti + 1
+
+            if pti > 1:
+                # Cursor up one line and clear line
+                sys.stdout.write("\x1b[1A\x1b[2K")
+
+            percent = (float(pti) / float(count)) * 100.
+            print '%(pti)s/%(count)s (%(percent)1.1f%% done): summing total area and likelihood covered by %(telescope)s' % locals()
+
+            thisDict = collections.OrderedDict(sorted({}.items()))
             pra = pt["raDeg"]
             pdec = pt["decDeg"]
             pmjd = pt["mjd"]
-            pexpid = pt["atlas_object_id"]
+            pexpid = pt["exp_id"]
             pexptime = pt["exp_time"]
             pfilter = pt["filter"]
+            plim = pt["limiting_magnitude"]
 
             # DETERMINE THE CORNERS FOR EACH ATLAS EXPOSURE AS MAPPED TO THE
             # SKY
-            decCorners = (pdec - atlasPointingSide / 2,
-                          pdec + atlasPointingSide / 2)
+            decCorners = (pdec - pointingSide / 2,
+                          pdec + pointingSide / 2)
             corners = []
             for d in decCorners:
                 if d > 90.:
                     d = 180. - d
                 elif d < -90.:
                     d = -180 - d
-                raCorners = (pra - (atlasPointingSide / 2) / np.cos(d * self.DEG_TO_RAD_FACTOR),
-                             pra + (atlasPointingSide / 2) / np.cos(d * self.DEG_TO_RAD_FACTOR))
+                raCorners = (pra - (pointingSide / 2) / np.cos(d * self.DEG_TO_RAD_FACTOR),
+                             pra + (pointingSide / 2) / np.cos(d * self.DEG_TO_RAD_FACTOR))
                 for r in raCorners:
                     if r > 360.:
                         r = 720. - r
@@ -210,8 +170,11 @@ class survey_footprint():
             expProb[:] = [aMap[i] for i in expPixels]
             expProb = sum(expProb)
             expArea = len(expPixels) * hpixArea
-            if expProb / expArea < 1e-6:
+            if expProb / expArea < 2e-6:
                 continue
+
+            pindex = "%(iindex)05d" % locals()
+            iindex += 1
 
             allHealpixIds = np.append(allHealpixIds, expPixels)
             allHealpixIds = np.unique(allHealpixIds)
@@ -219,9 +182,39 @@ class survey_footprint():
             cumProb[:] = [aMap[int(i)] for i in allHealpixIds]
             cumProb = sum(cumProb)
             cumArea = len(allHealpixIds) * hpixArea
-            print pexpid, pra, pdec, pmjd, pexptime, pfilter, "?", expArea, expProb, cumArea, cumProb
+            thisDict["INDEX"] = pindex
+            thisDict["EXPID"] = pexpid
+            thisDict["RA"] = "%(pra)5.5f" % locals()
+            thisDict["DEC"] = "%(pdec)5.5f" % locals()
+            thisDict["MJD"] = "%(pmjd)6.6f" % locals()
+            thisDict["EXPTIME"] = "%(pexptime)02.1f" % locals()
+            thisDict["FILTER"] = pfilter
+            try:
+                thisDict["LIM-MAG"] = "%(plim)5.2f" % locals()
+            except:
+                thisDict["LIM-MAG"] = "NaN"
+            # thisDict["EXP-AREA"] = expArea
+            # thisDict["EXP-LIKELIHOOD"] = expProb
+            thisDict["CUM-AREA"] = "%(cumArea)05.2f" % locals()
+            thisDict["CUM-LIKELIHOOD"] = "%(cumProb)05.2f" % locals()
+            dictList.append(thisDict)
 
-        # print "AREA: %(cumArea)0.2f. PROB: %(cumProb)0.5f" % locals()
+        print "AREA: %(cumArea)0.2f. PROB: %(cumProb)0.5f" % locals()
+
+        printFile = self.settings["output directory"] + "/" + \
+            self.gwid + "/" + self.gwid + "-" + self.telescope + "-coverage-stats.csv"
+
+        # RECURSIVELY CREATE MISSING DIRECTORIES
+        if not os.path.exists(self.settings["output directory"] + "/" + self.gwid):
+            os.makedirs(self.settings["output directory"] + "/" + self.gwid)
+
+        dataSet = list_of_dictionaries(
+            log=self.log,
+            listOfDictionaries=dictList,
+        )
+        csvData = dataSet.csv(filepath=printFile)
+
+        print "The coverage stats file was written to `%(printFile)s`" % locals()
 
         self.log.info('completed the ``get`` method')
         return None

@@ -131,7 +131,7 @@ class update_ps1_atlas_footprint_tables():
 
     def import_new_ps1_pointings(
             self,
-            recent=True):
+            recent=False):
         """
         *Import any new PS1 GW pointings from the ps1gw database into the ``ps1_pointings`` table of the Ligo-Virgo Waves database*
 
@@ -179,12 +179,10 @@ class update_ps1_atlas_footprint_tables():
                     filename,
                     m.exptime exp_time,
                     TRUNCATE(mjd_obs, 8) mjd,
-                    m.fpa_ra AS ra,
-                    m.fpa_dec AS decl,
                     LEFT(fpa_filter, 1) AS filter,
                     IF(deteff_counts < 200,
-                        m.zero_pt + m.deteff_magref,
-                        m.zero_pt + m.deteff_magref + m.deteff_calculated_offset) AS limiting_mag
+                        m.zero_pt + m.deteff_magref+2.5*log(10,exptime),
+                        m.zero_pt + m.deteff_magref + m.deteff_calculated_offset+2.5*log(10,exptime)) AS limiting_mag
                 FROM
                     tcs_cmf_metadata m
                     where filename like "%%.%(f)s.%%" %(recent)s 
@@ -204,24 +202,13 @@ class update_ps1_atlas_footprint_tables():
             )
             for row in rows:
                 e = {}
-                if row["ra"].lower() == "nan":
-                    e["raDeg"] = None
-                else:
-                    e["raDeg"] = converter.ra_sexegesimal_to_decimal(
-                        ra=row["ra"]
-                    )
-                if row["decl"].lower() == "nan":
-                    e["decDeg"] = None
-                else:
-                    e["decDeg"] = converter.dec_sexegesimal_to_decimal(
-                        dec=row["decl"]
-                    )
                 e["exp_time"] = row["exp_time"]
                 e["mjd"] = row["mjd"]
                 e["filter"] = row["filter"]
                 e["ps1_exp_id"] = row["imageid"]
                 e["limiting_mag"] = row["limiting_mag"]
                 e["filename"] = row["filename"]
+                e["skycell_id"] = (".").join(row["filename"].split(".")[0:5])
                 e["target_image"] = row["ppsub_input"]
                 entries.append(e)
 
@@ -237,230 +224,7 @@ class update_ps1_atlas_footprint_tables():
                 replace=True
             )
 
-            if "warp" in t:
-                # APPEND HTMIDs TO THE ps1_warp_stack_diff_skycells TABLE
-                add_htm_ids_to_mysql_database_table(
-                    raColName="raDeg",
-                    declColName="decDeg",
-                    tableName=t,
-                    dbConn=self.ligo_virgo_wavesDbConn,
-                    log=self.log,
-                    primaryIdColumnName="primaryId"
-                )
-
         print "PS1 skycells synced between `tcs_cmf_metadata` and `%(t)s` database tables" % locals()
-
-        # READ FROM THE WARP-STACK TABLE
-        self.ligo_virgo_wavesDbConn.autocommit(True)
-        cur = self.ligo_virgo_wavesDbConn.cursor(pymysql.cursors.DictCursor)
-        cur.execute(u"""
-SET @ROW_NUMBER:=0;
-SET @mjd:='';""")
-
-        cur.execute(u"""SELECT
-            a.mjd,
-            raDeg,
-            decDeg,
-            wrp_mean_lim_mag,
-            wrp_mdn_lim_mag,
-            wrp_set_count,
-            wrp_exptime,
-            filter,
-            htm10ID,
-            htm13ID,
-            htm16ID
-        FROM
-            (SELECT
-                mjd,
-                    raDeg,
-                    decDeg,
-                    htm10ID,
-                    htm13ID,
-                    htm16ID,
-                    AVG(limiting_mag) AS wrp_mdn_lim_mag,
-                    wrp_set_count,
-                    exp_time AS wrp_exptime,
-                    filter
-            FROM
-                (SELECT
-                *,
-                    @ROW_NUMBER:=CASE
-                        WHEN @mjd = mjd THEN @ROW_NUMBER + 1
-                        ELSE 1
-                    END AS count_of_group,
-                    @mjd:=mjd,
-                    (SELECT
-                            COUNT(*)
-                        FROM
-                            ps1_warp_stack_diff_skycells
-                        WHERE
-                            a.mjd = mjd) AS wrp_set_count
-            FROM
-                (SELECT
-                *
-            FROM
-                ps1_warp_stack_diff_skycells
-            ORDER BY mjd , limiting_mag) AS a) AS b
-            WHERE
-                count_of_group BETWEEN wrp_set_count / 2.0 AND wrp_set_count / 2.0 + 1
-            GROUP BY mjd) a,
-            (SELECT
-                mjd, AVG(limiting_mag) AS wrp_mean_lim_mag
-            FROM
-                ps1_warp_stack_diff_skycells
-            GROUP BY mjd) b
-        WHERE
-            a.mjd = b.mjd;
-        """ % locals())
-
-        rows = cur.fetchall()
-        cur.close()
-
-        createStatement = """CREATE TABLE IF NOT EXISTS `ps1_warp_stack_diff_exposures` (
-  `primaryId` bigint(20) NOT NULL AUTO_INCREMENT COMMENT 'An internal counter',
-  `dateCreated` datetime DEFAULT NULL,
-  `dateLastModified` datetime DEFAULT CURRENT_TIMESTAMP,
-  `updated` tinyint(4) DEFAULT '0',
-  `mjd` double NOT NULL,
-  `raDeg` double DEFAULT NULL,
-  `decDeg` double DEFAULT NULL,
-  `wrp_exptime` double DEFAULT NULL,
-  `wrp_mean_lim_mag` double DEFAULT NULL,
-  `wrp_mdn_lim_mag` double DEFAULT NULL,
-  `wrp_set_count` tinyint(4) DEFAULT NULL,
-  `filter` varchar(100) DEFAULT NULL,
-  `htm10ID` int(11) DEFAULT NULL,
-  `htm13ID` int(11) DEFAULT NULL,
-  `htm16ID` bigint(20) DEFAULT NULL,
-  PRIMARY KEY (`primaryId`),
-  UNIQUE KEY `primaryId_UNIQUE` (`primaryId`),
-  UNIQUE KEY `mjd` (`mjd`),
-  KEY `idx_htm16ID` (`htm16ID`),
-  KEY `idx_htm10ID` (`htm10ID`),
-  KEY `idx_htm13ID` (`htm13ID`),
-  KEY `idx_mjd` (`mjd`)
-) ENGINE=MyISAM AUTO_INCREMENT=0 DEFAULT CHARSET=latin1;
-"""
-
-        now = datetime.now()
-        now = now.strftime("%Y%m%dt%H%M%S")
-        dataSet = list_of_dictionaries(
-            log=self.log,
-            listOfDictionaries=list(rows),
-            reDatetime=re.compile('^[0-9]{4}-[0-9]{2}-[0-9]{2}T')
-        )
-        mysqlData = dataSet.mysql(
-            tableName="ps1_warp_stack_diff_exposures", filepath="/tmp/%(now)s-ps1-pointings/%(now)s.sql" % locals(), createStatement=createStatement)
-
-        directory_script_runner(
-            log=self.log,
-            pathToScriptDirectory="/tmp/%(now)s-ps1-pointings" % locals(),
-            databaseName=self.settings["database settings"][
-                "ligo_virgo_waves"]["db"],
-            loginPath=self.settings["database settings"][
-                "ligo_virgo_waves"]["loginPath"],
-            successRule="delete",
-            failureRule="failed"
-        )
-
-        print "New warp set metrics added to the `ps1_warp_stack_diff_exposures` database table" % locals()
-
-        # READ FROM THE STACK-STACK TABLE
-        self.ligo_virgo_wavesDbConn.autocommit(True)
-        cur = self.ligo_virgo_wavesDbConn.cursor(pymysql.cursors.DictCursor)
-        cur.execute(u"""
-SET @ROW_NUMBER:=0; 
-SET @mjd:='';""")
-
-        cur.execute(u"""SELECT 
-    a.mjd,
-    stk_mean_lim_mag,
-    stk_mdn_lim_mag,
-    stk_set_count,
-    stk_exptime,
-    filter
-FROM
-    (SELECT 
-        mjd,
-        AVG(limiting_mag) AS stk_mdn_lim_mag,
-        stk_set_count,
-        exp_time AS stk_exptime,
-        filter
-    FROM
-        (SELECT 
-        *,
-            @ROW_NUMBER:=CASE
-                WHEN @mjd = mjd THEN @ROW_NUMBER + 1
-                ELSE 1
-            END AS count_of_group,
-            @mjd:=mjd,
-            (SELECT 
-                    COUNT(*)
-                FROM
-                    ps1_stack_stack_diff_skycells
-                WHERE
-                    a.mjd = mjd) AS stk_set_count
-    FROM
-        (SELECT 
-        *
-    FROM
-        ps1_stack_stack_diff_skycells
-    ORDER BY mjd , limiting_mag) AS a) AS b
-    WHERE
-        count_of_group BETWEEN stk_set_count / 2.0 AND stk_set_count / 2.0 + 1
-    GROUP BY mjd) a,
-    (SELECT 
-        mjd, AVG(limiting_mag) AS stk_mean_lim_mag
-    FROM
-        ps1_stack_stack_diff_skycells
-    GROUP BY mjd) b
-WHERE
-    a.mjd = b.mjd;
-        """ % locals())
-
-        rows = cur.fetchall()
-        cur.close()
-
-        createStatement = """CREATE TABLE IF NOT EXISTS `ps1_stack_stack_diff_exposures` (
-  `primaryId` bigint(20) NOT NULL AUTO_INCREMENT COMMENT 'An internal counter',
-  `dateCreated` datetime DEFAULT NULL,
-  `dateLastModified` datetime DEFAULT CURRENT_TIMESTAMP,
-  `updated` tinyint(4) DEFAULT '0',
-  `mjd` double NOT NULL,
-  `stk_exptime` double DEFAULT NULL,
-  `stk_mean_lim_mag` double DEFAULT NULL,
-  `stk_mdn_lim_mag` double DEFAULT NULL,
-  `stk_set_count` tinyint(4) DEFAULT NULL,
-  `filter` varchar(100) DEFAULT NULL,
-  PRIMARY KEY (`primaryId`),
-  UNIQUE KEY `primaryId_UNIQUE` (`primaryId`),
-  UNIQUE KEY `mjd` (`mjd`),
-  KEY `idx_mjd` (`mjd`)
-) ENGINE=MyISAM AUTO_INCREMENT=0 DEFAULT CHARSET=latin1;
-"""
-
-        now = datetime.now()
-        now = now.strftime("%Y%m%dt%H%M%S")
-        dataSet = list_of_dictionaries(
-            log=self.log,
-            listOfDictionaries=list(rows),
-            reDatetime=re.compile('^[0-9]{4}-[0-9]{2}-[0-9]{2}T')
-        )
-        mysqlData = dataSet.mysql(
-            tableName="ps1_stack_stack_diff_exposures", filepath="/tmp/%(now)s-ps1-pointings/%(now)s.sql" % locals(), createStatement=createStatement)
-
-        directory_script_runner(
-            log=self.log,
-            pathToScriptDirectory="/tmp/%(now)s-ps1-pointings" % locals(),
-            databaseName=self.settings["database settings"][
-                "ligo_virgo_waves"]["db"],
-            loginPath=self.settings["database settings"][
-                "ligo_virgo_waves"]["loginPath"],
-            successRule="delete",
-            failureRule="failed"
-        )
-
-        print "New stack metrics added to the `ps1_stack_stack_diff_exposures` database table" % locals()
 
         self.log.info('completed the ``import_new_ps1_pointings`` method')
         return None
@@ -508,8 +272,8 @@ WHERE
                 `filter`,
                 `mjd_obs` as `mjd`,
                 `ra` as `raDeg`,
-                if(mjd_obs<57860.0,mag5sig+0.75,mag5sig) as `limiting_magnitude`,
-                `object` as `atlas_object_id` from atlas_metadata where %(recent)s order by mjd_obs desc;
+                if(mjd_obs<57855.0,mag5sig-0.75,mag5sig) as `limiting_magnitude`,
+                `object` as `atlas_object_id` from atlas_metadata where %(recent)s and object like "TA%%" order by mjd_obs desc;
         """ % locals()
         rows = readquery(
             log=self.log,
