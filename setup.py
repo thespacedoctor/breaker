@@ -25,7 +25,8 @@ install_requires = [
     'HMpTy',
     'cython',
     'scipy',
-    'Tornado'
+    'Tornado',
+    'pymysql'
 ]
 
 # READ THE DOCS SERVERS

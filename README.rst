@@ -12,9 +12,9 @@ breaker
 
 *A python package and command-line tools for the PanSTARRS & ATLAS LIGO-VIRGO (PSAT) group to aid surveys of the likely sky-locations of LIGO-VIRGO discovered Gravitational Waves*.
 
-Here's a summary of what's included in the python package:
 
-.. include:: /classes_and_functions.rst
+
+
 
 Command-Line Usage
 ==================
@@ -57,7 +57,7 @@ Command-Line Usage
     
         ARGUMENTS
         ---------
-        far                   false alarm rate limit in Hz (1e-7 Hz ~= 3.2 per year)
+        far                   false alarm rate limit in Hz (1e-5 Hz ~= 1 per day)
         -w <gwid>             the gravitational wave ID
         pathToSettingsFile    path to the yaml settings file
         pathToMapDirectory    path to a directory containing localisation maps
@@ -190,4 +190,3 @@ IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
 CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-

@@ -26,6 +26,8 @@ import codecs
 import csv
 import re
 import io
+import pymysql
+from astrocalc.times import now as mjdnow
 from fundamentals.renderer import list_of_dictionaries
 from fundamentals.mysql import directory_script_runner
 
@@ -36,7 +38,7 @@ class update_ps1_atlas_footprint_tables():
 
     Metadata for each GW event should be found in the settings file and are used when associating the telescope pointings in the database with a GW event. For example, here are the metadata for the first GW burst:
 
-    .. code-block:: yaml 
+    .. code-block:: yaml
 
         gravitational waves:
             G184098:
@@ -60,11 +62,11 @@ class update_ps1_atlas_footprint_tables():
 
     **Usage:**
 
-        .. code-block:: python 
+        .. code-block:: python
 
             from breaker import update_ps1_atlas_footprint_tables
             dbUpdater = update_ps1_atlas_footprint_tables(
-                log=log, 
+                log=log,
                 settings=settings,
                 updateNed=False
             )
@@ -102,10 +104,10 @@ class update_ps1_atlas_footprint_tables():
 
         This method:
 
-            * Imports the new PS1 pointings from the PS1 database, 
-            * Imports the new ATLAS pointings from the ATLAS database, 
-            * attempts to label these pointings with the ID for an associated GW, 
-            * queries NED for new data covered by the sky-area of these pointings and 
+            * Imports the new PS1 pointings from the PS1 database,
+            * Imports the new ATLAS pointings from the ATLAS database,
+            * attempts to label these pointings with the ID for an associated GW,
+            * queries NED for new data covered by the sky-area of these pointings and
             * adds data to the NED stream database table
 
         See the ``update_ps1_atlas_footprint_tables`` class of usage info.
@@ -128,18 +130,24 @@ class update_ps1_atlas_footprint_tables():
         return None
 
     def import_new_ps1_pointings(
-            self):
+            self,
+            recent=False):
         """
         *Import any new PS1 GW pointings from the ps1gw database into the ``ps1_pointings`` table of the Ligo-Virgo Waves database*
+
+        **Key Arguments:**
+            - ``recent`` -- only sync the most recent 2 months of data (speeds things up)
 
         **Return:**
             - None
 
+
          **Usage:**
 
-            .. code-block:: python 
+            .. code-block:: python
 
-                # IMPORT NEW PS1 POINTINGS FROM PS1 GW DATABASE INTO LIGO-VIRGO WAVES DATABASE
+                # IMPORT NEW PS1 POINTINGS FROM PS1 GW DATABASE INTO LIGO-VIRGO
+                # WAVES DATABASE
                 from breaker import update_ps1_atlas_footprint_tables
                 dbUpdater = update_ps1_atlas_footprint_tables(
                     log=log,
@@ -149,71 +157,86 @@ class update_ps1_atlas_footprint_tables():
         """
         self.log.info('starting the ``import_new_ps1_pointings`` method')
 
+        if recent:
+            mjd = mjdnow(
+                log=self.log
+            ).get_mjd()
+            recent = mjd - 62
+            recent = " and mjd_obs > %(recent)s " % locals()
+        else:
+            recent = ""
+
         # SELECT ALL OF THE POINTING INFO REQUIRED FROM THE ps1gw DATABASE
-        sqlQuery = u"""
-            select imageid, m.exptime exp_time, truncate(mjd_obs, 8) mjd, m.fpa_ra as ra, m.fpa_dec as decl, fpa_filter
-              from tcs_cmf_metadata m
-              where m.fpa_ra != "NaN" and m.fpa_dec != "NaN"
-            group by exp_time, mjd, fpa_object, fpa_comment, fpa_ra, fpa_dec, fpa_filter;
-        """ % locals()
-        rows = readquery(
-            log=self.log,
-            sqlQuery=sqlQuery,
-            dbConn=self.ps1gwDbConn,
-            quiet=False
-        )
+        tables = ["ps1_warp_stack_diff_skycells",
+                  "ps1_stack_stack_diff_skycells"]
+        filenameMatch = ["ws", "ss"]
+        for t, f in zip(tables, filenameMatch):
 
-        # TIDY RESULTS BEFORE IMPORT
-        entries = []
-
-        converter = unit_conversion(
-            log=self.log
-        )
-        for row in rows:
-            e = {}
-            e["raDeg"] = converter.ra_sexegesimal_to_decimal(
-                ra=row["ra"]
+            sqlQuery = u"""
+                SELECT
+                    imageid,
+                    ppsub_input,
+                    filename,
+                    m.exptime exp_time,
+                    TRUNCATE(mjd_obs, 8) mjd,
+                    LEFT(fpa_filter, 1) AS filter,
+                    IF(deteff_counts < 200,
+                        m.zero_pt + m.deteff_magref+2.5*log(10,exptime),
+                        m.zero_pt + m.deteff_magref + m.deteff_calculated_offset+2.5*log(10,exptime)) AS limiting_mag
+                FROM
+                    tcs_cmf_metadata m
+                    where filename like "%%.%(f)s.%%" %(recent)s 
+            """ % locals()
+            rows = readquery(
+                log=self.log,
+                sqlQuery=sqlQuery,
+                dbConn=self.ps1gwDbConn,
+                quiet=False
             )
-            e["decDeg"] = converter.dec_sexegesimal_to_decimal(
-                dec=row["decl"]
+
+            # TIDY RESULTS BEFORE IMPORT
+            entries = []
+
+            converter = unit_conversion(
+                log=self.log
             )
-            e["exp_time"] = row["exp_time"]
-            e["mjd"] = row["mjd"]
-            e["filter"] = row["fpa_filter"][0]
-            e["ps1_exp_id"] = row["imageid"]
-            entries.append(e)
+            for row in rows:
+                e = {}
+                e["exp_time"] = row["exp_time"]
+                e["mjd"] = row["mjd"]
+                e["filter"] = row["filter"]
+                e["ps1_exp_id"] = row["imageid"]
+                e["limiting_mag"] = row["limiting_mag"]
+                e["filename"] = row["filename"]
+                e["skycell_id"] = (".").join(row["filename"].split(".")[0:5])
+                e["target_image"] = row["ppsub_input"]
+                entries.append(e)
 
-        # ADD THE NEW RESULTS TO THE ps1_pointings TABLE
-        insert_list_of_dictionaries_into_database_tables(
-            dbConn=self.ligo_virgo_wavesDbConn,
-            log=self.log,
-            dictList=entries,
-            dbTableName="ps1_pointings",
-            uniqueKeyList=["raDeg", "decDeg", "mjd"],
-            dateModified=False,
-            batchSize=2500,
-            replace=True
-        )
+            # ADD THE NEW RESULTS TO THE ps1_pointings TABLE
+            insert_list_of_dictionaries_into_database_tables(
+                dbConn=self.ligo_virgo_wavesDbConn,
+                log=self.log,
+                dictList=entries,
+                dbTableName=t,
+                uniqueKeyList=["filename"],
+                dateModified=False,
+                batchSize=2500,
+                replace=True
+            )
 
-        # APPEND HTMIDs TO THE ps1_pointings TABLE
-        add_htm_ids_to_mysql_database_table(
-            raColName="raDeg",
-            declColName="decDeg",
-            tableName="ps1_pointings",
-            dbConn=self.ligo_virgo_wavesDbConn,
-            log=self.log,
-            primaryIdColumnName="primaryId"
-        )
-
-        print "PS1 pointings synced between `tcs_cmf_metadata` and `ps1_pointings` database tables"
+        print "PS1 skycells synced between `tcs_cmf_metadata` and `%(t)s` database tables" % locals()
 
         self.log.info('completed the ``import_new_ps1_pointings`` method')
         return None
 
     def import_new_atlas_pointings(
-            self):
+            self,
+            recent=False):
         """
         *Import any new ATLAS GW pointings from the atlas3 database into the ``atlas_pointings`` table of the Ligo-Virgo Waves database*
+
+        **Key Arguments:**
+            - ``recent`` -- only sync the most recent 2 months of data (speeds things up)
 
         **Return:**
             - None
@@ -232,6 +255,15 @@ class update_ps1_atlas_footprint_tables():
         """
         self.log.info('starting the ``import_new_atlas_pointings`` method')
 
+        if recent:
+            mjd = mjdnow(
+                log=self.log
+            ).get_mjd()
+            recent = mjd - 62
+            recent = " mjd_obs > %(recent)s " % locals()
+        else:
+            recent = "1=1"
+
         # SELECT ALL OF THE POINTING INFO REQUIRED FROM THE ps1gw DATABASE
         sqlQuery = u"""
             SELECT
@@ -240,7 +272,8 @@ class update_ps1_atlas_footprint_tables():
                 `filter`,
                 `mjd_obs` as `mjd`,
                 `ra` as `raDeg`,
-                `object` as `atlas_object_id` from atlas_metadata order by mjd_obs desc;
+                if(mjd_obs<57855.0,mag5sig-0.75,mag5sig) as `limiting_magnitude`,
+                `object` as `atlas_object_id` from atlas_metadata where %(recent)s and object like "TA%%" order by mjd_obs desc;
         """ % locals()
         rows = readquery(
             log=self.log,
@@ -442,7 +475,7 @@ class update_ps1_atlas_footprint_tables():
 
         # SELECT THE PS1 POINTINGS NEEDING SUBDISKS CALCULATED
         sqlQuery = u"""
-            select ps1_exp_id, raDeg, decDeg from ps1_pointings where subdisks_calculated = 0
+            select ps1_exp_id, raDeg, decDeg from ps1_pointings where subdisks_calculated = 0 and raDeg is not null
         """ % locals()
 
         rows = readquery(
