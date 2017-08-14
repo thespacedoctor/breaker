@@ -12,7 +12,7 @@ def readme():
 install_requires = [
     'pyyaml',
     'fundamentals',
-    'requests<=2.11.1',
+    'requests',
     'numpy',
     'astropy',
     'healpy<=1.10.3',
