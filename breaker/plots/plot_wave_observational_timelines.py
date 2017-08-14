@@ -436,17 +436,17 @@ class plot_wave_observational_timelines():
             SELECT raDeg, decDeg, mjd_registered as mjd, etime as exp_time, f as filter FROM ps1_nightlogs where gw_id like "%%%(gwid)s%%" and mjd_registered between %(mjdStart)s and %(mjdEnd)s
         """ % locals()
 
-        sqlQuery = u"""
-            SELECT * from (
-SELECT raDeg, decDeg, mjd, exp_time, filter, p.skycell_id, limiting_mag as limiting_magnitude, "stack" as diff_type, filename as exp_id FROM ps1_stack_stack_diff_skycells p, panstarrs_rings_v3_skycell_map s where mjd between %(mjdStart)s and %(mjdEnd)s and p.skycell_id=s.skycell_id
-UNION
-SELECT raDeg, decDeg, mjd, exp_time, filter, p.skycell_id, limiting_mag as limiting_magnitude, "warp" as diff_type, filename as exp_id FROM ps1_warp_stack_diff_skycells p, panstarrs_rings_v3_skycell_map s where mjd between %(mjdStart)s and %(mjdEnd)s and p.skycell_id=s.skycell_id) p order by mjd;
-        """ % locals()
+#         sqlQuery = u"""
+#             SELECT * from (
+# SELECT raDeg, decDeg, mjd, exp_time, filter, p.skycell_id, limiting_mag as limiting_magnitude, "stack" as diff_type, filename as exp_id FROM ps1_stack_stack_diff_skycells p, panstarrs_rings_v3_skycell_map s where mjd between %(mjdStart)s and %(mjdEnd)s and p.skycell_id=s.skycell_id
+# UNION
+# SELECT raDeg, decDeg, mjd, exp_time, filter, p.skycell_id, limiting_mag as limiting_magnitude, "warp" as diff_type, filename as exp_id FROM ps1_warp_stack_diff_skycells p, panstarrs_rings_v3_skycell_map s where mjd between %(mjdStart)s and %(mjdEnd)s and p.skycell_id=s.skycell_id) p order by mjd;
+#         """ % locals()
 
-        # STACK-STACK ONLY
-        sqlQuery = u"""
-SELECT raDeg, decDeg, mjd, exp_time, filter, p.skycell_id, limiting_mag as limiting_magnitude, "stack" as diff_type, filename as exp_id FROM ps1_stack_stack_diff_skycells p, panstarrs_rings_v3_skycell_map s where mjd between %(mjdStart)s and %(mjdEnd)s and p.skycell_id=s.skycell_id order by mjd;
-        """ % locals()
+#         # STACK-STACK ONLY
+#         sqlQuery = u"""
+# SELECT raDeg, decDeg, mjd, exp_time, filter, p.skycell_id, limiting_mag as limiting_magnitude, "stack" as diff_type, filename as exp_id FROM ps1_stack_stack_diff_skycells p, panstarrs_rings_v3_skycell_map s where mjd between %(mjdStart)s and %(mjdEnd)s and p.skycell_id=s.skycell_id order by mjd;
+#         """ % locals()
 
         ps1Pointings = readquery(
             log=self.log,
