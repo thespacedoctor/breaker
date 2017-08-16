@@ -1217,7 +1217,6 @@ class plot_wave_observational_timelines():
         # atlasPointings = []
         for atp in atlasPointings:
             # add a path patch
-            print atp
             atlasExpId = atp["exp_id"]
             raDeg = atp["raDeg"]
             decDeg = atp["decDeg"]
