@@ -58,7 +58,9 @@ class update_ps1_atlas_footprint_tables():
         - ``log`` -- logger
         - ``settings`` -- the settings dictionary
         - ``updateNed`` -- do you want to update NED stream in database (can take a LONG time). Default *False*
+        - ``updatePointings`` -- import new pointings from ATLAS and PS1 into the breaker database. Default *True*
         - ``updateAll`` -- update the PS1 database up to 21 days prior to the wave detecion. Default *False*
+        - ``updateTransientEventTags`` -- tag transients in the database with their gravity event map probability region locations (tagged for each event). Default *True*
 
     **Usage:**
 
@@ -68,7 +70,10 @@ class update_ps1_atlas_footprint_tables():
             dbUpdater = update_ps1_atlas_footprint_tables(
                 log=log,
                 settings=settings,
-                updateNed=False
+                updateNed=False,
+                updatePointings=True,
+                updateAll=False,
+                updateTransientEventTags=True
             )
             dbUpdater.get()
     """
@@ -78,13 +83,17 @@ class update_ps1_atlas_footprint_tables():
             log,
             settings=False,
             updateNed=False,
-            updateAll=False
+            updateAll=False,
+            updatePointings=True,
+            updateTransientEventTags=True
     ):
         self.log = log
         log.debug("instansiating a new 'update_ps1_atlas_footprint_tables' object")
         self.settings = settings
         self.updateNed = updateNed
         self.updateAll = updateAll
+        self.updatePointings = updatePointings
+        self.updateTransientEventTags = updateTransientEventTags
 
         # xt-self-arg-tmpx
 
@@ -117,11 +126,12 @@ class update_ps1_atlas_footprint_tables():
         """
         self.log.info('starting the ``get`` method')
 
-        self.import_new_ps1_pointings()
-        self.import_new_atlas_pointings()
-        self.parse_panstarrs_nightlogs(updateAll=self.updateAll)
-        self.label_pointings_with_gw_ids()
-        self.populate_ps1_subdisk_table()
+        if self.updatePointings:
+            self.import_new_ps1_pointings()
+            self.import_new_atlas_pointings()
+            self.parse_panstarrs_nightlogs(updateAll=self.updateAll)
+            self.label_pointings_with_gw_ids()
+            self.populate_ps1_subdisk_table()
         if self.updateNed:
             self.update_ned_database_table()
         self.update_gravity_event_annotations()
