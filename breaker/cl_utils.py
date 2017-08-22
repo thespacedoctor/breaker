@@ -11,7 +11,7 @@
 
 Usage:
     breaker init
-    breaker update [-na] [-s <pathToSettingsFile>]
+    breaker update [-naP] [-s <pathToSettingsFile>]
     breaker skymap <gwid> <pathToLVMap> [-c <centerDeg>]
     breaker plot [-a] (timeline|history|sources) [-w <gwid>] [-t <telescope>] [-p <projection>] [-s <pathToSettingsFile>]
     breaker plot comparison <gwid> <pathToMapDirectory> [-s <pathToSettingsFile>]
@@ -61,6 +61,7 @@ Usage:
     -n, --updateNed       update the NED database steam
     -d, --daemon          listen in daemon mode
     -a, --all             plot all timeline plot (including the CPU intensive -21-0 days and all transients/footprints plots)
+    -P, --no-pointings    do not update pointings 
 
 """
 ################# GLOBAL IMPORTS ####################
@@ -149,11 +150,15 @@ def main(arguments=None):
 
     # CALL FUNCTIONS/OBJECTS
     if update:
+        pointingsFlag = True
+        if nopointingsFlag:
+            pointingsFlag = False
         u = update_ps1_atlas_footprint_tables(
             log=log,
             settings=settings,
             updateNed=updateNedFlag,
-            updateAll=allFlag
+            updateAll=allFlag,
+            updatePointings=pointingsFlag
         )
         u.get()
     if plot and history:
