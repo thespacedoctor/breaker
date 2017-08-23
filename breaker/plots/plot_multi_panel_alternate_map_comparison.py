@@ -282,7 +282,7 @@ class plot_multi_panel_alternate_map_comparison():
             contours = np.reshape(np.array(contours), (yRange, xRange))
 
             # GRAB THE WCS FROM HEADER GENERATED EARLIER
-            from wcsaxes import datasets, WCS
+            from astropy.wcs import WCS
             wcs = WCS(hdu.header)
 
             if mapI == 0:
