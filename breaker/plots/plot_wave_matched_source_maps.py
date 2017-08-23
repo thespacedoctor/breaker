@@ -271,7 +271,6 @@ class plot_wave_matched_source_maps():
         contours = np.reshape(np.array(contours), (yRange, xRange))
 
         # GRAB THE WCS FROM HEADER GENERATED EARLIER
-        from wcsaxes import datasets, WCS
         from astropy.wcs import WCS
         wcs = WCS(hdu.header)
 

@@ -845,9 +845,8 @@ class plot_wave_observational_timelines():
             hdu = fits.PrimaryHDU(header=header, data=probs)
 
             # GRAB THE WCS FROM HEADER GENERATED EARLIER
-            from wcsaxes import datasets, WCS
             from astropy.wcs import WCS
-            from wcsaxes import WCSAxes
+            from astropy.visualization.wcsaxes import WCSAxes
 
             wcs = WCS(hdu.header)
             # USE WCS AS THE PROJECTION
@@ -1002,9 +1001,8 @@ class plot_wave_observational_timelines():
             hdu = fits.PrimaryHDU(header=header, data=probs)
 
             # GRAB THE WCS FROM HEADER GENERATED EARLIER
-            from wcsaxes import datasets, WCS
             from astropy.wcs import WCS
-            from wcsaxes import WCSAxes
+            from astropy.visualization.wcsaxes import WCSAxes
 
             wcs = WCS(hdu.header)
             # USE WCS AS THE PROJECTION

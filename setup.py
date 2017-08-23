@@ -19,7 +19,6 @@ install_requires = [
     'crowdedText',
     'qub-sherlock',
     'neddy',
-    'wcsaxes',
     'docopt',
     'ligo-gracedb',
     'HMpTy',
@@ -33,7 +32,7 @@ install_requires = [
 exists = os.path.exists("/home/docs/")
 if exists:
     c_exclude_list = ['healpy', 'astropy',
-                      'numpy', 'qub-sherlock', 'wcsaxes', 'HMpTy', 'ligo-gracedb']
+                      'numpy', 'qub-sherlock', 'HMpTy', 'ligo-gracedb']
     for e in c_exclude_list:
         try:
             install_requires.remove(e)
