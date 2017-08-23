@@ -22,9 +22,6 @@ install_requires = [
     'docopt',
     'ligo-gracedb',
     'HMpTy',
-    'cython',
-    'scipy',
-    'Tornado',
     'pymysql'
 ]
 
