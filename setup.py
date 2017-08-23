@@ -39,6 +39,7 @@ setup(name="breaker",
           'adjustText',
           'sherlock',
           'neddy',
+          'Tornado',
           'wcsaxes'
       ],
       test_suite='nose.collector',
