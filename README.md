@@ -1,28 +1,75 @@
 breaker
 =======
 
-*Tools used by the PanSTARRS & ATLAS teams when surveying the likely
-sky-locations of LIGO-VIRGO discovered Gravitational Waves*.
+[![Documentation Status](https://readthedocs.org/projects/breaker/badge/)](http://breaker.readthedocs.io/en/latest/?badge)
 
-Usage
-=====
+[![Coverage Status](https://cdn.rawgit.com/thespacedoctor/breaker/master/coverage.svg)](https://cdn.rawgit.com/thespacedoctor/breaker/master/htmlcov/index.html)
 
-    breaker update [-s <pathToSettingsFile>]
-    breaker plot (timeline|history|sources [<gwid>]) [-s <pathToSettingsFile>]
-    breaker plot comparison <gwid> <pathToMapDirectory> [-s <pathToSettingsFile>]
-    breaker faker <ps1ExpId> [-s <pathToSettingsFile>]
-    breaker stats <gwid> [-s <pathToSettingsFile>]
+*A python package and command-line tools for the PanSTARRS & ATLAS
+LIGO-VIRGO (PSAT) group to aid surveys of the likely sky-locations of
+LIGO-VIRGO discovered Gravitational Waves*.
 
-    -h, --help            show this help message
-    -s, --settings        the settings file
-    plot                  update the gravitational wave plots
-    timeline              observations looking forward from date of GW detection
-    history               observations from the past x days
-    faker                 generate a catalogue of simulated transient source in ps1 FP
-    stats                 output some stats for the GW surveys
+Command-Line Usage
+------------------
+
+    *The CL tools for breaker*
+
+    :Author:
+        David Young
+
+    :Date Created:
+        October 29, 2015
+
+    Usage:
+        breaker init
+        breaker update [-n] [-s <pathToSettingsFile>]
+        breaker skymap <gwid> <pathToLVMap>
+        breaker plot [-a] (timeline|history|sources) [-w <gwid>] [-t <telescope>] [-p <projection>] [-s <pathToSettingsFile>]
+        breaker plot comparison <gwid> <pathToMapDirectory> [-s <pathToSettingsFile>]
+        breaker faker <ps1ExpId> [-s <pathToSettingsFile>]
+        breaker stats <gwid> [<telescope>] [-s <pathToSettingsFile>]
+        breaker listen <far> (<mjdStart> <mjdEnd> | <inLastNMins>) [-s <pathToSettingsFile>]
+        breaker listen -d <far> [<sec>] [-s <pathToSettingsFile>]
+
+        COMMANDS
+        --------
+        init                  setup the breaker settings file for the first time
+        update                update the PS1 footprint table in breaker database and associate with GW-IDs. Optionally download overlapping NED source and also add to the database
+        skymap                generate an all sky FITS & PDF image map given the path to the LV likeihood map (Meractor and Mollweide projections respectively)
+        plot                  enter plotting mode
+        timeline              plot from the epoch of the wave detection forward in time
+        history               plot from now back in time over the last days, weeks and months
+        comparison            produce a multi-panel plot to compare wave maps
+        stats                 generate some coverage stats for a given wave survey campaign
+        sources               overplot map with NED sources found within the wave campaign footprint
+        faker                 generate a catalogue of simulated transient sources in PS1 exposure ID footprint
+        listen                connect to grace DB and download maps found within the given time range
+
+        ARGUMENTS
+        ---------
+        far                   false alarm rate limit in Hz (1e-5 Hz ~= 1 per day)
+        -w <gwid>             the gravitational wave ID
+        pathToSettingsFile    path to the yaml settings file
+        pathToMapDirectory    path to a directory containing localisation maps
+        ps1ExpId              a panstarrs exposure ID
+        mjdStart              start of an MJD range
+        mjdEnd                end of the MJD range
+        inLastNMins           in the last N number of minutes
+        pathToLVMap           path to the LV likelihood map
+        sec                   time in seconds
+        -t <telescope>        select an individual telescope (default is all telescopes) [ps1|atlas]
+        -p <projection>       skymap projection. Default *mercator*. [mercator|gnomonic|mollweide]
+
+        FLAGS
+        -----
+        -h, --help            show this help message
+        -s, --settings        the settings file
+        -n, --updateNed       update the NED database steam
+        -d, --daemon          listen in daemon mode
+        -a, --all             plot all timeline plot (including the CPU intensive -21-0 days and all transients/footprints plots)
 
 Documentation
-=============
+-------------
 
 Documentation for breaker is hosted by [Read the
 Docs](http://breaker.readthedocs.org/en/stable/) (last [stable
@@ -30,12 +77,9 @@ version](http://breaker.readthedocs.org/en/stable/) and [latest
 version](http://breaker.readthedocs.org/en/latest/)).
 
 Installation
-============
+------------
 
-Currently you need to manually install `dryxPython` and `HMpTy` packages
-before installing breaker.
-
-The easiest way to install breaker us to use `pip`:
+The easiest way to install breaker is to use `pip`:
 
     pip install breaker
 
@@ -51,8 +95,7 @@ To upgrade to the latest version of breaker use the command:
 
     pip install breaker --upgrade
 
-Troubleshooting
----------------
+### Troubleshooting
 
 If you're having trouble with the installation here are a few things to
 try:
@@ -61,25 +104,28 @@ try:
 clang before astropy will install. So before the breaker installation,
 try:
 
-`` `bash setenv CC clang ``\`
+    setenv CC clang
 
 or, for bash:
 
-`` `bash export CC=clang ``\`
+    export CC=clang
 
 Then try and install breaker again.
 
 **healpy**. If you're having trouble installing healpy try installing
-the [lastest version from
+the [latest version from
 github](https://github.com/healpy/healpy/releases). Download and extract
 the tarball.
 
 Untar, set your `MACOSX_DEPLOYMENT_TARGET` environment variable and
 install:
 
-`` ` tar -xvf healpy-1.9.0.tar.gz cd healpy-1.9.0 setenv MACOSX_DEPLOYMENT_TARGET 10.11 python setup.py install ``\`
+    tar -xvf healpy-1.9.0.tar.gz
+    cd healpy-1.9.0
+    setenv MACOSX_DEPLOYMENT_TARGET 10.11
+    python setup.py install
 
-### Development
+#### Development
 
 If you want to tinker with the code, then install in development mode.
 This means you can modify the code from your cloned repo:
@@ -91,13 +137,13 @@ This means you can modify the code from your cloned repo:
 [Pull requests](https://github.com/thespacedoctor/breaker/pulls) are
 welcomed!
 
-### Issues
+#### Issues
 
 Please report any issues
 [here](https://github.com/thespacedoctor/breaker/issues).
 
 License
-=======
+-------
 
 Copyright (c) 2016 David Young
 

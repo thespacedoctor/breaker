@@ -12,6 +12,9 @@ APIDIR        = source/_api
 INDIR         = source/_includes
 READMERST = ../README.rst
 READMEMD = ../README.md
+BLOGRST = ../blog-post.rst
+BLOGMD = ../blog-post.md
+
 
 # Internal variables.
 PAPEROPT_a4     = -D latex_paper_size=a4
@@ -45,7 +48,7 @@ help:
 	@echo "  doctest    to run all doctests embedded in the documentation (if enabled)"
 
 clean:
-	-rm -rf $(BUILDDIR)/*
+	rm -rf $(BUILDDIR)/*
 
 html:
 	
@@ -62,7 +65,23 @@ html:
 	@cat $(INDIR)/issues.rst >> $(READMERST)
 	@echo "" >> $(READMERST)
 	@cat $(INDIR)/license.rst >> $(READMERST)
-	@echo "" >> $(READMERST)
+	@echo "" >> $(BLOGRST)
+	sed -i -e "s/Here's a summary of what's included in the python package://g" $(READMERST)
+	sed -i -e "s/.. include:: \/classes_and_functions.rst//g" $(READMERST)	
+	@cat $(INDIR)/description.rst > $(BLOGRST)
+	@echo "" >> $(BLOGRST)
+	@cat $(INDIR)/usage.rst >> $(BLOGRST)
+	@echo "" >> $(BLOGRST)
+	@cat $(INDIR)/installation.rst >> $(BLOGRST)
+	@echo "" >> $(BLOGRST)
+	@cat $(INDIR)/documentation.rst >> $(BLOGRST)
+	@echo "" >> $(BLOGRST)
+	@cat $(INDIR)/tutorial.rst >> $(BLOGRST)
+	@echo "" >> $(BLOGRST)
+	sed -i -e "s/Here's a summary of what's included in the python package://g" $(BLOGRST)
+	sed -i -e "s/.. include:: \/classes_and_functions.rst//g" $(BLOGRST)
+
+	pandoc -s --columns=3000 --smart --wrap=preserve -f rst -t markdown_mmd+yaml_metadata_block+tex_math_dollars+mmd_link_attributes+raw_html+backtick_code_blocks --output=$(BLOGMD) $(BLOGRST)
 
 	pandoc --from=rst --to=markdown_mmd --output=$(READMEMD) $(READMERST)
 
@@ -96,24 +115,24 @@ htmlhelp:
 	$(SPHINXBUILD) -b htmlhelp $(ALLSPHINXOPTS) $(BUILDDIR)/htmlhelp
 	@echo
 	@echo "Build finished; now you can run HTML Help Workshop with the" \
-	      ".hhp project file in $(BUILDDIR)/htmlhelp."
+		  ".hhp project file in $(BUILDDIR)/htmlhelp."
 
 qthelp:
 	$(SPHINXBUILD) -b qthelp $(ALLSPHINXOPTS) $(BUILDDIR)/qthelp
 	@echo
 	@echo "Build finished; now you can run "qcollectiongenerator" with the" \
-	      ".qhcp project file in $(BUILDDIR)/qthelp, like this:"
-	@echo "# qcollectiongenerator $(BUILDDIR)/qthelp/breaker.qhcp"
+		  ".qhcp project file in $(BUILDDIR)/qthelp, like this:"
+	@echo "# qcollectiongenerator $(BUILDDIR)/qthelp/rockfinder.qhcp"
 	@echo "To view the help file:"
-	@echo "# assistant -collectionFile $(BUILDDIR)/qthelp/breaker.qhc"
+	@echo "# assistant -collectionFile $(BUILDDIR)/qthelp/rockfinder.qhc"
 
 devhelp:
 	$(SPHINXBUILD) -b devhelp $(ALLSPHINXOPTS) $(BUILDDIR)/devhelp
 	@echo
 	@echo "Build finished."
 	@echo "To view the help file:"
-	@echo "# mkdir -p $$HOME/.local/share/devhelp/breaker"
-	@echo "# ln -s $(BUILDDIR)/devhelp $$HOME/.local/share/devhelp/breaker"
+	@echo "# mkdir -p $$HOME/.local/share/devhelp/rockfinder"
+	@echo "# ln -s $(BUILDDIR)/devhelp $$HOME/.local/share/devhelp/rockfinder"
 	@echo "# devhelp"
 
 epub:
@@ -126,7 +145,7 @@ latex:
 	@echo
 	@echo "Build finished; the LaTeX files are in $(BUILDDIR)/latex."
 	@echo "Run \`make' in that directory to run these through (pdf)latex" \
-	      "(use \`make latexpdf' here to do that automatically)."
+		  "(use \`make latexpdf' here to do that automatically)."
 
 latexpdf:
 	$(SPHINXBUILD) -b latex $(ALLSPHINXOPTS) $(BUILDDIR)/latex
@@ -149,7 +168,7 @@ texinfo:
 	@echo
 	@echo "Build finished. The Texinfo files are in $(BUILDDIR)/texinfo."
 	@echo "Run \`make' in that directory to run these through makeinfo" \
-	      "(use \`make info' here to do that automatically)."
+		  "(use \`make info' here to do that automatically)."
 
 info:
 	$(SPHINXBUILD) -b texinfo $(ALLSPHINXOPTS) $(BUILDDIR)/texinfo
@@ -171,16 +190,16 @@ linkcheck:
 	$(SPHINXBUILD) -b linkcheck $(ALLSPHINXOPTS) $(BUILDDIR)/linkcheck
 	@echo
 	@echo "Link check complete; look for any errors in the above output " \
-	      "or in $(BUILDDIR)/linkcheck/output.txt."
+		  "or in $(BUILDDIR)/linkcheck/output.txt."
 
 doctest:
 	$(SPHINXBUILD) -b doctest $(ALLSPHINXOPTS) $(BUILDDIR)/doctest
 	@echo "Testing of doctests in the sources finished, look at the " \
-	      "results in $(BUILDDIR)/doctest/output.txt."
+		  "results in $(BUILDDIR)/doctest/output.txt."
 
 buildapi:
 	rm -rf $(APIDIR)
-	sphinx-apidoc -fMeET --full -o source/_api ../ ../setup.py ../breaker/__version__.py
+	sphinx-apidoc -fMeT --full -o source/_api ../ ../setup.py ../rockfinder/__version__.py ../*/tests* ../*/*/tests* ../*/*/*/tests* ../*/*/*/*/tests*
 	@echo "Auto-generation of API documentation finished. " \
 		"The generated files are in '_api/'"
 

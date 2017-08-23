@@ -1,8 +1,9 @@
 import os
 import nose
 import shutil
+import unittest
 import yaml
-from breaker import plot_multi_panel_alternate_map_comparison, cl_utils
+from breaker.plots import plot_multi_panel_alternate_map_comparison
 from breaker.utKit import utKit
 
 from fundamentals import tools, times
@@ -29,16 +30,16 @@ log, dbConn, pathToInputDir, pathToOutputDir = utKit.setupModule()
 utKit.tearDownModule()
 
 
-class test_plot_multi_panel_alternate_map_comparison():
+class test_plot_multi_panel_alternate_map_comparison(unittest.TestCase):
 
     def test_plot_multi_panel_alternate_map_comparison_function(self):
-        kwargs = {}
-        kwargs["log"] = log
-        kwargs["settings"] = settings
-        # xt-kwarg_key_and_value
-
-        testObject = plot_multi_panel_alternate_map_comparison(**kwargs)
-        testObject.get()
+        p = plot_multi_panel_alternate_map_comparison(
+            log=log,
+            settings=settings,
+            gwid="G211117",
+            pathToMapDirectory=pathToInputDir
+        )
+        p.get()
 
         # x-print-testpage-for-pessto-marshall-web-object
 

@@ -9,7 +9,8 @@ import os
 os.environ['TERM'] = 'vt100'
 from HMpTy import htm
 from fundamentals import tools, times
-from dryxPython import mysql as dms
+from fundamentals.mysql import readquery, table_exists, writequery
+from HMpTy.mysql import add_htm_ids_to_mysql_database_table
 import numpy as np
 import math
 import csv
@@ -67,7 +68,7 @@ class generate_faker_catalogue():
             log=self.log,
             settings=self.settings
         )
-        self.ligo_virgo_wavesDbConn, self.ps1gwDbConn, self.cataloguesDbConn = db.get()
+        self.ligo_virgo_wavesDbConn, self.ps1gwDbConn, self.cataloguesDbConn, self.atlasDbConn, self.ps13piDbConn = db.get()
 
         return None
 
@@ -127,10 +128,10 @@ class generate_faker_catalogue():
         sqlQuery = u"""
               select raDeg, decDeg, gw_id from ps1_pointings where 1=1 %(gwidClause)s  and ps1_exp_id = %(ps1ExpId)s
         """ % locals()
-        rows = dms.execute_mysql_read_query(
+        rows = readquery(
+            log=self.log,
             sqlQuery=sqlQuery,
-            dbConn=self.ligo_virgo_wavesDbConn,
-            log=self.log
+            dbConn=self.ligo_virgo_wavesDbConn
         )
         raFP = rows[0]["raDeg"]
         decFP = rows[0]["decDeg"]
@@ -152,7 +153,7 @@ class generate_faker_catalogue():
             htmWhereClause = "where htm16ID in (%(thesHtmIds)s)" % locals()
 
         # TEST TABLE EXIST
-        thisTableExists = dms.does_mysql_table_exist(
+        thisTableExists = table_exists(
             dbConn=self.ligo_virgo_wavesDbConn,
             log=self.log,
             dbTableName="tcs_%(gwid)s_catalogued_sources" % locals()
@@ -164,22 +165,23 @@ class generate_faker_catalogue():
 
         # ADD THE HTMIDs TO THE RELEVANT CATALOGUE SOURCES TABLE BEFORE
         # QUERYING
-        dms.add_HTMIds_to_mysql_tables.add_HTMIds_to_mysql_tables(
+        add_htm_ids_to_mysql_database_table(
             raColName="catalogue_object_ra",
             declColName="catalogue_object_dec",
             tableName="tcs_%(gwid)s_catalogued_sources" % locals(),
             dbConn=self.ligo_virgo_wavesDbConn,
             log=self.log,
-            primaryIdColumnName="id"
+            primaryIdColumnName="id",
+            batchSize=50000
         )
 
         # FINALLY SELECT THE FAKER DETAILS FROM FOV
         sqlQuery = """select faker_ra, faker_dec, z, catalogue_object_id, catalogue_object_subtype, 2mass_k_mag, 2mass_k_mag_error from tcs_%(gwid)s_catalogued_sources %(htmWhereClause)s and z is not null and z < 0.15 and (z_quality is null or z_quality not like 'PHOT%%') and (catalogue_object_subtype is null or catalogue_object_subtype not like "%%*%%") and major_axis_arcsec is not null """ % locals(
         )
-        rows = dms.execute_mysql_read_query(
+        rows = readquery(
+            log=self.log,
             sqlQuery=sqlQuery,
-            dbConn=self.ligo_virgo_wavesDbConn,
-            log=self.log
+            dbConn=self.ligo_virgo_wavesDbConn
         )
 
         savedRows = []
@@ -309,7 +311,7 @@ class generate_faker_catalogue():
         # ITERATE THROUGH THE CATALOGUED SOURCES DATABASE TABLES
         for gwid in self.settings["gravitational waves"]:
             tableName = "tcs_%(gwid)s_catalogued_sources" % locals()
-            thisTableExists = dms.does_mysql_table_exist(
+            thisTableExists = table_exists(
                 dbConn=self.ligo_virgo_wavesDbConn,
                 log=self.log,
                 dbTableName=tableName
@@ -320,10 +322,10 @@ class generate_faker_catalogue():
                 sqlQuery = u"""
                     select id, catalogue_object_ra, catalogue_object_dec, major_axis_arcsec from %(tableName)s where  major_axis_arcsec is not null and faker_ra is null
                 """ % locals()
-                rows = dms.execute_mysql_read_query(
+                rows = readquery(
+                    log=self.log,
                     sqlQuery=sqlQuery,
-                    dbConn=self.ligo_virgo_wavesDbConn,
-                    log=self.log
+                    dbConn=self.ligo_virgo_wavesDbConn
                 )
                 count = 0
                 values = []
@@ -357,11 +359,10 @@ class generate_faker_catalogue():
                             INSERT INTO %(tableName)s (id,faker_ra,faker_dec) VALUES %(values)s
                             ON DUPLICATE KEY UPDATE faker_ra=VALUES(faker_ra),faker_dec=VALUES(faker_dec);
                         """ % locals()
-
-                        dms.execute_mysql_write_query(
+                        writequery(
+                            log=self.log,
                             sqlQuery=sqlQuery,
-                            dbConn=self.ligo_virgo_wavesDbConn,
-                            log=self.log
+                            dbConn=self.ligo_virgo_wavesDbConn
                         )
                         count = 0
                         values = []
@@ -375,10 +376,10 @@ class generate_faker_catalogue():
                         INSERT INTO %(tableName)s (id,faker_ra,faker_dec) VALUES %(values)s
                         ON DUPLICATE KEY UPDATE faker_ra=VALUES(faker_ra),faker_dec=VALUES(faker_dec);
                     """ % locals()
-                    dms.execute_mysql_write_query(
+                    writequery(
+                        log=self.log,
                         sqlQuery=sqlQuery,
-                        dbConn=self.ligo_virgo_wavesDbConn,
-                        log=self.log
+                        dbConn=self.ligo_virgo_wavesDbConn
                     )
 
                     count = len(values)
@@ -387,7 +388,3 @@ class generate_faker_catalogue():
         self.log.info(
             'completed the ``generate_faker_locations_within_galaxies_found_in_survey_footprint`` method')
         return None
-
-    # 5. @flagged: what actions of the base class(es) need ammending? ammend them here
-    # Override Method Attributes
-    # method-override-tmpx

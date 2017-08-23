@@ -1,5 +1,6 @@
 import os
 import nose
+import unittest
 import shutil
 import yaml
 from breaker import cl_utils
@@ -30,16 +31,32 @@ log, dbConn, pathToInputDir, pathToOutputDir = utKit.setupModule()
 utKit.tearDownModule()
 
 
-class test_plot_wave_observational_timelines():
+class test_plot_wave_observational_timelines(unittest.TestCase):
 
     def test_plot_wave_observational_timelines_function(self):
-        kwargs = {}
-        kwargs["log"] = log
-        kwargs["settings"] = settings
-        # xt-kwarg_key_and_value
 
-        testObject = plot_wave_observational_timelines(**kwargs)
+        testObject = plot_wave_observational_timelines(
+            log=log,
+            settings=settings,
+            plotType="timeline",
+            gwid="G270580",
+            projection="mercator",
+            probabilityCut=False,
+            telescope="atlas",
+            timestamp=True)
         testObject.get()
+
+    def test_generate_fits_image_map(self):
+        plotter = plot_wave_observational_timelines(
+            log=log,
+            settings=settings,
+            databaseConnRequired=False
+        )
+
+        plotter.generate_fits_image_map(
+            pathToProbMap=pathToInputDir + "/GW151226-bayestar.fits",
+            gwid="G184098"
+        )
 
         # x-print-testpage-for-pessto-marshall-web-object
 

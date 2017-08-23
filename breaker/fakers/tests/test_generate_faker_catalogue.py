@@ -2,6 +2,7 @@ import os
 import nose
 import shutil
 import yaml
+import unittest
 from breaker import cl_utils
 from breaker.fakers import generate_faker_catalogue
 from breaker.utKit import utKit
@@ -11,7 +12,7 @@ from fundamentals import tools, times
 su = tools(
     arguments={},
     docString=__doc__,
-    logLevel="DEBUG",
+    logLevel="WARNING",
     options_first=False,
     projectName="breaker"
 )
@@ -30,7 +31,7 @@ log, dbConn, pathToInputDir, pathToOutputDir = utKit.setupModule()
 utKit.tearDownModule()
 
 
-class test_generate_faker_catalogue():
+class test_generate_faker_catalogue(unittest.TestCase):
 
     def test_generate_faker_catalogue_function(self):
         kwargs = {}

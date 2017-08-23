@@ -1,3 +1,6 @@
+"""
+*Unit testing tools*
+"""
 from fundamentals import utKit
 
 # OVERRIDES
@@ -39,11 +42,11 @@ class utKit(utKit):
         handlers:
             console:
                 class: logging.StreamHandler
-                level: WARNING
+                level: DEBUG
                 formatter: console_style
                 stream: ext://sys.stdout
         root:
-            level: WARNING
+            level: DEBUG
             handlers: [console]"""
 
         # Override Variable Data Atrributes

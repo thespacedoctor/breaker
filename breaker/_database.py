@@ -17,9 +17,8 @@ import readline
 import glob
 import pickle
 import time
-import MySQLdb as ms
+import pymysql as ms
 from docopt import docopt
-from dryxPython import mysql as dms
 from fundamentals import tools, times
 
 
@@ -31,57 +30,8 @@ class database():
     **Key Arguments:**
         - ``log`` -- logger
         - ``settings`` -- the settings dictionary
-
-    **Usage:**
-        .. todo::
-
-            - add usage info
-            - create a sublime snippet for usage
-
-        .. code-block:: python 
-
-            usage code 
-
-    .. todo::
-
-        - @review: when complete, clean _database class
-        - @review: when complete add logging
-        - @review: when complete, decide whether to abstract class to another module
     """
     # INITIALISATION
-
-    def methodName(
-            self):
-        """*methodName*
-
-        **Key Arguments:**
-            # -
-
-        **Return:**
-            - None
-
-        **Usage:**
-        .. todo::
-
-            - add usage info
-            - create a sublime snippet for usage
-
-        .. code-block:: python 
-
-            usage code 
-
-        .. todo::
-
-            - @review: when complete, clean methodName method
-            - @review: when complete add logging
-        """
-        self.log.info('starting the ``methodName`` method')
-
-        self.log.info('completed the ``methodName`` method')
-        return None
-
-    # use the tab-trigger below for new method
-    # xt-class-method
 
     def __init__(
             self,
@@ -104,47 +54,17 @@ class database():
         *get the database object*
 
         **Return:**
-            - ``self.transientsDbConn, self.ps1gwDbConn`` -- two database connections
-
-        **Usage:**
-            .. todo::
-
-                - add usage info
-                - create a sublime snippet for usage
-
-            .. code-block:: python 
-
-                usage code 
-
-        .. todo::
-
-            - @review: when complete, clean methodName method
-            - @review: when complete add logging
+            - ``self.transientsDbConn, self.ps1gwDbConn, self.cataloguesDbConn`` -- three database connections
         """
         self.log.debug('starting the ``get`` method')
         self._setup_database_connections()
         self.log.debug('completed the ``get`` method')
-        return self.ligo_virgo_wavesDbConn, self.ps1gwDbConn, self.cataloguesDbConn
+        return self.ligo_virgo_wavesDbConn, self.ps1gwDbConn, self.cataloguesDbConn, self.atlasDbConn, self.ps13piDbConn
 
     def _setup_database_connections(
             self):
         """
         *setup database connections for transient and catalogue databases*
-
-         **Usage:**
-            .. todo::
-
-                - add usage info
-                - create a sublime snippet for usage
-
-            .. code-block:: python 
-
-                usage code 
-
-        .. todo::
-
-            - @review: when complete, clean methodName method
-            - @review: when complete add logging
         """
         self.log.debug('starting the ``_setup_database_connections`` method')
 
@@ -164,42 +84,41 @@ class database():
             tunnels = self.settings["ssh tunnels"]
             for tunnelName in tunnels:
                 tunnel = self.settings["ssh tunnels"][tunnelName]
-                if tunnel["use tunnel"] is True:
-                    # TEST TUNNEL DOES NOT ALREADY EXIST
-                    sshPort = tunnel["port"]
-                    for db in tunnelDatabases[tunnelName]:
-                        connected = self._checkServer(
-                            self.settings["database settings"][db]["host"], sshPort)
-                        if connected:
-                            break
+                # TEST TUNNEL DOES NOT ALREADY EXIST
+                sshPort = tunnel["port"]
+                for db in tunnelDatabases[tunnelName]:
+                    connected = self._checkServer(
+                        self.settings["database settings"][db]["host"], sshPort)
                     if connected:
-                        self.log.debug('ssh tunnel already exists - moving on')
-                    else:
-                        # GRAB TUNNEL SETTINGS FROM SETTINGS FILE
-                        ru = tunnel["remote user"]
-                        rip = tunnel["remote ip"]
-                        rh = tunnel["remote datbase host"]
+                        break
+                if connected:
+                    self.log.debug('ssh tunnel already exists - moving on')
+                else:
+                    # GRAB TUNNEL SETTINGS FROM SETTINGS FILE
+                    ru = tunnel["remote user"]
+                    rip = tunnel["remote ip"]
+                    rh = tunnel["remote datbase host"]
 
-                        cmd = "ssh -fnN %(ru)s@%(rip)s -L %(sshPort)s:%(rh)s:3306" % locals()
-                        p = Popen(cmd, shell=True, close_fds=True)
-                        output = p.communicate()[0]
-                        self.log.debug('output: %(output)s' % locals())
+                    cmd = "ssh -fnN %(ru)s@%(rip)s -L %(sshPort)s:%(rh)s:3306" % locals()
+                    p = Popen(cmd, shell=True, close_fds=True)
+                    output = p.communicate()[0]
+                    self.log.debug('output: %(output)s' % locals())
 
-                        # TEST CONNECTION - QUIT AFTER SO MANY TRIES
-                        connected = False
-                        count = 0
-                        while not connected:
-                            for db in tunnelDatabases[tunnelName]:
-                                connected = self._checkServer(
-                                    self.settings["database settings"][db]["host"], sshPort)
-                                if connected:
-                                    break
-                            time.sleep(1)
-                            count += 1
-                            if count == 5:
-                                self.log.error(
-                                    'cound not setup tunnel to remote datbase' % locals())
-                                sys.exit(0)
+                    # TEST CONNECTION - QUIT AFTER SO MANY TRIES
+                    connected = False
+                    count = 0
+                    while not connected:
+                        for db in tunnelDatabases[tunnelName]:
+                            connected = self._checkServer(
+                                self.settings["database settings"][db]["host"], sshPort)
+                            if connected:
+                                break
+                        time.sleep(1)
+                        count += 1
+                        if count == 5:
+                            self.log.error(
+                                'cound not setup tunnel to remote datbase' % locals())
+                            sys.exit(0)
 
         # SETUP A DATABASE CONNECTION FOR THE ps1gw
         host = self.settings["database settings"][
@@ -226,6 +145,58 @@ class database():
         thisConn.autocommit(True)
         self.log.debug('ps1gwDbConn: %s' % (thisConn,))
         self.ps1gwDbConn = thisConn
+
+        # SETUP A DATABASE CONNECTION FOR THE ps13pi
+        host = self.settings["database settings"][
+            "ps13pi"]["host"]
+        user = self.settings["database settings"][
+            "ps13pi"]["user"]
+        passwd = self.settings["database settings"][
+            "ps13pi"]["password"]
+        dbName = self.settings["database settings"][
+            "ps13pi"]["db"]
+        port = self.settings["database settings"][
+            "ps13pi"]["port"]
+        if "tunnel" in str(port):
+            port = self.settings["ssh tunnels"][port]["port"]
+        thisConn = ms.connect(
+            host=host,
+            user=user,
+            passwd=passwd,
+            db=dbName,
+            port=port,
+            use_unicode=True,
+            charset='utf8'
+        )
+        thisConn.autocommit(True)
+        self.log.debug('ps13piDbConn: %s' % (thisConn,))
+        self.ps13piDbConn = thisConn
+
+        # SETUP A DATABASE CONNECTION FOR THE altas DATABASE
+        host = self.settings["database settings"][
+            "atlas"]["host"]
+        user = self.settings["database settings"][
+            "atlas"]["user"]
+        passwd = self.settings["database settings"][
+            "atlas"]["password"]
+        dbName = self.settings["database settings"][
+            "atlas"]["db"]
+        port = self.settings["database settings"][
+            "atlas"]["port"]
+        if "tunnel" in str(port):
+            port = self.settings["ssh tunnels"][port]["port"]
+        thisConn = ms.connect(
+            host=host,
+            user=user,
+            passwd=passwd,
+            db=dbName,
+            port=port,
+            use_unicode=True,
+            charset='utf8'
+        )
+        thisConn.autocommit(True)
+        self.log.debug('altasDbConn: %s' % (thisConn,))
+        self.atlasDbConn = thisConn
 
         # SETUP DATABASE CONNECTION FOR WAVE DATABASE
         host = self.settings["database settings"][
@@ -285,21 +256,6 @@ class database():
     def _checkServer(self, address, port):
         """
         *Check that the TCP Port we've decided to use for tunnelling is available*
-
-         **Usage:**
-            .. todo::
-
-                - add usage info
-                - create a sublime snippet for usage
-
-            .. code-block:: python 
-
-                usage code 
-
-        .. todo::
-
-            - @review: when complete, clean methodName method
-            - @review: when complete add logging
         """
         self.log.debug('starting the ``_checkServer`` method')
 
@@ -314,7 +270,7 @@ class database():
                 """Connected to `%(address)s` on port `%(port)s`""" % locals())
             return True
         except socket.error, e:
-            self.log.warning(
+            self.log.info(
                 """Connection to `%(address)s` on port `%(port)s` failed - try again: %(e)s""" % locals())
             return False
 

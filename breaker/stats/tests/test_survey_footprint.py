@@ -2,6 +2,7 @@ import os
 import nose
 import shutil
 import yaml
+import unittest
 from breaker import cl_utils
 from breaker.utKit import utKit
 from breaker.stats import survey_footprint
@@ -30,17 +31,17 @@ log, dbConn, pathToInputDir, pathToOutputDir = utKit.setupModule()
 utKit.tearDownModule()
 
 
-class test_survey_footprint():
+class test_survey_footprint(unittest.TestCase):
 
     def test_survey_footprint_function(self):
-        kwargs = {}
-        kwargs["log"] = log
-        kwargs["settings"] = settings
-        kwargs["gwid"] = "G184098"
-        # xt-kwarg_key_and_value
 
-        testObject = survey_footprint(**kwargs)
-        testObject.get()
+        from breaker.stats import survey_footprint
+        stats = survey_footprint(
+            log=log,
+            settings=settings,
+            gwid="G184098"
+        )
+        stats.get()
 
         # x-print-testpage-for-pessto-marshall-web-object
 

@@ -20,37 +20,33 @@ from matplotlib.path import Path
 from matplotlib.pyplot import savefig
 import matplotlib.patches as patches
 from HMpTy import htm
-from dryxPython import astrotools as dat
 from fundamentals import tools, times
-from dryxPython import mysql as dms
+from fundamentals.mysql import readquery
 from matplotlib.patches import Rectangle
 from matplotlib.patches import Circle
+from astrocalc.times import now
 
 
 class plot_wave_matched_source_maps():
     """
-    *Plot the gravitation wave sky-location maps showing catalogued sources matched within the survey footprint*
+    *Plot the gravitation wave sky - location maps showing catalogued sources matched within the survey footprint*
 
-    **Key Arguments:**
-        - ``log`` -- logger
-        - ``settings`` -- the settings dictionary
-        - ``gwid`` -- the wave id
+    **Key Arguments: **
+        - ``log`` - - logger
+        - ``settings`` - - the settings dictionary
+        - ``gwid`` - - the wave id
 
-    **Usage:**
-        .. todo::
+    **Usage: **
 
-            - add usage info
-            - create a sublime snippet for usage
+        .. code-block: : python
 
-        .. code-block:: python 
-
-            usage code 
-
-    .. todo::
-
-        - @review: when complete, clean _database class
-        - @review: when complete add logging
-        - @review: when complete, decide whether to abstract class to another module
+            from breaker import plot_wave_matched_source_maps
+            p = plot_wave_matched_source_maps(
+                log=log,
+                settings=settings,
+                gwid="G211117"
+            )
+            p.get_source_plots()
     """
     # Initialisation
 
@@ -73,31 +69,13 @@ class plot_wave_matched_source_maps():
             log=self.log,
             settings=self.settings
         )
-        self.ligo_virgo_wavesDbConn, self.ps1gwDbConn, self.cataloguesDbConn = db.get()
+        self.ligo_virgo_wavesDbConn, self.ps1gwDbConn, self.cataloguesDbConn, self.atlasDbConn, self.ps13piDbConn = db.get()
 
         return None
 
     def get(self):
         """
         *get the plot_wave_matched_source_maps object - history or timeline*
-
-        **Return:**
-            - None
-
-        **Usage:**
-            .. todo::
-
-                - add usage info
-                - create a sublime snippet for usage
-
-            .. code-block:: python 
-
-                usage code 
-
-        .. todo::
-
-            - @review: when complete, clean methodName method
-            - @review: when complete add logging
         """
         self.log.info('starting the ``get`` method')
 
@@ -114,34 +92,21 @@ class plot_wave_matched_source_maps():
         """
         *get ps1 pointings to add to the plot*
 
-        **Key Arguments:**
-            - ``gwid`` -- the unique ID of the gravitational wave to plot
-            - ``inPastDays`` -- used for the `history` plots (looking back from today)
-            - ``inFirstDays`` -- used in the `timeline` plots (looking forward from wave detection)
+        **Key Arguments: **
+            - ``gwid`` - - the unique ID of the gravitational wave to plot
+            - ``inPastDays`` - - used for the `history` plots(looking back from today)
+            - ``inFirstDays`` - - used in the `timeline` plots(looking forward from wave detection)
 
-        **Return:**
-            - ``ps1Pointings`` -- the pointings to place on the plot
-
-        **Usage:**
-            .. todo::
-
-                - add usage info
-                - create a sublime snippet for usage
-
-            .. code-block:: python 
-
-                usage code 
-
-        .. todo::
-
-            - @review: when complete, clean methodName method
-            - @review: when complete add logging
+        **Return: **
+            - ``ps1Pointings`` - - the pointings to place on the plot
         """
         self.log.info('starting the ``_get_ps1_pointings`` method')
 
         # DETERMINE THE TEMPORAL CONSTRAINTS FOR MYSQL QUERY
         if inPastDays != False or inPastDays == 0:
-            nowMjd = dat.getCurrentMJD()
+            nowMjd = now(
+                log=self.log
+            ).get_mjd()
             mjdStart = nowMjd - inPastDays
             mjdEnd = 10000000000
             if inPastDays == 0:
@@ -160,11 +125,10 @@ class plot_wave_matched_source_maps():
         sqlQuery = u"""
             SELECT raDeg, decDeg FROM ps1_pointings where gw_id = "%(gwid)s" and mjd between %(mjdStart)s and %(mjdEnd)s
         """ % locals()
-        print sqlQuery
-        ps1Pointings = dms.execute_mysql_read_query(
+        ps1Pointings = readquery(
+            log=self.log,
             sqlQuery=sqlQuery,
-            dbConn=self.ligo_virgo_wavesDbConn,
-            log=self.log
+            dbConn=self.ligo_virgo_wavesDbConn
         )
 
         self.log.info('completed the ``_get_ps1_pointings`` method')
@@ -185,35 +149,20 @@ class plot_wave_matched_source_maps():
         """
         *generate probability plot*
 
-        **Key Arguments:**
-            - ``gwid`` -- the unique ID of the gravitational wave to plot
-            - ``plotParameters`` -- the parameters of the plot (for spatial & temporal parameters etc)
-            - ``ps1Pointings`` -- the pointings to place on the plot
-            - ``pathToProbMap`` -- path to the FITS file containing the probability map of the wave
-            - ``mjdStart`` -- earliest mjd of discovery
-            - ``raArray`` -- the array of matched source RAs
-            - ``decArray`` -- the array of matched source DECs
-            - ``fileFormats`` -- the format(s) to output the plots in (list of strings)
-            - ``folderName`` -- the name of the folder to add the plots to
-            - ``plotTitle`` -- the plot title
+        **Key Arguments: **
+            - ``gwid`` - - the unique ID of the gravitational wave to plot
+            - ``plotParameters`` - - the parameters of the plot(for spatial & temporal parameters etc)
+            - ``ps1Pointings`` - - the pointings to place on the plot
+            - ``pathToProbMap`` - - path to the FITS file containing the probability map of the wave
+            - ``mjdStart`` - - earliest mjd of discovery
+            - ``raArray`` - - the array of matched source RAs
+            - ``decArray`` - - the array of matched source DECs
+            - ``fileFormats`` - - the format(s) to output the plots in (list of strings)
+            - ``folderName`` - - the name of the folder to add the plots to
+            - ``plotTitle`` - - the plot title
 
-        **Return:**
+        **Return: **
             - None
-
-        **Usage:**
-            .. todo::
-
-                - add usage info
-                - create a sublime snippet for usage
-
-            .. code-block:: python 
-
-                usage code 
-
-        .. todo::
-
-            - @review: when complete, clean methodName method
-            - @review: when complete add logging
         """
         self.log.info('starting the ``_generate_probability_plot`` method')
 
@@ -323,6 +272,7 @@ class plot_wave_matched_source_maps():
 
         # GRAB THE WCS FROM HEADER GENERATED EARLIER
         from wcsaxes import datasets, WCS
+        from astropy.wcs import WCS
         wcs = WCS(hdu.header)
 
         # PLOT MAP WITH PROJECTION IN HEADER
@@ -453,8 +403,8 @@ class plot_wave_matched_source_maps():
             startRA, startDec = (159.0, 2.5)
             ax.annotate('COSMOS',
                         color='#100983',
-                        xy=w.wcs_world2pix(finRA, finDec, 1),
-                        xytext=w.wcs_world2pix(startRA, startDec, 1),
+                        xy=w.wcs_world2pix(finRA, finDec, 0),
+                        xytext=w.wcs_world2pix(startRA, startDec, 0),
                         arrowprops=dict(arrowstyle='->',
                                         facecolor='#100983', ec='#100983',  zorder=10),
                         xycoords=ax.transData,
@@ -468,8 +418,8 @@ class plot_wave_matched_source_maps():
             startRA, startDec = (138.5, -8.)
             ax.annotate('LCRS',
                         color='#fffdd5',
-                        xy=w.wcs_world2pix(finRA, finDec, 1),
-                        xytext=w.wcs_world2pix(startRA, startDec, 1),
+                        xy=w.wcs_world2pix(finRA, finDec, 0),
+                        xytext=w.wcs_world2pix(startRA, startDec, 0),
                         arrowprops=dict(arrowstyle='->',
                                         facecolor='#100983', ec='#100983', zorder=10),
                         xycoords=ax.transData,
@@ -483,8 +433,8 @@ class plot_wave_matched_source_maps():
             startRA, startDec = (138.0, -7)
             ax.annotate('LCRS',
                         color='#100983',
-                        xy=w.wcs_world2pix(finRA, finDec, 1),
-                        xytext=w.wcs_world2pix(startRA, startDec, 1),
+                        xy=w.wcs_world2pix(finRA, finDec, 0),
+                        xytext=w.wcs_world2pix(startRA, startDec, 0),
                         arrowprops=dict(arrowstyle='->',
                                         facecolor='#100983', ec='#100983',  zorder=10),
                         xycoords=ax.transData,
@@ -498,8 +448,8 @@ class plot_wave_matched_source_maps():
             startRA, startDec = (163, -7.5)
             ax.annotate('WINGS',
                         color='#fffdd5',
-                        xy=w.wcs_world2pix(finRA, finDec, 1),
-                        xytext=w.wcs_world2pix(startRA, startDec, 1),
+                        xy=w.wcs_world2pix(finRA, finDec, 0),
+                        xytext=w.wcs_world2pix(startRA, startDec, 0),
                         arrowprops=dict(arrowstyle='->',
                                         facecolor='#100983', ec='#100983',  zorder=10),
                         xycoords=ax.transData,
@@ -513,8 +463,8 @@ class plot_wave_matched_source_maps():
             startRA, startDec = (162, -7)
             ax.annotate('WINGS',
                         color='#100983',
-                        xy=w.wcs_world2pix(finRA, finDec, 1),
-                        xytext=w.wcs_world2pix(startRA, startDec, 1),
+                        xy=w.wcs_world2pix(finRA, finDec, 0),
+                        xytext=w.wcs_world2pix(startRA, startDec, 0),
                         arrowprops=dict(arrowstyle='->',
                                         facecolor='#100983', ec='#100983',  zorder=10),
                         xycoords=ax.transData,
@@ -542,7 +492,7 @@ class plot_wave_matched_source_maps():
 
         plotTitle = plotTitle.replace(" ", "_").replace(
             "<", "lt").replace(">", "gt").replace(",", "").replace("\n", "_").replace("&", "").replace("__", "_")
-        figureName = """%(plotTitle)s""" % locals(
+        figureName = """ %(plotTitle)s""" % locals(
         )
 
         for f in fileFormats:
@@ -558,27 +508,6 @@ class plot_wave_matched_source_maps():
             self):
         """
         *plot the history plots*
-
-        **Key Arguments:**
-            # -
-
-        **Return:**
-            - None
-
-        **Usage:**
-            .. todo::
-
-                - add usage info
-                - create a sublime snippet for usage
-
-            .. code-block:: python 
-
-                usage code 
-
-        .. todo::
-
-            - @review: when complete, clean methodName method
-            - @review: when complete add logging
         """
         self.log.info('starting the ``get_source_plots`` method')
 
@@ -739,31 +668,16 @@ class plot_wave_matched_source_maps():
         """
         *get matched sources*
 
-        **Key Arguments:**
-            # -
+        **Key Arguments: **
+            - ``gwid`` -- gravitational wave ID
+            - ``plotParameters`` -- plot parameters from settings
+            - ``redshiftLimit`` -- limit in redshift for returned sources
+            - ``allNed`` -- no limits on query
+            - ``match2mass`` -- NED sources need to be 2MASS sources with semi-major axis measurement
 
-        **Return:**
-            - None
-
-        .. todo::
-
-            - @review: when complete, clean _get_matched_sources method
-            - @review: when complete add logging
-
-        **Usage:**
-            .. todo::
-
-                - add usage info
-                - create a sublime snippet for usage
-
-            .. code-block:: python 
-
-                usage code 
-
-        .. todo::
-
-            - @review: when complete, clean methodName method
-            - @review: when complete add logging
+        **Return: **
+            - ``ra`` -- array of match NED source RAs
+            - ``dec`` -- array of match NED source DECs
         """
         self.log.info('starting the ``_get_matched_sources`` method')
 
@@ -781,13 +695,14 @@ class plot_wave_matched_source_maps():
             decMin = centralCoordinate[1] - decRange / 2.
 
             sqlQuery = u"""
-                select raDeg, decDeg from tcs_cat_ned_stream where raDeg > %(raMin)s and raDeg < %(raMax)s and decDeg > %(decMin)s and decDeg < %(decMax)s  
+                select raDeg, decDeg from tcs_cat_ned_stream where raDeg > %(raMin)s and raDeg < %(raMax)s and decDeg > %(decMin)s and decDeg < %(decMax)s
             """ % locals()
-            rows = dms.execute_mysql_read_query(
+            rows = readquery(
+                log=self.log,
                 sqlQuery=sqlQuery,
-                dbConn=self.cataloguesDbConn,
-                log=self.log
+                dbConn=self.cataloguesDbConn
             )
+
         else:
             if redshiftLimit:
                 redshiftClause = " and t.z is not null and t.z < %(redshiftLimit)s and (t.z_quality is null or t.z_quality not like 'PHOT%%') and (t.catalogue_object_subtype is null or t.catalogue_object_subtype not like '%%*%%')" % locals(
@@ -805,13 +720,11 @@ class plot_wave_matched_source_maps():
             sqlQuery = u"""
                 select t.catalogue_object_ra as raDeg, t.catalogue_object_dec as decDeg from ps1_pointings p, %(tcs_cross_matches)s t where p.ps1_exp_id=t.transient_object_id and gw_id = "%(gwid)s" %(redshiftClause)s %(match2massClause)s;
             """ % locals()
-            rows = dms.execute_mysql_read_query(
+            rows = readquery(
+                log=self.log,
                 sqlQuery=sqlQuery,
-                dbConn=self.ligo_virgo_wavesDbConn,
-                log=self.log
+                dbConn=self.ligo_virgo_wavesDbConn
             )
-
-        print sqlQuery
 
         ra = []
         dec = []
@@ -824,37 +737,10 @@ class plot_wave_matched_source_maps():
         self.log.info('completed the ``_get_matched_sources`` method')
         return ra, dec
 
-    # use the tab-trigger below for new method
     def _sampled_area_only_points(
             self):
         """
         *sampled area only points*
-
-        **Key Arguments:**
-            # -
-
-        **Return:**
-            - None
-
-        .. todo::
-
-            - @review: when complete, clean _sampled_area_only_points method
-            - @review: when complete add logging
-
-        **Usage:**
-            .. todo::
-
-                - add usage info
-                - create a sublime snippet for usage
-
-            .. code-block:: python 
-
-                usage code 
-
-        .. todo::
-
-            - @review: when complete, clean methodName method
-            - @review: when complete add logging
         """
         self.log.info('starting the ``_sampled_area_only_points`` method')
 
@@ -901,17 +787,13 @@ class plot_wave_matched_source_maps():
                 thesHtmIds = s.getvalue()[:-1]
                 htmWhereClause = "where htm16ID in (%(thesHtmIds)s)" % locals()
 
-            # hmax = thisArray.max()
-            # hmin = thisArray.min()
-            #
-
             # FINALLY BUILD THE FULL QUERY
             sqlQuery = """select raDeg, decDeg, redshift, object_type from tcs_cat_ned_stream %(htmWhereClause)s and redshift is not null and redshift < 0.15 and (redshift_quality is null or redshift_quality not like 'PHOT%%') and (object_type is null or object_type not like "%%*%%") """ % locals(
             )
-            rows = dms.execute_mysql_read_query(
+            rows = readquery(
+                log=self.log,
                 sqlQuery=sqlQuery,
-                dbConn=self.cataloguesDbConn,
-                log=self.log
+                dbConn=self.cataloguesDbConn
             )
 
             raList = []

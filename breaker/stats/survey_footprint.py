@@ -13,15 +13,22 @@ os.environ['TERM'] = 'vt100'
 import healpy as hp
 import numpy as np
 import math
+from operator import itemgetter
 import matplotlib
 import matplotlib.cm as cm
 import matplotlib.pyplot as plt
 from matplotlib.path import Path
 from matplotlib.pyplot import savefig
 import matplotlib.patches as patches
-from dryxPython import astrotools as dat
-from dryxPython import mysql as dms
+import numpy
+from astropy import wcs as awcs
+from astropy.io import fits
+from HMpTy import Matcher
 from fundamentals import tools, times
+from astrocalc.coords import separations
+from breaker.plots import plot_wave_observational_timelines
+from fundamentals.renderer import list_of_dictionaries
+import collections
 
 
 class survey_footprint():
@@ -32,23 +39,22 @@ class survey_footprint():
         - ``log`` -- logger
         - ``settings`` -- the settings dictionary
         - ``gwid`` -- the unique wave id
+        - ``telescope`` -- select a single telescope. The default is to select all telescopes. Default *False* [False|ps1|atlas]
 
     **Usage:**
 
-        .. todo::
+        To generate cummulative stats for the wave "G184098"
 
-            - add usage info
-            - create a sublime snippet for usage
+        .. code-block:: python
 
-        .. code-block:: python 
-
-            usage code 
-
-    .. todo::
-
-        - @review: when complete, clean _database class
-        - @review: when complete add logging
-        - @review: when complete, decide whether to abstract class to another module
+            from breaker.stats import survey_footprint
+            stats = survey_footprint(
+                log=log,
+                settings=settings,
+                gwid="G184098",
+                telescope=False
+            )
+            stats.get()
     """
     # Initialisation
 
@@ -56,13 +62,18 @@ class survey_footprint():
             self,
             log,
             settings=False,
-            gwid=False
-
+            gwid=False,
+            telescope=False
     ):
         self.log = log
         log.debug("instansiating a new 'survey_footprint' object")
         self.settings = settings
         self.gwid = gwid
+        self.telescope = telescope
+
+        pi = (4 * math.atan(1.0))
+        self.DEG_TO_RAD_FACTOR = pi / 180.0
+        self.RAD_TO_DEG_FACTOR = 180.0 / pi
 
         # INITIAL ACTIONS - CONNECT TO THE DATABASE REQUIRED
         from breaker import database
@@ -70,41 +81,168 @@ class survey_footprint():
             log=self.log,
             settings=self.settings
         )
-        self.ligo_virgo_wavesDbConn, self.ps1gwDbConn, self.cataloguesDbConn = db.get()
+        self.ligo_virgo_wavesDbConn, self.ps1gwDbConn, self.cataloguesDbConn, self.atlasDbConn, self.ps13piDbConn = db.get()
 
         return None
 
-    # Method Attributes
     def get(self):
         """
-        *get the survey_footprint stats and print to screen/file*
+        *get the survey footprint stats and print to screen/file*
 
         **Return:**
-            - ``survey_footprint``
-
-        **Usage:**
-            .. todo::
-
-                - add usage info
-                - create a sublime snippet for usage
-
-            .. code-block:: python 
-
-                usage code 
-
-        .. todo::
-
-            - @review: when complete, clean methodName method
-            - @review: when complete add logging
+            - ``None``
         """
         self.log.info('starting the ``get`` method')
 
         # GRAB METADATA FROM THE DATABASES
-        from breaker.plots import plot_wave_observational_timelines
         this = plot_wave_observational_timelines(
             log=self.log, settings=self.settings)
-        plotParameters, ps1Transients, ps1Pointings, altasPointings = this.get_gw_parameters_from_settings(
+        plotParameters, ps1Transients, ps1Pointings, altasPointings, atlasTransients = this.get_gw_parameters_from_settings(
             gwid=self.gwid)
+
+        if self.telescope == "atlas":
+            pointings = altasPointings
+            pointingSide = 5.46
+        if self.telescope == "ps1":
+            pointings = ps1Pointings
+            pointingSide = 0.4
+        telescope = self.telescope.upper()
+
+        # SORT ALL POINTINGS VIA MJD
+        pointings = sorted(list(pointings),
+                           key=itemgetter('mjd'), reverse=False)
+
+        nside, hpixArea, aMap, healpixIds, wr, wd = self._create_healpixid_coordinate_grid()
+
+        print "EXPID, RA, DEC, MJD, EXPTIME, FILTER, LIM-MAG, EXP-AREA, EXP-LIKELIHOOD, CUM-AREA, CUM-LIKELIHOOD" % locals()
+
+        allHealpixIds = np.array([])
+        dictList = []
+        iindex = 0
+        count = len(pointings)
+        for pti, pt in enumerate(pointings):
+            pti = pti + 1
+
+            if pti > 1:
+                # Cursor up one line and clear line
+                sys.stdout.write("\x1b[1A\x1b[2K")
+
+            percent = (float(pti) / float(count)) * 100.
+            print '%(pti)s/%(count)s (%(percent)1.1f%% done): summing total area and likelihood covered by %(telescope)s' % locals()
+
+            thisDict = collections.OrderedDict(sorted({}.items()))
+            pra = pt["raDeg"]
+            pdec = pt["decDeg"]
+            pmjd = pt["mjd"]
+            pexpid = pt["exp_id"]
+            pexptime = pt["exp_time"]
+            pfilter = pt["filter"]
+            plim = pt["limiting_magnitude"]
+
+            # DETERMINE THE CORNERS FOR EACH ATLAS EXPOSURE AS MAPPED TO THE
+            # SKY
+            decCorners = (pdec - pointingSide / 2,
+                          pdec + pointingSide / 2)
+            corners = []
+            for d in decCorners:
+                if d > 90.:
+                    d = 180. - d
+                elif d < -90.:
+                    d = -180 - d
+                raCorners = (pra - (pointingSide / 2) / np.cos(d * self.DEG_TO_RAD_FACTOR),
+                             pra + (pointingSide / 2) / np.cos(d * self.DEG_TO_RAD_FACTOR))
+                for r in raCorners:
+                    if r > 360.:
+                        r = 720. - r
+                    elif r < 0.:
+                        r = 360. + r
+                    corners.append(hp.ang2vec(r, d, lonlat=True))
+
+            # FLIP CORNERS 3 & 4 SO HEALPY UNDERSTANDS POLYGON SHAPE
+            corners = [corners[0], corners[1],
+                       corners[3], corners[2]]
+
+            # RETURN HEALPIXELS IN EXPOSURE AREA
+            expPixels = hp.query_polygon(nside, np.array(
+                corners))
+
+            expProb = []
+            expProb[:] = [aMap[i] for i in expPixels]
+            expProb = sum(expProb)
+            expArea = len(expPixels) * hpixArea
+            if expProb / expArea < 2e-6:
+                continue
+
+            pindex = "%(iindex)05d" % locals()
+            iindex += 1
+
+            allHealpixIds = np.append(allHealpixIds, expPixels)
+            allHealpixIds = np.unique(allHealpixIds)
+            cumProb = []
+            cumProb[:] = [aMap[int(i)] for i in allHealpixIds]
+            cumProb = sum(cumProb)
+            cumArea = len(allHealpixIds) * hpixArea
+            thisDict["INDEX"] = pindex
+            thisDict["EXPID"] = pexpid
+            thisDict["RA"] = "%(pra)5.5f" % locals()
+            thisDict["DEC"] = "%(pdec)5.5f" % locals()
+            thisDict["MJD"] = "%(pmjd)6.6f" % locals()
+            thisDict["EXPTIME"] = "%(pexptime)02.1f" % locals()
+            thisDict["FILTER"] = pfilter
+            try:
+                thisDict["LIM-MAG"] = "%(plim)5.2f" % locals()
+            except:
+                thisDict["LIM-MAG"] = "NaN"
+            # thisDict["EXP-AREA"] = expArea
+            # thisDict["EXP-LIKELIHOOD"] = expProb
+            thisDict["CUM-AREA"] = "%(cumArea)05.2f" % locals()
+            thisDict["CUM-LIKELIHOOD"] = "%(cumProb)05.2f" % locals()
+            dictList.append(thisDict)
+
+        print "AREA: %(cumArea)0.2f. PROB: %(cumProb)0.5f" % locals()
+
+        printFile = self.settings["output directory"] + "/" + \
+            self.gwid + "/" + self.gwid + "-" + self.telescope + "-coverage-stats.csv"
+
+        # RECURSIVELY CREATE MISSING DIRECTORIES
+        if not os.path.exists(self.settings["output directory"] + "/" + self.gwid):
+            os.makedirs(self.settings["output directory"] + "/" + self.gwid)
+
+        dataSet = list_of_dictionaries(
+            log=self.log,
+            listOfDictionaries=dictList,
+        )
+        csvData = dataSet.csv(filepath=printFile)
+
+        print "The coverage stats file was written to `%(printFile)s`" % locals()
+
+        self.log.info('completed the ``get`` method')
+        return None
+
+    def _create_healpixid_coordinate_grid(
+            self):
+        """* create healpixid coordinate grid*
+
+        **Key Arguments:**
+            # -
+
+        **Return:**
+            - None
+
+        **Usage:**
+            ..  todo::
+
+                - add usage info
+                - create a sublime snippet for usage
+                - write a command-line tool for this method
+                - update package tutorial with command-line tool info if needed
+
+            .. code-block:: python
+
+                usage code
+
+        """
+        self.log.info('starting the ``_create_healpix_id_list`` method')
 
         # GET THE PROBABILITY MAP FOR THE GIVEN GWID
         pathToProbMap = self.settings[
@@ -117,34 +255,31 @@ class survey_footprint():
             raise IOError(message)
 
         # UNPACK THE PLOT PARAMETERS
-        pixelSizeDeg = 0.066667
-        centralCoordinate = plotParameters["centralCoordinate"]
-        raRange = plotParameters["raRange"]
-        decRange = plotParameters["decRange"]
-
-        raMax = centralCoordinate[0] + raRange / 2.
-        raMin = centralCoordinate[0] - raRange / 2.
-        decMax = centralCoordinate[1] + decRange / 2.
-        decMin = centralCoordinate[1] - decRange / 2.
+        pixelSizeDeg = 0.05
+        raRange = 360.
+        decRange = 180.
 
         # DETERMINE THE PIXEL GRID X,Y RANGES
         xRange = int(raRange / pixelSizeDeg)
-        yRange = int(decRange / pixelSizeDeg)
+        yRange = int(decRange / pixelSizeDeg) * 2
 
         # CREATE A NEW WCS OBJECT
-        import numpy
-        from astropy import wcs as awcs
-        from astropy.io import fits
         w = awcs.WCS(naxis=2)
+
+        # SET THE REQUIRED PIXEL SIZE
+        w.wcs.cdelt = numpy.array([pixelSizeDeg, pixelSizeDeg])
 
         # SET THE REFERENCE PIXEL TO THE CENTRE PIXEL
         w.wcs.crpix = [xRange / 2., yRange / 2.]
-        # SET THE REQUIRED PIXEL SIZE
-        w.wcs.cdelt = numpy.array([pixelSizeDeg, pixelSizeDeg])
+
+        # FOR AN ORTHOGONAL GRID THE CRPIX2 VALUE MUST BE ZERO AND CRPIX2
+        # MUST REFLECT THIS
+        w.wcs.crpix[1] -= w.wcs.crval[1] / w.wcs.cdelt[1]
+
         # WORLD COORDINATES AT REFERENCE PIXEL
-        w.wcs.crval = centralCoordinate
+        w.wcs.crval = [0, 0]
         # USE THE "GNOMONIC" PROJECTION ("COORDINATESYS---PROJECTION")
-        w.wcs.ctype = ["RA---TAN", "DEC--TAN"]
+        w.wcs.ctype = ["RA---MER", "DEC--MER"]
 
         # CREATE THE FITS HEADER WITH WCS
         header = w.to_header()
@@ -165,10 +300,10 @@ class survey_footprint():
         # READ HEALPIX MAPS FROM FITS FILE
         # THIS FILE IS A ONE COLUMN FITS BINARY, WITH EACH CELL CONTAINING AN
         # ARRAY OF PROBABILITIES (3,072 ROWS)
-        import healpy as hp
+
         aMap, mapHeader = hp.read_map(pathToProbMap, h=True)
         nside = hp.pixelfunc.get_nside(aMap)
-        hpixArea = hp.nside2pixarea(nside, "degrees")
+        hpixArea = hp.nside2pixarea(nside, degrees=True)
 
         # import matplotlib.pyplot as plt
         # hp.mollview(aMap, title="mollview image RING", cmap="YlOrRd")
@@ -176,10 +311,9 @@ class survey_footprint():
         # plt.show()
 
         # HEALPY REQUIRES RA, DEC IN RADIANS AND AS TWO SEPERATE ARRAYS
-        import math
         pi = (4 * math.atan(1.0))
-        DEG_TO_RAD_FACTOR = pi / 180.0
-        RAD_TO_DEG_FACTOR = 180.0 / pi
+        self.DEG_TO_RAD_FACTOR = pi / 180.0
+        self.RAD_TO_DEG_FACTOR = 180.0 / pi
 
         # THETA: IS THE POLAR ANGLE, RANGING FROM 0 AT THE NORTH POLE TO PI AT THE SOUTH POLE.
         # PHI: THE AZIMUTHAL ANGLE ON THE SPHERE FROM 0 TO 2PI
@@ -187,116 +321,11 @@ class survey_footprint():
         nd = -wd + 90.
 
         # CONVERT WORLD TO HEALPIX INDICES (NON-UNIQUE IDS!)
-        healpixIds = hp.ang2pix(nside, theta=nd * DEG_TO_RAD_FACTOR,
-                                phi=wr * DEG_TO_RAD_FACTOR)
+        healpixIds = hp.ang2pix(nside, theta=nd * self.DEG_TO_RAD_FACTOR,
+                                phi=wr * self.DEG_TO_RAD_FACTOR)
 
-        # NOW READ THE VALUES OF THE MAP AT THESE HEALPIX INDICES
-        probs = []
-        probs[:] = [aMap[i] for i in healpixIds]
-        probs = np.array(probs)
+        self.log.info('completed the ``_create_healpix_id_list`` method')
+        return nside, hpixArea, aMap, healpixIds, wr, wd
 
-        # CREATE THE FITS FILE
-        hdu = fits.PrimaryHDU(header=header, data=probs)
-
-        from operator import itemgetter
-        ps1Pointings = list(ps1Pointings)
-        ps1Pointings = sorted(
-            ps1Pointings, key=itemgetter('mjd'), reverse=False)
-
-        exposureRadius = 1.4
-        healpixDictionary = {}
-        totalPointings = len(ps1Pointings)
-        cumCoveredArray = np.ones(healpixIds.size)
-        finalMJDs = []
-        finalAreas = []
-        finalProbs = []
-
-        for pti, pt in enumerate(ps1Pointings):
-
-            pra = pt["raDeg"]
-            pdec = pt["decDeg"]
-            pmjd = pt["mjd"]
-            # print pmjd
-
-            decFactor = math.cos(pdec * DEG_TO_RAD_FACTOR)
-            coveredPixels = []
-
-            covered = -1
-            for r, d, c in zip(wr, wd, cumCoveredArray):
-                if c == 0:
-                    # WE HAVE COVERED THIS PIXEL BEFORE -- MOVE ON
-                    covered = 0
-                elif (((pra - r) * decFactor)**2)**0.5 > exposureRadius:
-                    covered = 0
-                elif ((pdec - d)**2)**0.5 > exposureRadius:
-                    covered = 0
-                else:
-                    angularSeparation, northSep, eastSep = dat.get_angular_separation(
-                        log=self.log,
-                        ra1=pra,
-                        dec1=pdec,
-                        ra2=r,
-                        dec2=d
-                    )
-                    if angularSeparation < exposureRadius * 60 * 60:
-                        covered = 1
-                    else:
-                        covered = 0
-                coveredPixels.append(covered)
-
-            # APPEND TO CUMMULATIVE COVERED ARRAY - SPEED THINGS UP!
-            cumCoveredArray = cumCoveredArray * (1 - np.array(coveredPixels))
-
-            # RESHAPE THE ARRAY AS BITMAP
-            coveredPixelGrid = np.reshape(
-                np.array(coveredPixels), (yRange, xRange))
-
-            # GRAB THE WCS FROM HEADER GENERATED EARLIER
-            from wcsaxes import datasets, WCS
-            wcs = WCS(hdu.header)
-
-            # PLOT MAP WITH PROJECTION IN HEADER
-            import matplotlib.pyplot as plt
-            fig = plt.figure()
-            ax = fig.add_axes([0.15, 0.1, 0.8, 0.8], projection=wcs)
-            im = ax.imshow(coveredPixelGrid,
-                           cmap="YlOrRd", origin='lower', alpha=0.7, zorder=1)
-
-            coveredHealPixels = coveredPixels * healpixIds
-            coveredProbabilities = coveredPixels * probs
-
-            for cx, cp in zip(coveredHealPixels, coveredProbabilities):
-                if cx != 0:
-                    healpixDictionary[cx] = cp
-
-            cumArea = len(healpixDictionary) * hpixArea
-            cumProb = sum(healpixDictionary.values())
-
-            finalMJDs.append(pmjd)
-            finalAreas.append(cumArea)
-            finalProbs.append(cumProb)
-
-            print "%(pti)s/%(totalPointings)s.  MJD: %(pmjd)s. AREA: %(cumArea)0.2f. PROB: %(cumProb)0.5f" % locals()
-
-        gwid = self.gwid
-        import codecs
-        from datetime import datetime, date, time
-        now = datetime.now()
-        now = now.strftime("%Y%m%dt%H%M%S")
-        pathToWriteFile = "/Users/Dave/Desktop/%(now)s_%(gwid)s_%(mapName)s.csv" % locals(
-        )
-        writeFile = codecs.open(pathToWriteFile, encoding='utf-8', mode='w')
-        writeFile.write(
-            "MJD,Cummulative Area (degrees),Cummulative Probability Covered\n" % locals())
-        for m, a, p in zip(finalMJDs, finalAreas, finalProbs):
-            writeFile.write("%(m)0.3f,%(a)0.2f,%(p)0.5f\n" % locals())
-        writeFile.close()
-
-        self.log.info('completed the ``get`` method')
-        return survey_footprint
-
+    # use the tab-trigger below for new method
     # xt-class-method
-
-    # 5. @flagged: what actions of the base class(es) need ammending? ammend them here
-    # Override Method Attributes
-    # method-override-tmpx

@@ -3,6 +3,7 @@
 *.sublime-project
 *.sublime-workspace
 .DS_Store
+**/tests/output/*
 .svn
 _git*
 *.orig
@@ -29,5 +30,9 @@ logs/*.log
 transients_cache/
 test_database.sql
 /logs/log.html
+**/tests/output/*
+
 
 path_to_settings.yaml
+blog-post.md
+blog-post.rst
