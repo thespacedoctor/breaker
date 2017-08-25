@@ -345,7 +345,7 @@ class listen():
             if not key in event:
                 self.log.info(
                     "`%(key)s` not in event %(event)s" % locals())
-                return None
+                event[key] = None
             eventinfo[key] = event[key]
         eventinfo['gpstime'] = float(eventinfo['gpstime'])
 
