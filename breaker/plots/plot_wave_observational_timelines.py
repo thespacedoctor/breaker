@@ -863,6 +863,7 @@ class plot_wave_observational_timelines():
             cumsum = np.cumsum(aMap[i])
             cls = np.empty_like(aMap)
             cls[i] = cumsum * 100 * stampProb
+            cls[i] = cumsum * 100
 
             # EXTRACT CONTOUR VALUES AT HEALPIX INDICES
             contours = []
