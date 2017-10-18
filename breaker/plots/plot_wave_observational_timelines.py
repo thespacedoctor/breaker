@@ -1890,8 +1890,7 @@ class plot_wave_observational_timelines():
         # DEC FROM 180 to 0
         theta = np.linspace(np.pi - pixelSizeDeg / 2, +
                             pixelSizeDeg / 2, yRange)
-        print theta[0], theta[-1]
-        print theta.shape
+
         latitude = np.radians(np.linspace(-90 + pixelSizeDeg, 90, yRange))
 
         # RA FROM -180 to +180
@@ -1899,8 +1898,7 @@ class plot_wave_observational_timelines():
         centralRaRad = centralRa * DEG_TO_RAD_FACTOR
         phi = np.linspace(-np.pi + centralRaRad + pixelSizeDeg / 2,
                           np.pi + centralRaRad - pixelSizeDeg / 2, xRange)
-        print phi[0], phi[-1]
-        print phi.shape
+
         longitude = np.radians(np.linspace(-180 + pixelSizeDeg, 180, xRange))
         X, Y = np.meshgrid(longitude, latitude)
 

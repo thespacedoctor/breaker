@@ -12,7 +12,7 @@
 Usage:
     breaker init
     breaker update [-naP] [-s <pathToSettingsFile>]
-    breaker skymap <gwid> <pathToLVMap> [-c <centerDeg>]
+    breaker skymap [-o] <gwid> <pathToLVMap> [-c <centerDeg>]
     breaker plot [-a] (timeline|history|sources) [-w <gwid>] [-t <telescope>] [-p <projection>] [-s <pathToSettingsFile>]
     breaker plot comparison <gwid> <pathToMapDirectory> [-s <pathToSettingsFile>]
     breaker faker <ps1ExpId> [-s <pathToSettingsFile>]
@@ -62,6 +62,7 @@ Usage:
     -d, --daemon          listen in daemon mode
     -a, --all             plot all timeline plot (including the CPU intensive -21-0 days and all transients/footprints plots)
     -P, --no-pointings    do not update pointings 
+    -o, --default-output  output files to the default breaker output location (as set in settings file)
 
 """
 ################# GLOBAL IMPORTS ####################
@@ -94,7 +95,7 @@ def main(arguments=None):
     su = tools(
         arguments=arguments,
         docString=__doc__,
-        logLevel="DEBUG",
+        logLevel="WARNING",
         options_first=False,
         projectName="breaker"
     )
@@ -266,11 +267,16 @@ def main(arguments=None):
         else:
             cFlag = float(cFlag)
 
+        if defaultoutputFlag:
+            outputDirectory = False
+        else:
+            outputDirectory = "."
+
         plotter.generate_probability_plot(
             gwid=gwid,
             pathToProbMap=pathToLVMap,
             fileFormats=["pdf", "png"],
-            outputDirectory=".",
+            outputDirectory=outputDirectory,
             projection="mollweide",
             plotType="timeline",
             fitsImage=False,
@@ -282,7 +288,7 @@ def main(arguments=None):
             gwid=gwid,
             pathToProbMap=pathToLVMap,
             fileFormats=["pdf", "png"],
-            outputDirectory=".",
+            outputDirectory=outputDirectory,
             projection="mercator",
             plotType="timeline",
             fitsImage=True,
