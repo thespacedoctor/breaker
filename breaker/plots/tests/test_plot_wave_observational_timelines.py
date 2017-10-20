@@ -53,9 +53,33 @@ class test_plot_wave_observational_timelines(unittest.TestCase):
             databaseConnRequired=False
         )
 
-        plotter.generate_fits_image_map(
+        # plotter.generate_fits_image_map(
+        #     pathToProbMap=pathToInputDir + "/GW151226-bayestar.fits",
+        #     gwid="G184098"
+        # )
+
+        plotter.generate_probability_plot(
+            gwid="G184098",
             pathToProbMap=pathToInputDir + "/GW151226-bayestar.fits",
-            gwid="G184098"
+            fileFormats=["pdf", "png"],
+            outputDirectory=pathToOutputDir,
+            projection="mollweide",
+            plotType="timeline",
+            fitsImage=False,
+            allSky=True,
+            center=False
+        )
+
+        plotter.generate_probability_plot(
+            gwid="G184098",
+            pathToProbMap=pathToInputDir + "/GW151226-bayestar.fits",
+            fileFormats=["pdf", "png"],
+            outputDirectory=pathToOutputDir,
+            projection="mercator",
+            plotType="timeline",
+            fitsImage=True,
+            allSky=True,
+            center=False
         )
 
         # x-print-testpage-for-pessto-marshall-web-object

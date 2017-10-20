@@ -12,7 +12,7 @@
 Usage:
     breaker init
     breaker update [-naP] [-s <pathToSettingsFile>]
-    breaker skymap [-o] <gwid> <pathToLVMap> [-c <centerDeg>]
+    breaker skymap [-o] <gwid> [<pathToLVMap>] [-c <centerDeg>]
     breaker plot [-a] (timeline|history|sources) [-w <gwid>] [-t <telescope>] [-p <projection>] [-s <pathToSettingsFile>]
     breaker plot comparison <gwid> <pathToMapDirectory> [-s <pathToSettingsFile>]
     breaker faker <ps1ExpId> [-s <pathToSettingsFile>]

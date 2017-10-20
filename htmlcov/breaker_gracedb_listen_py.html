@@ -813,7 +813,7 @@
 <p id="t226" class="pln"><span class="strut">&nbsp;</span></p>
 <p id="t227" class="stm mis">                <span class="nam">files</span> <span class="op">=</span> <span class="nam">self</span><span class="op">.</span><span class="nam">client</span><span class="op">.</span><span class="nam">files</span><span class="op">(</span><span class="nam">event</span><span class="op">[</span><span class="str">'graceid'</span><span class="op">]</span><span class="op">)</span><span class="strut">&nbsp;</span></p>
 <p id="t228" class="stm mis">                <span class="key">for</span> <span class="nam">k</span><span class="op">,</span> <span class="nam">v</span> <span class="key">in</span> <span class="nam">files</span><span class="op">.</span><span class="nam">json</span><span class="op">(</span><span class="op">)</span><span class="op">.</span><span class="nam">iteritems</span><span class="op">(</span><span class="op">)</span><span class="op">:</span><span class="strut">&nbsp;</span></p>
-<p id="t229" class="stm mis">                    <span class="key">if</span> <span class="str">".fits"</span> <span class="key">in</span> <span class="nam">k</span><span class="op">.</span><span class="nam">split</span><span class="op">(</span><span class="str">","</span><span class="op">)</span><span class="op">[</span><span class="num">0</span><span class="op">]</span><span class="op">:</span><span class="strut">&nbsp;</span></p>
+<p id="t229" class="stm mis">                    <span class="key">if</span> <span class="str">"fits"</span> <span class="key">in</span> <span class="nam">k</span><span class="op">.</span><span class="nam">split</span><span class="op">(</span><span class="str">","</span><span class="op">)</span><span class="op">[</span><span class="num">0</span><span class="op">]</span><span class="op">:</span><span class="strut">&nbsp;</span></p>
 <p id="t230" class="stm mis">                        <span class="key">try</span><span class="op">:</span><span class="strut">&nbsp;</span></p>
 <p id="t231" class="stm mis">                            <span class="nam">aMap</span> <span class="op">=</span> <span class="nam">self</span><span class="op">.</span><span class="nam">client</span><span class="op">.</span><span class="nam">files</span><span class="op">(</span><span class="nam">event</span><span class="op">[</span><span class="str">'graceid'</span><span class="op">]</span><span class="op">,</span> <span class="nam">k</span><span class="op">)</span><span class="strut">&nbsp;</span></p>
 <p id="t232" class="stm mis">                            <span class="key">if</span> <span class="nam">aMap</span> <span class="key">not</span> <span class="key">in</span> <span class="nam">allMaps</span><span class="op">:</span><span class="strut">&nbsp;</span></p>
@@ -932,7 +932,7 @@
 <p id="t345" class="stm mis">            <span class="key">if</span> <span class="key">not</span> <span class="nam">key</span> <span class="key">in</span> <span class="nam">event</span><span class="op">:</span><span class="strut">&nbsp;</span></p>
 <p id="t346" class="stm mis">                <span class="nam">self</span><span class="op">.</span><span class="nam">log</span><span class="op">.</span><span class="nam">info</span><span class="op">(</span><span class="strut">&nbsp;</span></p>
 <p id="t347" class="pln">                    <span class="str">"`%(key)s` not in event %(event)s"</span> <span class="op">%</span> <span class="nam">locals</span><span class="op">(</span><span class="op">)</span><span class="op">)</span><span class="strut">&nbsp;</span></p>
-<p id="t348" class="stm mis">                <span class="key">return</span> <span class="nam">None</span><span class="strut">&nbsp;</span></p>
+<p id="t348" class="stm mis">                <span class="nam">event</span><span class="op">[</span><span class="nam">key</span><span class="op">]</span> <span class="op">=</span> <span class="nam">None</span><span class="strut">&nbsp;</span></p>
 <p id="t349" class="stm mis">            <span class="nam">eventinfo</span><span class="op">[</span><span class="nam">key</span><span class="op">]</span> <span class="op">=</span> <span class="nam">event</span><span class="op">[</span><span class="nam">key</span><span class="op">]</span><span class="strut">&nbsp;</span></p>
 <p id="t350" class="stm mis">        <span class="nam">eventinfo</span><span class="op">[</span><span class="str">'gpstime'</span><span class="op">]</span> <span class="op">=</span> <span class="nam">float</span><span class="op">(</span><span class="nam">eventinfo</span><span class="op">[</span><span class="str">'gpstime'</span><span class="op">]</span><span class="op">)</span><span class="strut">&nbsp;</span></p>
 <p id="t351" class="pln"><span class="strut">&nbsp;</span></p>
@@ -1109,8 +1109,8 @@
 <div id="footer">
     <div class="content">
         <p>
-            <a class="nav" href="index.html">&#xab; index</a> &nbsp; &nbsp; <a class="nav" href="https://coverage.readthedocs.io">coverage.py v4.3.4</a>,
-            created at 2017-03-21 10:38
+            <a class="nav" href="index.html">&#xab; index</a> &nbsp; &nbsp; <a class="nav" href="https://coverage.readthedocs.io">coverage.py v4.4.1</a>,
+            created at 2017-10-20 10:55
         </p>
     </div>
 </div>

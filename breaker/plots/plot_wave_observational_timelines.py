@@ -624,6 +624,26 @@ class plot_wave_observational_timelines():
         cmap = "YlOrRd"
         colorBar = False
 
+        # DETERMINE PATH TO MAP AND IF IT IS THE PREFERRED MAP AT THIS TIME
+        bestMap = False
+        if pathToProbMap is None or not pathToProbMap:
+            pathToProbMap = self.settings[
+                "gravitational waves"][gwid]["mapPath"]
+
+        pathToProbMap = os.path.abspath(pathToProbMap)
+
+        if gwid in self.settings["gravitational waves"]:
+            bestMapPath = self.settings[
+                "gravitational waves"][gwid]["mapPath"]
+            bestMapPath = os.path.abspath(bestMapPath)
+            if pathToProbMap == bestMapPath:
+                bestMap = True
+
+        mapBasename = os.path.basename(pathToProbMap)
+        mapBasename = os.path.splitext(mapBasename)[0]
+        mapBasename = os.path.splitext(mapBasename)[0]
+        mapBasename = os.path.splitext(mapBasename)[0]
+
         # INITIALISE FIGURE
         fig = plt.figure()
 
@@ -1123,7 +1143,8 @@ class plot_wave_observational_timelines():
                 )
                 timeRangeLabel = "all transients"
         elif plotType == "timeline":
-            plotTitle = "%(gwid)s Probability Map" % locals()
+
+            plotTitle = "%(gwid)s %(mapBasename)s skymap" % locals()
             timeRangeLabel = ""
 
         else:
@@ -1613,7 +1634,7 @@ class plot_wave_observational_timelines():
         if timeLimitDay == 0:
             figureName = """%(plotTitle)s""" % locals(
             )
-        if allSky:
+        if allSky and plotDir == ".":
             figureName = figureName + "_" + projection.title()
         if self.telescope:
             figureName = figureName + "_" + self.telescope
@@ -1624,6 +1645,14 @@ class plot_wave_observational_timelines():
                 figurePath = "%(plotDir)s/%(folderName)s/%(f)s/%(figureName)s_%(projection)s.%(f)s" % locals()
                 savefig(figurePath, bbox_inches='tight', dpi=300)
                 # savefig(figurePath, dpi=300)
+
+                if bestMap:
+                    linkName = "%(plotDir)s/%(folderName)s/%(f)s/%(gwid)s_preferred_skymap_%(projection)s.%(f)s" % locals()
+                    try:
+                        os.remove(linkName)
+                    except:
+                        pass
+                    os.symlink(figurePath, linkName)
 
             # if not os.path.exists("%(plotDir)s/%(folderName)s/fits" % locals()):
             #     os.makedirs("%(plotDir)s/%(folderName)s/fits" % locals())
@@ -1652,7 +1681,8 @@ class plot_wave_observational_timelines():
                 pathToProbMap=pathToProbMap,
                 folderName=folderName,
                 outputDirectory=outputDirectory,
-                center=center
+                center=center,
+                bestMap=bestMap
             )
 
         self.log.info('completed the ``generate_probability_plot`` method')
@@ -1822,7 +1852,8 @@ class plot_wave_observational_timelines():
             folderName="",
             outputDirectory=False,
             rebin=True,
-            center=0.):
+            center=False,
+            bestMap=False):
         """*generate fits image map from the LV-skymap (FITS binary table)*
 
         **Key Arguments:**
@@ -1831,7 +1862,8 @@ class plot_wave_observational_timelines():
             - ``gwid`` -- the unique ID of the gravitational wave to plot
             - ``folderName`` -- the name of the folder to add the plots to
             - ``rebin`` -- rebin the final image to reduce size
-            - ``center`` -- central longitude in degrees. Default *0*. 
+            - ``center`` -- central longitude in degrees. Default *0*.
+            - ``bestMap`` -- is this the prefered skymap. If so, add symlink to placeholder name for prefered map.
 
         **Return:**
             - None
@@ -1864,6 +1896,11 @@ class plot_wave_observational_timelines():
         DEG_TO_RAD_FACTOR = pi / 180.0
         RAD_TO_DEG_FACTOR = 180.0 / pi
 
+        mapBasename = os.path.basename(pathToProbMap)
+        mapBasename = os.path.splitext(mapBasename)[0]
+        mapBasename = os.path.splitext(mapBasename)[0]
+        mapBasename = os.path.splitext(mapBasename)[0]
+
         # X, Y PIXEL COORDINATE GRID
         xRange = 10000
         yRange = xRange / 2
@@ -1892,6 +1929,14 @@ class plot_wave_observational_timelines():
                             pixelSizeDeg / 2, yRange)
 
         latitude = np.radians(np.linspace(-90 + pixelSizeDeg, 90, yRange))
+
+        # FIND THE COORDINATES OF THE CORE LIKEIHOOD
+        maxProbHealpix = aMap.argmax()
+        maxCoordinate = hp.pix2ang(nside, maxProbHealpix, lonlat=True)
+        print "The %(gwid)s %(mapBasename)s map's maximum likelihood is centered at %(maxCoordinate)s" % locals()
+
+        if center == False:
+            center = maxCoordinate[0]
 
         # RA FROM -180 to +180
         centralRa = center
@@ -1987,19 +2032,30 @@ class plot_wave_observational_timelines():
         if plotDir != ".":
             if not os.path.exists("%(plotDir)s/%(folderName)s/fits" % locals()):
                 os.makedirs("%(plotDir)s/%(folderName)s/fits" % locals())
-            pathToExportFits = "%(plotDir)s/%(folderName)s/fits/%(gwid)s_skymap.fits" % locals()
+            pathToExportFits = "%(plotDir)s/%(folderName)s/fits/%(gwid)s_%(mapBasename)s_breaker_skymap.fits" % locals()
             try:
                 os.remove(pathToExportFits)
             except:
                 pass
             hdu.writeto(pathToExportFits)
+
+            if bestMap:
+                linkName = "%(plotDir)s/%(folderName)s/fits/%(gwid)s_preferred_breaker_skymap.fits" % locals()
+                print "The %(gwid)s prefered likeihood map is symlinked at `%(linkName)s`" % locals()
+                try:
+                    os.remove(linkName)
+                except:
+                    pass
+                os.symlink(pathToExportFits, linkName)
         else:
-            pathToExportFits = "%(plotDir)s/%(gwid)s_skymap.fits" % locals()
+            pathToExportFits = "%(plotDir)s/%(gwid)s_%(mapBasename)s_breaker_skymap.fits" % locals()
             try:
                 os.remove(pathToExportFits)
             except:
                 pass
             hdu.writeto(pathToExportFits)
+
+        print "The %(gwid)s %(mapBasename)s likeihood map can be found here `%(pathToExportFits)s`" % locals()
 
         self.log.info('completed the ``generate_fits_image_map`` method')
         return None
