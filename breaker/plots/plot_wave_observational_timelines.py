@@ -679,7 +679,8 @@ class plot_wave_observational_timelines():
         projectionDict = {
             "mollweide": "MOL",
             "gnomonic": "MER",
-            "mercator": "MER"
+            "mercator": "MER",
+            "cartesian": "CAR"
         }
 
         if projection in ["mollweide"]:
@@ -786,7 +787,7 @@ class plot_wave_observational_timelines():
 
             plt.grid(True)
 
-        elif projection in ["mercator"]:
+        elif projection in ["mercator", "cartesian"]:
 
             if allSky:
                 raRange = 360.
@@ -959,8 +960,13 @@ class plot_wave_observational_timelines():
 
         elif projection == "gnomonic":
             # UNPACK THE PLOT PARAMETERS
-            raRange = plotParameters["raRange"]
-            decRange = plotParameters["decRange"]
+
+            if allSky:
+                raRange = 360.
+                decRange = 180.
+            else:
+                raRange = plotParameters["raRange"]
+                decRange = plotParameters["decRange"]
 
             raMax = centralCoordinate[0] + raRange / 2.
             raMin = centralCoordinate[0] - raRange / 2.

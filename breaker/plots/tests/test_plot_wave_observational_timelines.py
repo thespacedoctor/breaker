@@ -58,6 +58,13 @@ class test_plot_wave_observational_timelines(unittest.TestCase):
         #     gwid="G184098"
         # )
 
+    def test_generate_pdf_image_map(self):
+        plotter = plot_wave_observational_timelines(
+            log=log,
+            settings=settings,
+            databaseConnRequired=False
+        )
+
         plotter.generate_probability_plot(
             gwid="G184098",
             pathToProbMap=pathToInputDir + "/GW151226-bayestar.fits",
@@ -75,12 +82,36 @@ class test_plot_wave_observational_timelines(unittest.TestCase):
             pathToProbMap=pathToInputDir + "/GW151226-bayestar.fits",
             fileFormats=["pdf", "png"],
             outputDirectory=pathToOutputDir,
-            projection="mercator",
+            projection="cartesian",
             plotType="timeline",
-            fitsImage=True,
+            fitsImage=False,
             allSky=True,
             center=False
         )
+
+        # plotter.generate_probability_plot(
+        #     gwid="G184098",
+        #     pathToProbMap=pathToInputDir + "/GW151226-bayestar.fits",
+        #     fileFormats=["pdf", "png"],
+        #     outputDirectory=pathToOutputDir,
+        #     projection="gnomonic",
+        #     plotType="timeline",
+        #     fitsImage=False,
+        #     allSky=True,
+        #     center=False
+        # )
+
+        # plotter.generate_probability_plot(
+        #     gwid="G184098",
+        #     pathToProbMap=pathToInputDir + "/GW151226-bayestar.fits",
+        #     fileFormats=["pdf", "png"],
+        #     outputDirectory=pathToOutputDir,
+        #     projection="cartesian",
+        #     plotType="timeline",
+        #     fitsImage=False,
+        #     allSky=True,
+        #     center=False
+        # )
 
         # x-print-testpage-for-pessto-marshall-web-object
 
