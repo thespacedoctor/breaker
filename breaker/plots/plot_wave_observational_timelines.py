@@ -174,7 +174,8 @@ class plot_wave_observational_timelines():
             self,
             gwid,
             inPastDays=False,
-            inFirstDays=False):
+            inFirstDays=False,
+            maxProbCoordinate=[0, 0]):
         """
         *Query the settings file and database for PS1 Pointings, PS1 discovered transients and plot parameters relatiing to the given gravitational wave (``gwid``)*
 
@@ -182,6 +183,7 @@ class plot_wave_observational_timelines():
             - ``gwid`` -- the unique ID of the gravitational wave to plot
             - ``inPastDays`` -- used for the `history` plots (looking back from today)
             - ``inFirstDays`` -- used in the `timeline` plots (looking forward from wave detection). A tuple (start day, end day).
+            - ``maxProbCoordinate`` -- the sky-coordiante of the pixel containing the highest likelihood (calculated from map).
 
         **Return:**
             - ``plotParameters`` -- the parameters used for the plots
@@ -259,6 +261,9 @@ class plot_wave_observational_timelines():
             'starting the ``get_gw_parameters_from_settings`` method')
 
         plotParameters = self.settings["gravitational waves"][gwid]["plot"]
+
+        if "centralCoordinate" not in plotParameters:
+            plotParameters["centralCoordinate"] = maxProbCoordinate
 
         # GRAB PS1 TRANSIENTS FROM THE DATABASE
         ps1Transients, atlasTransients = self._get_ps1_transient_candidates(
@@ -533,7 +538,7 @@ class plot_wave_observational_timelines():
             outputDirectory=False,
             fitsImage=False,
             allSky=False,
-            center=0.):
+            center=False):
         """
         *Generate a single probability map plot for a given gravitational wave and save it to file*
 
@@ -664,6 +669,14 @@ class plot_wave_observational_timelines():
         # locals()
 
         # UNPACK THE PLOT PARAMETERS
+        # FIND THE COORDINATES OF THE CORE LIKEIHOOD
+        maxProbHealpix = aMap.argmax()
+        maxCoordinate = hp.pix2ang(nside, maxProbHealpix, lonlat=True)
+        print "The %(gwid)s %(mapBasename)s map's maximum likelihood is centered at %(maxCoordinate)s" % locals()
+
+        if center == False:
+            center = maxCoordinate[0]
+
         if plotParameters:
             centralCoordinate = plotParameters["centralCoordinate"]
         else:
@@ -730,9 +743,9 @@ class plot_wave_observational_timelines():
                 ::-1], latitude, probs, rasterized=True, cmap=cmap)
 
             # GRATICULE
-            ax.set_longitude_grid(60)
-            ax.set_latitude_grid(45)
-            ax.xaxis.set_major_formatter(ThetaFormatterShiftPi(60))
+            ax.set_longitude_grid(30)
+            ax.set_latitude_grid(15)
+            ax.xaxis.set_major_formatter(ThetaFormatterShiftPi(30))
             ax.set_longitude_grid_ends(90)
 
             # CONTOURS - NEED TO ADD THE CUMMULATIVE PROBABILITY
@@ -762,8 +775,8 @@ class plot_wave_observational_timelines():
                 # WORKAROUND FOR ISSUE WITH VIEWERS, SEE COLORBAR DOCSTRING
                 cb.solids.set_edgecolor("face")
 
-            ax.tick_params(axis='x', labelsize=16)
-            ax.tick_params(axis='y', labelsize=16)
+            ax.tick_params(axis='x', labelsize=12)
+            ax.tick_params(axis='y', labelsize=12)
             # lon.set_ticks_position('bt')
             # lon.set_ticklabel_position('b')
             # lon.set_ticklabel(size=20)
@@ -1189,7 +1202,7 @@ class plot_wave_observational_timelines():
             width = height / math.cos(decDeg * DEG_TO_RAD_FACTOR)
 
             # MULTIPLE CIRCLES
-            if projection in ["mercator", "gnomonic"]:
+            if projection in ["mercator", "gnomonic", "cartesian"]:
                 circ = Ellipse(
                     (raDeg, decDeg), width=width, height=height, alpha=0.2, color='#859900', fill=True, transform=ax.get_transform('fk5'), zorder=3)
             else:
@@ -1207,7 +1220,7 @@ class plot_wave_observational_timelines():
             height = 3.5
 
             width = height / math.cos(decDeg * DEG_TO_RAD_FACTOR)
-            if projection in ["mercator", "gnomonic"]:
+            if projection in ["mercator", "gnomonic", "cartesian"]:
                 circ = Ellipse(
                     (raDeg, decDeg), width=width, height=height, alpha=0.2, color='#859900', fill=True, transform=ax.get_transform('fk5'), zorder=3)
                 ax.text(
@@ -1266,7 +1279,7 @@ class plot_wave_observational_timelines():
             if decDeg < 0:
                 deltaDeg = -deltaDeg
 
-            if projection in ["mercator", "gnomonic"]:
+            if projection in ["mercator", "gnomonic", "cartesian"]:
                 widthDegTop = atlasPointingSide / \
                     math.cos((decDeg + deltaDeg) * DEG_TO_RAD_FACTOR)
                 widthDegBottom = atlasPointingSide / \
@@ -1332,7 +1345,7 @@ class plot_wave_observational_timelines():
 
         # LEGEND FOR ATLAS
         if len(atlasPointings) and 1 == -1:
-            if projection in ["mercator", "gnomonic"]:
+            if projection in ["mercator", "gnomonic", "cartesian"]:
                 raDeg = 88.
                 decDeg = 4.
                 atlasPointingSide = 4.5
@@ -1441,7 +1454,7 @@ class plot_wave_observational_timelines():
 
         if len(ra) > 0:
             # MULTIPLE CIRCLES
-            if projection in ["mercator", "gnomonic"]:
+            if projection in ["mercator", "gnomonic", "cartesian"]:
                 ax.scatter(
                     x=np.array(ra),
                     y=np.array(dec),
@@ -1526,7 +1539,7 @@ class plot_wave_observational_timelines():
 
         if len(ra) > 0:
             # MULTIPLE CIRCLES
-            if projection in ["mercator", "gnomonic"]:
+            if projection in ["mercator", "gnomonic", "cartesian"]:
                 ax.scatter(
                     x=np.array(ra),
                     y=np.array(dec),
@@ -1592,7 +1605,7 @@ class plot_wave_observational_timelines():
         fig = plt.gcf()
         fWidth, fHeight = fig.get_size_inches()
 
-        if projection in ["mercator", "gnomonic"]:
+        if projection in ["mercator", "gnomonic", "cartesian"]:
             fig.set_size_inches(8.0, 8.0)
             ax.text(0.95, 0.95, timeRangeLabel,
                     horizontalalignment='right',
@@ -1652,7 +1665,7 @@ class plot_wave_observational_timelines():
                 savefig(figurePath, bbox_inches='tight', dpi=300)
                 # savefig(figurePath, dpi=300)
 
-                if bestMap:
+                if bestMap and allSky:
                     linkName = "%(plotDir)s/%(folderName)s/%(f)s/%(gwid)s_preferred_skymap_%(projection)s.%(f)s" % locals()
                     try:
                         os.remove(linkName)
@@ -1814,13 +1827,28 @@ class plot_wave_observational_timelines():
         for gwid in theseIds:
             for tday, tlabel, raLimit in zip(timeLimitDays, timeLimitLabels, raLimits):
 
+                pathToProbMap = self.settings[
+                    "gravitational waves"][gwid]["mapPath"]
+                aMap, mapHeader = hp.read_map(
+                    pathToProbMap, 0, h=True, verbose=False)
+
+                mapBasename = os.path.basename(pathToProbMap)
+                mapBasename = os.path.splitext(mapBasename)[0]
+                mapBasename = os.path.splitext(mapBasename)[0]
+                mapBasename = os.path.splitext(mapBasename)[0]
+
+                # DETERMINE THE SIZE OF THE HEALPIXELS
+                nside = hp.npix2nside(len(aMap))
+                maxProbHealpix = aMap.argmax()
+                maxProbCoordinate = hp.pix2ang(
+                    nside, maxProbHealpix, lonlat=True)
+
                 plotParameters, ps1Transients, ps1Pointings, atlasPointings, atlasTransients = self.get_gw_parameters_from_settings(
                     gwid=gwid,
                     inPastDays=False,
-                    inFirstDays=tday)
+                    inFirstDays=tday,
+                    maxProbCoordinate=maxProbCoordinate)
 
-                pathToProbMap = self.settings[
-                    "gravitational waves"][gwid]["mapPath"]
                 if not os.path.exists(pathToProbMap):
                     message = "the path to the map %s does not exist on this machine" % (
                         pathToProbMap,)

@@ -89,17 +89,17 @@ class test_plot_wave_observational_timelines(unittest.TestCase):
             center=False
         )
 
-        # plotter.generate_probability_plot(
-        #     gwid="G184098",
-        #     pathToProbMap=pathToInputDir + "/GW151226-bayestar.fits",
-        #     fileFormats=["pdf", "png"],
-        #     outputDirectory=pathToOutputDir,
-        #     projection="gnomonic",
-        #     plotType="timeline",
-        #     fitsImage=False,
-        #     allSky=True,
-        #     center=False
-        # )
+        plotter.generate_probability_plot(
+            gwid="G184098",
+            pathToProbMap=pathToInputDir + "/GW151226-bayestar.fits",
+            fileFormats=["pdf", "png"],
+            outputDirectory=pathToOutputDir,
+            projection="mercator",
+            plotType="timeline",
+            fitsImage=False,
+            allSky=True,
+            center=False
+        )
 
         # plotter.generate_probability_plot(
         #     gwid="G184098",
