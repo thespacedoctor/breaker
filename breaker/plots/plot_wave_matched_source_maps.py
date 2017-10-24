@@ -115,10 +115,10 @@ class plot_wave_matched_source_maps():
             print inPastDays
 
         if inFirstDays:
-            mjdStart = self.settings["gravitational waves"][gwid]["time"][
-                "mjdStart"] + inFirstDays[0]
+            mjdStart = self.settings["gravitational waves"][
+                gwid]["mjd"] + inFirstDays[0]
             mjdEnd = self.settings["gravitational waves"][
-                gwid]["time"]["mjdStart"] + inFirstDays[1]
+                gwid]["mjd"] + inFirstDays[1]
             if inFirstDays[1] == 0:
                 mjdEnd = 10000000000
 
@@ -531,7 +531,7 @@ class plot_wave_matched_source_maps():
                 raise IOError(message)
 
             mjdStart = self.settings["gravitational waves"][
-                gwid]["time"]["mjdStart"]
+                gwid]["mjd"]
 
             r = 0.15
             raArray, decArray = self._get_matched_sources(

@@ -96,7 +96,7 @@ class longitude_coverage():
 
         # TIME OF WAVE DETECTION
         self.t0 = self.settings["gravitational waves"][
-            gwid]["time"]["mjdStart"]
+            gwid]["mjd"]
 
         return None
 

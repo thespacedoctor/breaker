@@ -269,9 +269,9 @@ class plot_wave_observational_timelines():
         ps1Transients, atlasTransients = self._get_ps1_transient_candidates(
             gwid=gwid,
             mjdStart=self.settings["gravitational waves"][
-                gwid]["time"]["mjdStart"],
+                gwid]["mjd"],
             mjdEnd=self.settings["gravitational waves"][
-                gwid]["time"]["mjdEnd"],
+                gwid]["mjd"] + 31.,
             plotParameters=plotParameters,
             inPastDays=inPastDays,
             inFirstDays=inFirstDays
@@ -339,10 +339,10 @@ class plot_wave_observational_timelines():
             mjdEnd = 1000000000000000
 
         if inFirstDays:
-            mjdStart = self.settings["gravitational waves"][gwid]["time"][
-                "mjdStart"] + inFirstDays[0]
+            mjdStart = self.settings["gravitational waves"][
+                gwid]["mjd"] + inFirstDays[0]
             mjdEnd = self.settings["gravitational waves"][
-                gwid]["time"]["mjdStart"] + inFirstDays[1]
+                gwid]["mjd"] + inFirstDays[1]
             if inFirstDays[1] == 0 and inFirstDays[0] == 0:
                 mjdEnd = 10000000000
 
@@ -420,18 +420,17 @@ class plot_wave_observational_timelines():
                 mjdStart = 0.0
 
         if inFirstDays:
-            mjdStart = self.settings["gravitational waves"][gwid]["time"][
-                "mjdStart"] + inFirstDays[0]
+            mjdStart = self.settings["gravitational waves"][
+                gwid]["mjd"] + inFirstDays[0]
             mjdEnd = self.settings["gravitational waves"][
-                gwid]["time"]["mjdStart"] + inFirstDays[1]
+                gwid]["mjd"] + inFirstDays[1]
             if inFirstDays[1] == 0 and inFirstDays[0] == 0:
                 mjdEnd = 10000000000
 
         if inPastDays == False and inFirstDays == False:
-            mjdStart = self.settings["gravitational waves"][gwid]["time"][
-                "mjdStart"]
+            mjdStart = self.settings["gravitational waves"][gwid]["mjd"]
             mjdEnd = self.settings["gravitational waves"][
-                gwid]["time"]["mjdEnd"]
+                gwid]["mjd"] + 31.
 
         sqlQuery = u"""
             SELECT raDeg, decDeg, mjd, exp_time, filter, limiting_mag FROM ps1_pointings where gw_id like "%%%(gwid)s%%" and mjd between %(mjdStart)s and %(mjdEnd)s
@@ -491,18 +490,17 @@ class plot_wave_observational_timelines():
                 mjdStart = 0.0
 
         if inFirstDays:
-            mjdStart = self.settings["gravitational waves"][gwid]["time"][
-                "mjdStart"] + inFirstDays[0]
+            mjdStart = self.settings["gravitational waves"][
+                gwid]["mjd"] + inFirstDays[0]
             mjdEnd = self.settings["gravitational waves"][
-                gwid]["time"]["mjdStart"] + inFirstDays[1]
+                gwid]["mjd"] + inFirstDays[1]
             if inFirstDays[1] == 0 and inFirstDays[0] == 0:
                 mjdEnd = 10000000000
 
         if inPastDays == False and inFirstDays == False:
-            mjdStart = self.settings["gravitational waves"][gwid]["time"][
-                "mjdStart"]
+            mjdStart = self.settings["gravitational waves"][gwid]["mjd"]
             mjdEnd = self.settings["gravitational waves"][
-                gwid]["time"]["mjdEnd"]
+                gwid]["mjd"] + 31.
 
         sqlQuery = u"""
             SELECT atlas_object_id as exp_id, raDeg, decDeg, mjd, exp_time, filter, limiting_magnitude FROM atlas_pointings where gw_id like "%%%(gwid)s%%" and mjd between %(mjdStart)s and %(mjdEnd)s group by atlas_object_id;
@@ -1757,7 +1755,7 @@ class plot_wave_observational_timelines():
                     raise IOError(message)
 
                 mjdStart = self.settings["gravitational waves"][
-                    gwid]["time"]["mjdStart"]
+                    gwid]["mjd"]
 
                 self.generate_probability_plot(
                     gwid=gwid,
@@ -1856,7 +1854,7 @@ class plot_wave_observational_timelines():
                     raise IOError(message)
 
                 mjdStart = self.settings["gravitational waves"][
-                    gwid]["time"]["mjdStart"]
+                    gwid]["mjd"]
 
                 self.generate_probability_plot(
                     gwid=gwid,
