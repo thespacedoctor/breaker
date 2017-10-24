@@ -21,6 +21,7 @@ from astrocalc.times import conversions
 from HMpTy.mysql import add_htm_ids_to_mysql_database_table
 from fundamentals.download import multiobject_download
 from fundamentals.renderer import list_of_dictionaries
+from fundamentals.mysql import writequery
 from datetime import datetime, date, time
 import codecs
 import csv
@@ -43,9 +44,7 @@ class update_ps1_atlas_footprint_tables():
         gravitational waves:
             G184098:
                 human-name: GW150914
-                time:
-                    mjdStart: 57279.90
-                    mjdEnd: 57369.90
+                mjd: 57279.90
                 plot:
                     raRange: 48.  # CENTRAL WIDTH IN DEGREES
                     decRange: 45.  # CENTRAL HEIGHT IN DEGREES
@@ -195,7 +194,7 @@ class update_ps1_atlas_footprint_tables():
                         m.zero_pt + m.deteff_magref + m.deteff_calculated_offset+2.5*log(10,exptime)) AS limiting_mag
                 FROM
                     tcs_cmf_metadata m
-                    where filename like "%%.%(f)s.%%" %(recent)s 
+                    where filename like "%%.%(f)s.%%" %(recent)s
             """ % locals()
             rows = readquery(
                 log=self.log,
@@ -253,9 +252,10 @@ class update_ps1_atlas_footprint_tables():
 
          **Usage:**
 
-            .. code-block:: python 
+            .. code-block:: python
 
-                # IMPORT NEW ATLAS POINTINGS FROM ATLAS DATABASE INTO LIGO-VIRGO WAVES DATABASE
+                # IMPORT NEW ATLAS POINTINGS FROM ATLAS DATABASE INTO
+                # LIGO-VIRGO WAVES DATABASE
                 from breaker import update_ps1_atlas_footprint_tables
                 dbUpdater = update_ps1_atlas_footprint_tables(
                     log=log,
@@ -334,9 +334,9 @@ class update_ps1_atlas_footprint_tables():
 
          **Usage:**
 
-            .. code-block:: python 
+            .. code-block:: python
 
-                # ATTEMPT TO LABEL PS1 POINTINGS IN DATABASE WITH A GW ID 
+                # ATTEMPT TO LABEL PS1 POINTINGS IN DATABASE WITH A GW ID
                 from breaker import update_ps1_atlas_footprint_tables
                 dbUpdater = update_ps1_atlas_footprint_tables(
                     log=log,
@@ -363,9 +363,9 @@ class update_ps1_atlas_footprint_tables():
             decMin = (centralCoordinate[1] - decRange / 2.) - 5.
 
             mjdLower = self.settings["gravitational waves"][
-                wave]["time"]["mjdStart"] - 21.
+                wave]["mjd"] - 21.
             mjdUpper = self.settings["gravitational waves"][
-                wave]["time"]["mjdEnd"]
+                wave]["mjd"] + 31
 
             if raMin > 0. and raMax < 360.:
                 raWhere = """(raDeg > %(raMin)s and raDeg < %(raMax)s)""" % locals(
@@ -470,9 +470,9 @@ class update_ps1_atlas_footprint_tables():
 
          **Usage:**
 
-            .. code-block:: python 
+            .. code-block:: python
 
-                # SPLIT PS1 POINTINGS INTO SUB-DISKS AND ADD TO LV DATABASE 
+                # SPLIT PS1 POINTINGS INTO SUB-DISKS AND ADD TO LV DATABASE
                 from breaker import update_ps1_atlas_footprint_tables
                 dbUpdater = update_ps1_atlas_footprint_tables(
                     log=log,
@@ -614,9 +614,9 @@ class update_ps1_atlas_footprint_tables():
 
         **Usage:**
 
-            .. code-block:: python 
+            .. code-block:: python
 
-                # UPDATE THE NED STREAM FOR NEW PS1 FOOTPRINTS 
+                # UPDATE THE NED STREAM FOR NEW PS1 FOOTPRINTS
                 from breaker import update_ps1_atlas_footprint_tables
                 dbUpdater = update_ps1_atlas_footprint_tables(
                     log=log,
@@ -707,9 +707,9 @@ class update_ps1_atlas_footprint_tables():
                 - create a sublime snippet for usage
                 - update package tutorial if needed
 
-            .. code-block:: python 
+            .. code-block:: python
 
-                usage code 
+                usage code
 
         """
         self.log.info('starting the ``parse_panstarrs_nightlogs`` method')
@@ -749,9 +749,9 @@ CREATE TABLE `ps1_nightlogs` (
         for wave in self.settings["gravitational waves"]:
             # GIVE A 3 DAY WINDOW EITHER SIDE OF WAVE TIME-RANGE
             mjdLower = int(self.settings["gravitational waves"][
-                wave]["time"]["mjdStart"] - 21. - 3.)
+                wave]["mjd"] - 21. - 3.)
             mjdUpper = int(self.settings["gravitational waves"][
-                wave]["time"]["mjdEnd"] + 3.)
+                wave]["mjd"] + 31. + 3.)
 
             if updateAll == False:
                 if mjdUpper < mjdNow - 7.:
@@ -888,9 +888,9 @@ CREATE TABLE `ps1_nightlogs` (
                 - write a command-line tool for this method
                 - update package tutorial with command-line tool info if needed
 
-            .. code-block:: python 
+            .. code-block:: python
 
-                usage code 
+                usage code
 
         """
         self.log.info(
@@ -898,10 +898,10 @@ CREATE TABLE `ps1_nightlogs` (
 
         from breaker.transients import annotator
 
+        # CREATE THE ANNOTATION HELPER TABLES IF THEY DON"T EXIST
         moduleDirectory = os.path.dirname(__file__)
         mysql_scripts = moduleDirectory + "/resources/mysql"
-
-        for db in ["ps1gw", "ps13pi"]:
+        for db in ["ps1gw", "ps13pi", "atlas"]:
             directory_script_runner(
                 log=self.log,
                 pathToScriptDirectory=mysql_scripts,
@@ -911,33 +911,38 @@ CREATE TABLE `ps1_nightlogs` (
                 successRule=False,
                 failureRule=False
             )
+        for db in ["ligo_virgo_waves"]:
+            directory_script_runner(
+                log=self.log,
+                pathToScriptDirectory=mysql_scripts + "/ps1_skycell_help_tables",
+                databaseName=self.settings["database settings"][db]["db"],
+                loginPath=self.settings["database settings"][db]["loginPath"],
+                waitForResult=True,
+                successRule=False,
+                failureRule=False
+            )
 
+        # UPDATE THE TABLE WITH THE METADATA OF EACH GRAVITY EVENT
         sqlQuery = ""
         for g in self.settings["gravitational waves"]:
             h = self.settings["gravitational waves"][g]["human-name"]
-            m = self.settings["gravitational waves"][g]["time"]["mjdStart"]
+            m = self.settings["gravitational waves"][g]["mjd"]
             cmd = """insert ignore into tcs_gravity_events (`gracedb_id`, `gravity_event_id`, `mjd`) VALUES ("%(g)s", "%(h)s", %(m)s) on duplicate key update mjd=%(m)s;\n""" % locals(
             )
             sqlQuery += cmd
-
-        from fundamentals.mysql import writequery
+        for db in [self.atlasDbConn, self.ps1gwDbConn, self.ps13piDbConn]:
+            writequery(
+                log=self.log,
+                sqlQuery=sqlQuery,
+                dbConn=db
+            )
+        sqlQuery = sqlQuery.replace("tcs_gravity_events", "gravity_events")
         writequery(
             log=self.log,
             sqlQuery=sqlQuery,
-            dbConn=self.atlasDbConn
+            dbConn=self.ligo_virgo_wavesDbConn,
         )
-        writequery(
-            log=self.log,
-            sqlQuery=sqlQuery,
-            dbConn=self.ps1gwDbConn
-        )
-        writequery(
-            log=self.log,
-            sqlQuery=sqlQuery,
-            dbConn=self.ps13piDbConn
-        )
-
-        for db in ["ps1gw", "atlas", "ps13pi"]:
+        for db in ["ps1gw", "ps13pi", "atlas"]:
             directory_script_runner(
                 log=self.log,
                 pathToScriptDirectory=mysql_scripts,
@@ -947,23 +952,39 @@ CREATE TABLE `ps1_nightlogs` (
                 successRule=False,
                 failureRule=False
             )
+        for db in ["ligo_virgo_waves"]:
+            directory_script_runner(
+                log=self.log,
+                pathToScriptDirectory=mysql_scripts + "/ps1_skycell_help_tables",
+                databaseName=self.settings["database settings"][db]["db"],
+                loginPath=self.settings["database settings"][db]["loginPath"],
+                waitForResult=True,
+                successRule=False,
+                failureRule=False
+            )
+
+        dbDict = {
+            "ps1gw": self.ps1gwDbConn,
+            "atlas": self.atlasDbConn,
+            "ps13pi": self.ps13piDbConn,
+            "ligo_virgo_waves": self.ligo_virgo_wavesDbConn
+        }
+
+        for db in ["ligo_virgo_waves"]:
 
             for g in self.settings["gravitational waves"]:
                 h = self.settings["gravitational waves"][g]["human-name"]
                 print "Annotating new transients associated with gravity event %(h)s" % locals()
-                m = self.settings["gravitational waves"][g]["time"]["mjdStart"]
+                m = self.settings["gravitational waves"][g]["mjd"]
                 mapPath = self.settings["gravitational waves"][g]["mapPath"]
                 mapName = os.path.basename(mapPath)
 
-                if db in ["ps1gw", "ps13pi"]:
+                thisDbConn = dbDict[db]
 
-                    if db == "ps1gw":
-                        thisDB = self.ps1gwDbConn
-                    else:
-                        thisDB = self.ps13piDbConn
+                if thisDbConn in [self.ps1gwDbConn, self.ps13piDbConn]:
 
                     sqlQuery = u"""
-                        SELECT 
+                        SELECT
                             a.transient_object_id, a.gracedb_id, t.ra_psf, t.dec_psf
                         FROM
                             tcs_transient_objects t,
@@ -971,14 +992,15 @@ CREATE TABLE `ps1_nightlogs` (
                         WHERE
                             a.transient_object_id = t.id
                                 AND t.detection_list_id != 0
-                                AND (a.map_name != "%(mapName)s"  or a.map_name is null)
-                                AND a.gracedb_id="%(g)s"; 
+                                AND (a.map_name !=
+                                     "%(mapName)s"  or a.map_name is null)
+                                AND a.gracedb_id="%(g)s";
                     """ % locals()
 
                     rows = readquery(
                         log=self.log,
                         sqlQuery=sqlQuery,
-                        dbConn=thisDB,
+                        dbConn=thisDbConn,
                         quiet=False
                     )
 
@@ -987,9 +1009,9 @@ CREATE TABLE `ps1_nightlogs` (
                         transients[r["transient_object_id"]] = (
                             r["ra_psf"], r["dec_psf"])
 
-                else:
+                if thisDbConn in [self.atlasDbConn]:
                     sqlQuery = u"""
-                        SELECT 
+                        SELECT
                             a.transient_object_id, a.gracedb_id, t.ra, t.dec
                         FROM
                             atlas_diff_objects t,
@@ -997,13 +1019,14 @@ CREATE TABLE `ps1_nightlogs` (
                         WHERE
                             a.transient_object_id = t.id
                                 AND t.detection_list_id != 0
-                                AND (a.map_name != "%(mapName)s"  or a.map_name is null)
-                                AND a.gracedb_id="%(g)s"; 
+                                AND (a.map_name !=
+                                     "%(mapName)s"  or a.map_name is null)
+                                AND a.gracedb_id="%(g)s";
                     """ % locals()
                     rows = readquery(
                         log=self.log,
                         sqlQuery=sqlQuery,
-                        dbConn=self.atlasDbConn,
+                        dbConn=thisDbConn,
                         quiet=False
                     )
 
@@ -1011,6 +1034,30 @@ CREATE TABLE `ps1_nightlogs` (
                     for r in rows:
                         transients[r["transient_object_id"]] = (
                             r["ra"], r["dec"])
+
+                if thisDbConn in [self.ligo_virgo_wavesDbConn]:
+                    sqlQuery = u"""
+                        SELECT 
+                                a.skycell_id, a.gracedb_id, t.raDeg, t.decDeg
+                            FROM
+                                ps1_skycell_map t,
+                                ps1_skycell_gravity_event_annotations a
+                            WHERE
+                                a.skycell_id = t.skycell_id
+                                AND (a.map_name != "%(mapName)s"  or a.map_name is null)
+                                AND a.gracedb_id="%(g)s"; 
+                    """ % locals()
+                    rows = readquery(
+                        log=self.log,
+                        sqlQuery=sqlQuery,
+                        dbConn=thisDbConn,
+                        quiet=False
+                    )
+
+                    transients = {}
+                    for r in rows:
+                        transients[r["skycell_id"]] = (
+                            r["raDeg"], r["decDeg"])
 
                 an = annotator(
                     log=self.log,
@@ -1020,13 +1067,25 @@ CREATE TABLE `ps1_nightlogs` (
                 transientNames, probs = an.annotate(transients)
 
                 dataList = []
-                for p, t in zip(probs, transientNames):
-                    dataList.append({
-                        "transient_object_id": t,
-                        "enclosing_contour": p,
-                        "gracedb_id": g,
-                        "map_name": mapName
-                    })
+                if thisDbConn in [self.ligo_virgo_wavesDbConn]:
+                    for p, t in zip(probs, transientNames):
+                        dataList.append({
+                            "skycell_id": t,
+                            "enclosing_contour": p,
+                            "gracedb_id": g,
+                            "map_name": mapName
+                        })
+                        tableName = "ps1_skycell_gravity_event_annotations"
+
+                else:
+                    for p, t in zip(probs, transientNames):
+                        dataList.append({
+                            "transient_object_id": t,
+                            "enclosing_contour": p,
+                            "gracedb_id": g,
+                            "map_name": mapName
+                        })
+                        tableName = "tcs_gravity_event_annotations"
 
                 dataSet = list_of_dictionaries(
                     log=self.log,
@@ -1039,9 +1098,9 @@ CREATE TABLE `ps1_nightlogs` (
                 now = datetime.now()
                 now = now.strftime("%Y%m%dt%H%M%S%f")
                 mysqlData = dataSet.mysql(
-                    tableName="tcs_gravity_event_annotations", filepath="/tmp/mysqlinsert/%(db)s/%(now)s.sql" % locals(), createStatement=False)
+                    tableName=tableName, filepath="/tmp/mysqlinsert/%(db)s/%(now)s.sql" % locals(), createStatement=False)
 
-        for db in ["ps1gw", "atlas", "ps13pi"]:
+        for db in dbDict.keys():
             directory_script_runner(
                 log=self.log,
                 pathToScriptDirectory="/tmp/mysqlinsert/%(db)s" % locals(),
