@@ -115,4 +115,15 @@ class test_plot_wave_observational_timelines(unittest.TestCase):
 
         # x-print-testpage-for-pessto-marshall-web-object
 
-    # x-class-to-test-named-worker-function
+    def test_generate_timeline_plot_maps(self):
+
+        p = plot_wave_observational_timelines(
+            log=log,
+            settings=settings,
+            gwid="G211117",
+            plotType="timeline",
+            allPlots=False,
+            telescope="ps1",
+            projection="mercator"
+        )
+        p.get()
