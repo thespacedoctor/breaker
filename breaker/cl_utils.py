@@ -13,7 +13,7 @@ Usage:
     breaker init
     breaker update [-naP] [-s <pathToSettingsFile>]
     breaker skymap [-o] <gwid> [<pathToLVMap>] [-c <centerDeg>]
-    breaker plot [-a] (timeline|history|sources) [-w <gwid>] [-t <telescope>] [-p <projection>] [-s <pathToSettingsFile>]
+    breaker plot [-a] (timeline|history|sources) [-w <gwid>] [-t <telescope>] [-p <projection>] [-f <filters>] [-s <pathToSettingsFile>]
     breaker plot comparison <gwid> <pathToMapDirectory> [-s <pathToSettingsFile>]
     breaker faker <ps1ExpId> [-s <pathToSettingsFile>]
     breaker stats <gwid> [<telescope>] [-s <pathToSettingsFile>]
@@ -53,6 +53,7 @@ Usage:
     sec                   time in seconds
     -t <telescope>        select an individual telescope (default is all telescopes) [ps1|atlas]
     -p <projection>       skymap projection. Default *mercator*. [mercator|gnomonic|mollweide]
+    -f <filters>          which exposure filters to show on plots
 
     FLAGS
     -----
@@ -173,6 +174,11 @@ def main(arguments=None):
         if not pFlag:
             pFlag = "mercator"
 
+        if fFlag:
+            filters = list(fFlag)
+        else:
+            filters = False
+
         p = plot_wave_observational_timelines(
             log=log,
             settings=settings,
@@ -180,7 +186,9 @@ def main(arguments=None):
             plotType="timeline",
             allPlots=allFlag,
             telescope=tFlag,
-            projection=pFlag
+            projection=pFlag,
+            filters=filters,
+            probabilityCut=True
         )
         p.get()
     if plot and sources:
