@@ -1009,10 +1009,10 @@
 <p id="t115" class="stm mis">            <span class="key">print</span> <span class="nam">inPastDays</span><span class="strut">&nbsp;</span></p>
 <p id="t116" class="pln"><span class="strut">&nbsp;</span></p>
 <p id="t117" class="stm mis">        <span class="key">if</span> <span class="nam">inFirstDays</span><span class="op">:</span><span class="strut">&nbsp;</span></p>
-<p id="t118" class="stm mis">            <span class="nam">mjdStart</span> <span class="op">=</span> <span class="nam">self</span><span class="op">.</span><span class="nam">settings</span><span class="op">[</span><span class="str">"gravitational waves"</span><span class="op">]</span><span class="op">[</span><span class="nam">gwid</span><span class="op">]</span><span class="op">[</span><span class="str">"time"</span><span class="op">]</span><span class="op">[</span><span class="strut">&nbsp;</span></p>
-<p id="t119" class="pln">                <span class="str">"mjdStart"</span><span class="op">]</span> <span class="op">+</span> <span class="nam">inFirstDays</span><span class="op">[</span><span class="num">0</span><span class="op">]</span><span class="strut">&nbsp;</span></p>
+<p id="t118" class="stm mis">            <span class="nam">mjdStart</span> <span class="op">=</span> <span class="nam">self</span><span class="op">.</span><span class="nam">settings</span><span class="op">[</span><span class="str">"gravitational waves"</span><span class="op">]</span><span class="op">[</span><span class="strut">&nbsp;</span></p>
+<p id="t119" class="pln">                <span class="nam">gwid</span><span class="op">]</span><span class="op">[</span><span class="str">"mjd"</span><span class="op">]</span> <span class="op">+</span> <span class="nam">inFirstDays</span><span class="op">[</span><span class="num">0</span><span class="op">]</span><span class="strut">&nbsp;</span></p>
 <p id="t120" class="stm mis">            <span class="nam">mjdEnd</span> <span class="op">=</span> <span class="nam">self</span><span class="op">.</span><span class="nam">settings</span><span class="op">[</span><span class="str">"gravitational waves"</span><span class="op">]</span><span class="op">[</span><span class="strut">&nbsp;</span></p>
-<p id="t121" class="pln">                <span class="nam">gwid</span><span class="op">]</span><span class="op">[</span><span class="str">"time"</span><span class="op">]</span><span class="op">[</span><span class="str">"mjdStart"</span><span class="op">]</span> <span class="op">+</span> <span class="nam">inFirstDays</span><span class="op">[</span><span class="num">1</span><span class="op">]</span><span class="strut">&nbsp;</span></p>
+<p id="t121" class="pln">                <span class="nam">gwid</span><span class="op">]</span><span class="op">[</span><span class="str">"mjd"</span><span class="op">]</span> <span class="op">+</span> <span class="nam">inFirstDays</span><span class="op">[</span><span class="num">1</span><span class="op">]</span><span class="strut">&nbsp;</span></p>
 <p id="t122" class="stm mis">            <span class="key">if</span> <span class="nam">inFirstDays</span><span class="op">[</span><span class="num">1</span><span class="op">]</span> <span class="op">==</span> <span class="num">0</span><span class="op">:</span><span class="strut">&nbsp;</span></p>
 <p id="t123" class="stm mis">                <span class="nam">mjdEnd</span> <span class="op">=</span> <span class="num">10000000000</span><span class="strut">&nbsp;</span></p>
 <p id="t124" class="pln"><span class="strut">&nbsp;</span></p>
@@ -1425,7 +1425,7 @@
 <p id="t531" class="stm mis">                <span class="key">raise</span> <span class="nam">IOError</span><span class="op">(</span><span class="nam">message</span><span class="op">)</span><span class="strut">&nbsp;</span></p>
 <p id="t532" class="pln"><span class="strut">&nbsp;</span></p>
 <p id="t533" class="stm mis">            <span class="nam">mjdStart</span> <span class="op">=</span> <span class="nam">self</span><span class="op">.</span><span class="nam">settings</span><span class="op">[</span><span class="str">"gravitational waves"</span><span class="op">]</span><span class="op">[</span><span class="strut">&nbsp;</span></p>
-<p id="t534" class="pln">                <span class="nam">gwid</span><span class="op">]</span><span class="op">[</span><span class="str">"time"</span><span class="op">]</span><span class="op">[</span><span class="str">"mjdStart"</span><span class="op">]</span><span class="strut">&nbsp;</span></p>
+<p id="t534" class="pln">                <span class="nam">gwid</span><span class="op">]</span><span class="op">[</span><span class="str">"mjd"</span><span class="op">]</span><span class="strut">&nbsp;</span></p>
 <p id="t535" class="pln"><span class="strut">&nbsp;</span></p>
 <p id="t536" class="stm mis">            <span class="nam">r</span> <span class="op">=</span> <span class="num">0.15</span><span class="strut">&nbsp;</span></p>
 <p id="t537" class="stm mis">            <span class="nam">raArray</span><span class="op">,</span> <span class="nam">decArray</span> <span class="op">=</span> <span class="nam">self</span><span class="op">.</span><span class="nam">_get_matched_sources</span><span class="op">(</span><span class="strut">&nbsp;</span></p>
@@ -1724,7 +1724,7 @@
     <div class="content">
         <p>
             <a class="nav" href="index.html">&#xab; index</a> &nbsp; &nbsp; <a class="nav" href="https://coverage.readthedocs.io">coverage.py v4.4.1</a>,
-            created at 2017-10-20 10:55
+            created at 2017-10-26 09:17
         </p>
     </div>
 </div>

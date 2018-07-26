@@ -49,6 +49,7 @@ class annotator():
             )
             transientNames, probs = an.annotate(transients) 
     """
+
     # INITIALISATION
 
     def __init__(
@@ -82,7 +83,7 @@ class annotator():
 
             See class docstring
         """
-        self.log.info('starting the ``annotate`` method')
+        self.log.debug('starting the ``annotate`` method')
 
         transientNames = []
         ra = []
@@ -97,7 +98,7 @@ class annotator():
 
         probs = self._generate_probability_distribution(ra, dec)
 
-        self.log.info('completed the ``annotate`` method')
+        self.log.debug('completed the ``annotate`` method')
         return transientNames, probs
 
     def _generate_probability_distribution(
@@ -113,8 +114,8 @@ class annotator():
         **Return:**
             - ``prob`` -- a list of the probabilty contours the transients lie within (indices synced with RA and DEC lists)
         """
-        self.log.info(
-            'starting the ``_generate_probability_distribution`` method')
+        self.log.debug(
+            'completed the ````_generate_probability_distribution`` method')
 
         pathToProbMap = self.settings[
             "gravitational waves"][self.gwid]["mapPath"]
@@ -143,7 +144,7 @@ class annotator():
         probs = []
         probs[:] = [roundup(p, 10) if p < 100. else 100 for p in vals]
 
-        self.log.info(
+        self.log.debug(
             'completed the ``_generate_probability_distribution`` method')
         return probs
 

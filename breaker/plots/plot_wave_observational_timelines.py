@@ -164,14 +164,14 @@ class plot_wave_observational_timelines():
         """
         *Generate the plots*
         """
-        self.log.info('starting the ``get`` method')
+        self.log.debug('starting the ``get`` method')
 
         if self.plotType == "history":
             self.get_history_plots()
         elif self.plotType == "timeline":
             self.get_timeline_plots()
 
-        self.log.info('completed the ``get`` method')
+        self.log.debug('completed the ``get`` method')
         return None
 
     def get_gw_parameters_from_settings(
@@ -179,7 +179,8 @@ class plot_wave_observational_timelines():
             gwid,
             inPastDays=False,
             inFirstDays=False,
-            maxProbCoordinate=[0, 0]):
+            maxProbCoordinate=[0, 0],
+            stackOnly=False):
         """
         *Query the settings file and database for PS1 Pointings, PS1 discovered transients and plot parameters relatiing to the given gravitational wave (``gwid``)*
 
@@ -261,16 +262,23 @@ class plot_wave_observational_timelines():
                     inFirstDays=(0,3)
                 )
         """
-        self.log.info(
-            'starting the ``get_gw_parameters_from_settings`` method')
+        self.log.debug(
+            'completed the ````get_gw_parameters_from_settings`` method')
 
         plotParameters = self.settings["gravitational waves"][gwid]["plot"]
+        if not plotParameters:
+            plotParameters = {}
 
         if "centralCoordinate" not in plotParameters:
             plotParameters["centralCoordinate"] = maxProbCoordinate
 
+        if "raRange" not in plotParameters:
+            plotParameters["centralCoordinate"] = list(
+                plotParameters["centralCoordinate"])
+            plotParameters["centralCoordinate"][1] = 0.
+
         # GRAB PS1 TRANSIENTS FROM THE DATABASE
-        ps1Transients, atlasTransients = self._get_ps1_transient_candidates(
+        ps1Transients, atlasTransients = self._get_ps1_atlas_transient_candidates(
             gwid=gwid,
             mjdStart=self.settings["gravitational waves"][
                 gwid]["mjd"],
@@ -286,11 +294,12 @@ class plot_wave_observational_timelines():
             'finished getting the PS1 transients')
 
         # GRAB PS1 & ATLAS POINTINGS FROM THE DATABASE
-        ps1Pointings = self._get_ps1_pointings(gwid, inPastDays, inFirstDays)
+        ps1Pointings = self._get_ps1_pointings(
+            gwid, inPastDays, inFirstDays, stackOnly=stackOnly)
         atlasPointings = self._get_atlas_pointings(
             gwid, inPastDays, inFirstDays)
 
-        self.log.info(
+        self.log.debug(
             'completed the ``get_gw_parameters_from_settings`` method')
 
         if self.telescope == "ps1":
@@ -302,7 +311,7 @@ class plot_wave_observational_timelines():
 
         return plotParameters, ps1Transients, ps1Pointings, atlasPointings, atlasTransients
 
-    def _get_ps1_transient_candidates(
+    def _get_ps1_atlas_transient_candidates(
             self,
             gwid,
             mjdStart,
@@ -325,7 +334,8 @@ class plot_wave_observational_timelines():
         **Return:**
             - ``ps1Transients`` -- the transients to add to the plot
         """
-        self.log.info('starting the ``_get_ps1_transient_candidates`` method')
+        self.log.debug(
+            'completed the ````_get_ps1_atlas_transient_candidates`` method')
 
         # UNPACK THE PLOT PARAMETERS
         if "centralCoordinate" in plotParameters:
@@ -333,13 +343,20 @@ class plot_wave_observational_timelines():
         else:
             centralCoordinate = maxProbCoordinate
 
-        raRange = plotParameters["raRange"]
-        decRange = plotParameters["decRange"]
-
-        raMax = centralCoordinate[0] + raRange / 2.
-        raMin = centralCoordinate[0] - raRange / 2.
-        decMax = centralCoordinate[1] + decRange / 2.
-        decMin = centralCoordinate[1] - decRange / 2.
+        if "raRange" not in plotParameters:
+            raRange = 360.
+            decRange = 180.
+            raMax = 360.
+            raMin = 0.
+            decMax = 90.
+            decMin = -90.
+        else:
+            raRange = plotParameters["raRange"]
+            decRange = plotParameters["decRange"]
+            raMax = centralCoordinate[0] + raRange / 2.
+            raMin = centralCoordinate[0] - raRange / 2.
+            decMax = centralCoordinate[1] + decRange / 2.
+            decMin = centralCoordinate[1] - decRange / 2.
 
         if inPastDays:
             nowMjd = now(
@@ -356,7 +373,7 @@ class plot_wave_observational_timelines():
             if inFirstDays[1] == 0 and inFirstDays[0] == 0:
                 mjdEnd = 10000000000
 
-        if raMin >= 0 and raMax < 360.:
+        if raMin >= 0 and raMax <= 360.:
             sqlQuery = u"""
                 SELECT ps1_designation, local_designation, ra_psf, dec_psf FROM tcs_transient_objects o, tcs_latest_object_stats s where o.detection_list_id in (1,2) and o.id=s.id and (s.earliest_mjd between %(mjdStart)s and %(mjdEnd)s) and (ra_psf between %(raMin)s and %(raMax)s) and (`dec_psf` between %(decMin)s and %(decMax)s) ;
             """ % locals()
@@ -377,7 +394,7 @@ class plot_wave_observational_timelines():
             dbConn=self.ps1gwDbConn
         )
 
-        if raMin > 0 and raMax < 360.:
+        if raMin >= 0 and raMax <= 360.:
             sqlQuery = u"""
                 SELECT atlas_designation, ra, `dec` FROM atlas_diff_objects o, tcs_latest_object_stats s where o.detection_list_id in (1,2) and o.id=s.id and (s.earliest_mjd between %(mjdStart)s and %(mjdEnd)s) and (ra between %(raMin)s and %(raMax)s) and (`dec` between %(decMin)s and %(decMax)s) ;
             """ % locals()
@@ -398,14 +415,16 @@ class plot_wave_observational_timelines():
             dbConn=self.atlasDbConn
         )
 
-        self.log.info('completed the ``_get_ps1_transient_candidates`` method')
+        self.log.debug(
+            'completed the ``_get_ps1_atlas_transient_candidates`` method')
         return ps1Transients, atlasTransients
 
     def _get_ps1_pointings(
             self,
             gwid,
             inPastDays,
-            inFirstDays):
+            inFirstDays,
+            stackOnly=False):
         """
         *get ps1 pointings to add to the plot*
 
@@ -417,7 +436,7 @@ class plot_wave_observational_timelines():
         **Return:**
             - ``ps1Pointings`` -- the pointings to place on the plot
         """
-        self.log.info('starting the ``_get_ps1_pointings`` method')
+        self.log.debug('starting the ``_get_ps1_pointings`` method')
 
         # DETERMINE THE TEMPORAL CONSTRAINTS FOR MYSQL QUERY
         if inPastDays != False or inPastDays == 0:
@@ -455,17 +474,20 @@ class plot_wave_observational_timelines():
         else:
             filters = ""
 
-        sqlQuery = u"""
-            SELECT distinct * from (
-SELECT distinct raDeg, decDeg, mjd, filter, p.skycell_id as exp_id FROM ps1_stack_stack_diff_skycells p, ps1_skycell_gravity_event_annotations s, ps1_skycell_map m where mjd between %(mjdStart)s and %(mjdEnd)s and p.skycell_id=s.skycell_id and p.skycell_id=m.skycell_id and gracedb_id = "%(gwid)s" %(filters)s
-UNION
-SELECT distinct raDeg, decDeg, mjd, filter, p.skycell_id as exp_id FROM ps1_warp_stack_diff_skycells p, ps1_skycell_gravity_event_annotations s, ps1_skycell_map m where mjd between %(mjdStart)s and %(mjdEnd)s and p.skycell_id=s.skycell_id and p.skycell_id=m.skycell_id and gracedb_id = "%(gwid)s" %(filters)s) p order by mjd;
-        """ % locals()
+        if not stackOnly:
 
-#         # STACK-STACK ONLY
-#         sqlQuery = u"""
-# SELECT raDeg, decDeg, mjd, exp_time, filter, p.skycell_id, limiting_mag as limiting_magnitude, "stack" as diff_type, filename as exp_id FROM ps1_stack_stack_diff_skycells p, panstarrs_rings_v3_skycell_map s where mjd between %(mjdStart)s and %(mjdEnd)s and p.skycell_id=s.skycell_id order by mjd;
-#         """ % locals()
+            sqlQuery = u"""
+                SELECT distinct * from (
+    SELECT distinct raDeg, decDeg, mjd, filter, p.skycell_id as exp_id, exp_time, limiting_mag as limiting_magnitude FROM ps1_stack_stack_diff_skycells p, ps1_skycell_gravity_event_annotations s, ps1_skycell_map m where mjd between %(mjdStart)s and %(mjdEnd)s and p.skycell_id=s.skycell_id and p.skycell_id=m.skycell_id and gracedb_id = "%(gwid)s" %(filters)s and s.prob_coverage > 1e-6
+    UNION
+    SELECT distinct raDeg, decDeg, mjd, filter, p.skycell_id as exp_id, exp_time, limiting_mag as limiting_magnitude FROM ps1_warp_stack_diff_skycells p, ps1_skycell_gravity_event_annotations s, ps1_skycell_map m where mjd between %(mjdStart)s and %(mjdEnd)s and p.skycell_id=s.skycell_id and p.skycell_id=m.skycell_id and gracedb_id = "%(gwid)s" %(filters)s and s.prob_coverage > 1e-6) p order by mjd;
+            """ % locals()
+
+        else:
+
+            sqlQuery = u"""
+                SELECT distinct raDeg, decDeg, mjd, filter, p.skycell_id as exp_id, exp_time, limiting_mag as limiting_magnitude FROM ps1_stack_stack_diff_skycells p, ps1_skycell_gravity_event_annotations s, ps1_skycell_map m where mjd between %(mjdStart)s and %(mjdEnd)s and p.skycell_id=s.skycell_id and p.skycell_id=m.skycell_id and gracedb_id = "%(gwid)s" %(filters)s and s.prob_coverage > 1e-6
+            """ % locals()
 
         ps1Pointings = readquery(
             log=self.log,
@@ -473,7 +495,7 @@ SELECT distinct raDeg, decDeg, mjd, filter, p.skycell_id as exp_id FROM ps1_warp
             dbConn=self.ligo_virgo_wavesDbConn
         )
 
-        self.log.info('completed the ``_get_ps1_pointings`` method')
+        self.log.debug('completed the ``_get_ps1_pointings`` method')
         return ps1Pointings
 
     def _get_atlas_pointings(
@@ -492,7 +514,7 @@ SELECT distinct raDeg, decDeg, mjd, filter, p.skycell_id as exp_id FROM ps1_warp
         **Return:**
             - ``atlasPointings`` -- the pointings to place on the plot
         """
-        self.log.info('starting the ``_get_atlas_pointings`` method')
+        self.log.debug('starting the ``_get_atlas_pointings`` method')
 
         # DETERMINE THE TEMPORAL CONSTRAINTS FOR MYSQL QUERY
         if inPastDays != False or inPastDays == 0:
@@ -518,7 +540,7 @@ SELECT distinct raDeg, decDeg, mjd, filter, p.skycell_id as exp_id FROM ps1_warp
                 gwid]["mjd"] + 31.
 
         sqlQuery = u"""
-            SELECT atlas_object_id as exp_id, raDeg, decDeg, mjd, exp_time, filter, limiting_magnitude FROM atlas_pointings where gw_id like "%%%(gwid)s%%" and mjd between %(mjdStart)s and %(mjdEnd)s group by atlas_object_id;
+            SELECT p.atlas_object_id as exp_id, p.raDeg, p.decDeg, mjd, exp_time, filter, limiting_magnitude FROM atlas_pointings p, atlas_exposure_gravity_event_annotations a where a.prob_coverage > 1e-3 and a.gracedb_id = "%(gwid)s" and a.atlas_object_id=p.atlas_object_id and gw_id like "%%%(gwid)s%%" and mjd between %(mjdStart)s and %(mjdEnd)s order by mjd;
         """ % locals()
 
         atlasPointings = readquery(
@@ -527,7 +549,7 @@ SELECT distinct raDeg, decDeg, mjd, filter, p.skycell_id as exp_id FROM ps1_warp
             dbConn=self.ligo_virgo_wavesDbConn
         )
 
-        self.log.info('completed the ``_get_atlas_pointings`` method')
+        self.log.debug('completed the ``_get_atlas_pointings`` method')
         return atlasPointings
 
     def generate_probability_plot(
@@ -551,7 +573,8 @@ SELECT distinct raDeg, decDeg, mjd, filter, p.skycell_id as exp_id FROM ps1_warp
             outputDirectory=False,
             fitsImage=False,
             allSky=False,
-            center=False):
+            center=False,
+            symLink=True):
         """
         *Generate a single probability map plot for a given gravitational wave and save it to file*
 
@@ -622,7 +645,7 @@ SELECT distinct raDeg, decDeg, mjd, filter, p.skycell_id as exp_id FROM ps1_warp
                 )
 
         """
-        self.log.info('starting the ``generate_probability_plot`` method')
+        self.log.debug('starting the ``generate_probability_plot`` method')
 
         import matplotlib.pyplot as plt
         import healpy as hp
@@ -815,7 +838,9 @@ SELECT distinct raDeg, decDeg, mjd, filter, p.skycell_id as exp_id FROM ps1_warp
 
         elif projection in ["mercator", "cartesian"]:
 
-            if allSky:
+            if allSky or "raRange" not in plotParameters:
+                centralCoordinate = list(centralCoordinate)
+                centralCoordinate[1] = 0.
                 raRange = 360.
                 decRange = 180.
             else:
@@ -987,7 +1012,9 @@ SELECT distinct raDeg, decDeg, mjd, filter, p.skycell_id as exp_id FROM ps1_warp
         elif projection == "gnomonic":
             # UNPACK THE PLOT PARAMETERS
 
-            if allSky:
+            if allSky and "raRange" not in plotParameters:
+                centralCoordinate = list(centralCoordinate)
+                centralCoordinate[1] = 0.
                 raRange = 360.
                 decRange = 180.
             else:
@@ -1249,15 +1276,17 @@ SELECT distinct raDeg, decDeg, mjd, filter, p.skycell_id as exp_id FROM ps1_warp
                     aMap=aMap,
                     fovSide=0.4,
                     axes=ax,
-                    probabilityCut=self.probabilityCut,
-                    projection=projection,
-                    color='#859900')
+                    projection=projection)
 
                 if patch:
                     patches.append(patch)
 
-            ax.add_collection(PatchCollection(patches, alpha=0.6,
-                                              color='#859900', zorder=3, transform=ax.get_transform('fk5')))
+            if projection in ["mercator", "gnomonic", "cartesian"]:
+                ax.add_collection(PatchCollection(patches, alpha=0.2,
+                                                  color='#859900', zorder=2, transform=ax.get_transform('fk5')))
+            else:
+                ax.add_collection(PatchCollection(patches, alpha=0.2,
+                                                  color='#859900', zorder=2))
 
         patches = []
         for atp in atlasPointings:
@@ -1275,14 +1304,17 @@ SELECT distinct raDeg, decDeg, mjd, filter, p.skycell_id as exp_id FROM ps1_warp
                 aMap=aMap,
                 fovSide=5.46,
                 axes=ax,
-                probabilityCut=self.probabilityCut,
-                projection=projection,
-                color="#6c71c4")
+                projection=projection)
 
             if patch:
                 patches.append(patch)
 
-        ax.add_collection(PatchCollection(patches))
+        if projection in ["mercator", "gnomonic", "cartesian"]:
+            ax.add_collection(PatchCollection(patches, alpha=0.2,
+                                              color="#6c71c4", zorder=2, transform=ax.get_transform('fk5')))
+        else:
+            ax.add_collection(PatchCollection(patches, alpha=0.2,
+                                              color="#6c71c4", zorder=2))
 
         # ADD DATA POINTS FOR TRANSIENTS
         names = []
@@ -1303,6 +1335,7 @@ SELECT distinct raDeg, decDeg, mjd, filter, p.skycell_id as exp_id FROM ps1_warp
             names.append(name)
             raDeg = trans["ra_psf"]
             decDeg = trans["dec_psf"]
+            print name, raDeg, decDeg
             ra.append(raDeg)
             dec.append(decDeg)
             raRad.append(-raDeg * DEG_TO_RAD_FACTOR)
@@ -1392,6 +1425,8 @@ SELECT distinct raDeg, decDeg, mjd, filter, p.skycell_id as exp_id FROM ps1_warp
             dec.append(decDeg)
             raRad.append(-raDeg * DEG_TO_RAD_FACTOR)
             decRad.append(decDeg * DEG_TO_RAD_FACTOR)
+
+            print name, raDeg, decDeg
 
         if len(ra) > 0:
             # MULTIPLE CIRCLES
@@ -1516,10 +1551,17 @@ SELECT distinct raDeg, decDeg, mjd, filter, p.skycell_id as exp_id FROM ps1_warp
                 if not os.path.exists("%(plotDir)s/%(folderName)s/%(f)s" % locals()):
                     os.makedirs("%(plotDir)s/%(folderName)s/%(f)s" % locals())
                 figurePath = "%(plotDir)s/%(folderName)s/%(f)s/%(figureName)s.%(f)s" % locals()
+                figurePath = figurePath.replace("_.", ".")
+
+                if f == "pdf":
+                    matplotlib.use('PDF')
+                elif f == "png":
+                    matplotlib.use('TkAgg')
+
                 savefig(figurePath, bbox_inches='tight', dpi=300)
                 # savefig(figurePath, dpi=300)
 
-                if bestMap and allSky:
+                if bestMap and allSky and symLink:
                     linkName = "%(plotDir)s/%(folderName)s/%(f)s/%(gwid)s_preferred_skymap_%(projection)s.%(f)s" % locals()
                     try:
                         os.remove(linkName)
@@ -1537,7 +1579,14 @@ SELECT distinct raDeg, decDeg, mjd, filter, p.skycell_id as exp_id FROM ps1_warp
             # hdu.writeto(pathToExportFits)
         else:
             for f in fileFormats:
+
+                if f == "pdf":
+                    matplotlib.use('PDF')
+                elif f == "png":
+                    matplotlib.use('TkAgg')
+
                 figurePath = "%(plotDir)s/%(figureName)s.%(f)s" % locals()
+                figurePath = figurePath.replace("_.", ".")
                 savefig(figurePath, bbox_inches='tight', dpi=300)
                 # savefig(figurePath, dpi=300)
 
@@ -1558,7 +1607,7 @@ SELECT distinct raDeg, decDeg, mjd, filter, p.skycell_id as exp_id FROM ps1_warp
                 bestMap=bestMap
             )
 
-        self.log.info('completed the ``generate_probability_plot`` method')
+        self.log.debug('completed the ``generate_probability_plot`` method')
         return None
 
     def get_history_plots(
@@ -1583,7 +1632,7 @@ SELECT distinct raDeg, decDeg, mjd, filter, p.skycell_id as exp_id FROM ps1_warp
                 )
                 plotter.get()
         """
-        self.log.info('starting the ``get_history_plots`` method')
+        self.log.debug('starting the ``get_history_plots`` method')
 
         timeLimitLabels = ["day", "2 days", "3 days", "4 days", "5 days", "6 days",
                            "7 days", "2 weeks", "3 weeks", "1 month", "2 months", "3 months", "no limit"]
@@ -1631,7 +1680,7 @@ SELECT distinct raDeg, decDeg, mjd, filter, p.skycell_id as exp_id FROM ps1_warp
                     projection=self.projection,
                     probabilityCut=self.probabilityCut)
 
-        self.log.info('completed the ``get_history_plots`` method')
+        self.log.debug('completed the ``get_history_plots`` method')
         return None
 
     def get_timeline_plots(
@@ -1656,9 +1705,7 @@ SELECT distinct raDeg, decDeg, mjd, filter, p.skycell_id as exp_id FROM ps1_warp
                 )
                 plotter.get()
         """
-        self.log.info('starting the ``get_timeline_plots`` method')
-
-        matplotlib.use('PDF')
+        self.log.debug('starting the ``get_timeline_plots`` method')
 
         if self.allPlots:
             timeLimitLabels = ["21 days pre-detection", "<1d", "1-2d",
@@ -1668,7 +1715,7 @@ SELECT distinct raDeg, decDeg, mjd, filter, p.skycell_id as exp_id FROM ps1_warp
         else:
             timeLimitLabels = ["0-1d", "1-2d", "2-3d", "3-4d",
                                "4-5d", "5-10d", "10-17d", "17-24d", "24-31d"]
-            timeLimitLabels = ["0-1d"]
+            # timeLimitLabels = ["0-1d"]
             timeLimitDays = [(0, 1), (1, 2), (2, 3), (3, 4),
                              (4, 5), (5, 10), (10, 17), (17, 24), (24, 31)]
 
@@ -1715,6 +1762,13 @@ SELECT distinct raDeg, decDeg, mjd, filter, p.skycell_id as exp_id FROM ps1_warp
                 mjdStart = self.settings["gravitational waves"][
                     gwid]["mjd"]
 
+                if "raRange" not in plotParameters:
+                    allSky = True
+                    center = False
+                else:
+                    allSky = False
+                    center = maxProbCoordinate
+
                 self.generate_probability_plot(
                     gwid=gwid,
                     plotParameters=plotParameters,
@@ -1732,9 +1786,11 @@ SELECT distinct raDeg, decDeg, mjd, filter, p.skycell_id as exp_id FROM ps1_warp
                     plotType=self.plotType,
                     projection=self.projection,
                     probabilityCut=self.probabilityCut,
-                    center=maxProbCoordinate)
+                    allSky=allSky,
+                    center=center,
+                    symLink=False)
 
-        self.log.info('completed the ``get_timeline_plots`` method')
+        self.log.debug('completed the ``get_timeline_plots`` method')
         return None
 
     def generate_fits_image_map(
@@ -1779,7 +1835,7 @@ SELECT distinct raDeg, decDeg, mjd, filter, p.skycell_id as exp_id FROM ps1_warp
 
         The size of the final FITS image map is ~1.1GB so it's probably best to rebin the image (~80MB) unless you really need the resolution.
         """
-        self.log.info('starting the ``generate_fits_image_map`` method')
+        self.log.debug('starting the ``generate_fits_image_map`` method')
 
         import healpy as hp
         # HEALPY REQUIRES RA, DEC IN RADIANS AND AS TWO SEPERATE ARRAYS
@@ -1931,7 +1987,7 @@ SELECT distinct raDeg, decDeg, mjd, filter, p.skycell_id as exp_id FROM ps1_warp
                 pass
             hdu.writeto(pathToExportFits)
 
-            if bestMap:
+            if bestMap and symLink:
                 linkName = "%(plotDir)s/%(folderName)s/fits/%(gwid)s_preferred_breaker_skymap.fits" % locals()
                 print "The %(gwid)s prefered likeihood map is symlinked at `%(linkName)s`" % locals()
                 try:
@@ -1949,7 +2005,7 @@ SELECT distinct raDeg, decDeg, mjd, filter, p.skycell_id as exp_id FROM ps1_warp
 
         print "The %(gwid)s %(mapBasename)s likeihood map can be found here `%(pathToExportFits)s`" % locals()
 
-        self.log.info('completed the ``generate_fits_image_map`` method')
+        self.log.debug('completed the ``generate_fits_image_map`` method')
         return None
 
 
@@ -1981,9 +2037,7 @@ def add_square_fov(
         aMap,
         fovSide,
         axes,
-        probabilityCut,
-        projection,
-        color):
+        projection):
     """*summary of function*
 
     **Key Arguments:**
@@ -2003,27 +2057,12 @@ def add_square_fov(
 
             usage code            
     """
-    log.info('starting the ``add_square_fov`` function')
+    log.debug('starting the ``add_square_fov`` function')
 
     import math
     pi = (4 * math.atan(1.0))
     DEG_TO_RAD_FACTOR = pi / 180.0
     RAD_TO_DEG_FACTOR = 180.0 / pi
-
-    # REMOVE LOWER PROBABILITY FOOTPRINTS
-    phi = raDeg
-    if phi > 180.:
-        phi = phi - 360.
-    theta = -decDeg + 90.
-    healpixId = hp.ang2pix(
-        nside, theta * DEG_TO_RAD_FACTOR, phi * DEG_TO_RAD_FACTOR)
-    probs = aMap[healpixId]
-    probs = float("%0.*f" % (7, probs))
-    if probabilityCut and probs == 0.:
-        return None
-    elif probabilityCut:
-        # print atp["mjd"], atlasExpId, raDeg, decDeg
-        pass
 
     deltaDeg = fovSide / 2
     if decDeg < 0:
@@ -2087,10 +2126,9 @@ def add_square_fov(
         ]
         codes, verts = zip(*path_data)
         path = mpath.Path(verts, codes)
-        patch = patches.PathPatch(path, alpha=0.6,
-                                  color=color, fill=True, zorder=3,)
+        patch = patches.PathPatch(path)
 
-    log.info('completed the ``add_square_fov`` function')
+    log.debug('completed the ``add_square_fov`` function')
     return patch
 
 # use the tab-trigger below for new function

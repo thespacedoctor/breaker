@@ -118,7 +118,7 @@ class longitude_coverage():
 
             usage code 
         """
-        self.log.info('starting the ``get`` method')
+        self.log.debug('starting the ``get`` method')
 
         gwid = self.gwid.upper()
 
@@ -204,7 +204,7 @@ class longitude_coverage():
                 figurePath = "%(plotDir)s/%(figureName)s.%(f)s" % locals()
                 plt.savefig(figurePath, bbox_inches='tight', dpi=300)
 
-        self.log.info('completed the ``get`` method')
+        self.log.debug('completed the ``get`` method')
         return longitude_coverage
 
     # xt-class-method

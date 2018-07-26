@@ -77,11 +77,11 @@ class plot_wave_matched_source_maps():
         """
         *get the plot_wave_matched_source_maps object - history or timeline*
         """
-        self.log.info('starting the ``get`` method')
+        self.log.debug('starting the ``get`` method')
 
         self.get_source_plots()
 
-        self.log.info('completed the ``get`` method')
+        self.log.debug('completed the ``get`` method')
         return None
 
     def _get_ps1_pointings(
@@ -100,7 +100,7 @@ class plot_wave_matched_source_maps():
         **Return: **
             - ``ps1Pointings`` - - the pointings to place on the plot
         """
-        self.log.info('starting the ``_get_ps1_pointings`` method')
+        self.log.debug('starting the ``_get_ps1_pointings`` method')
 
         # DETERMINE THE TEMPORAL CONSTRAINTS FOR MYSQL QUERY
         if inPastDays != False or inPastDays == 0:
@@ -131,7 +131,7 @@ class plot_wave_matched_source_maps():
             dbConn=self.ligo_virgo_wavesDbConn
         )
 
-        self.log.info('completed the ``_get_ps1_pointings`` method')
+        self.log.debug('completed the ``_get_ps1_pointings`` method')
         return ps1Pointings
 
     def _generate_probability_plot(
@@ -164,7 +164,7 @@ class plot_wave_matched_source_maps():
         **Return: **
             - None
         """
-        self.log.info('starting the ``_generate_probability_plot`` method')
+        self.log.debug('starting the ``_generate_probability_plot`` method')
 
         pixelSizeDeg = 0.066667
 
@@ -500,7 +500,7 @@ class plot_wave_matched_source_maps():
             figurePath = "%(plotDir)s/%(folderName)s/%(f)s/%(figureName)s.%(f)s" % locals()
             savefig(figurePath, bbox_inches='tight', dpi=300)
 
-        self.log.info('completed the ``_generate_probability_plot`` method')
+        self.log.debug('completed the ``_generate_probability_plot`` method')
         return None
 
     def get_source_plots(
@@ -508,7 +508,7 @@ class plot_wave_matched_source_maps():
         """
         *plot the history plots*
         """
-        self.log.info('starting the ``get_source_plots`` method')
+        self.log.debug('starting the ``get_source_plots`` method')
 
         if self.gwid:
             theseWaves = [self.gwid]
@@ -653,7 +653,7 @@ class plot_wave_matched_source_maps():
                 plotTitle=plotTitle
             )
 
-        self.log.info('completed the ``get_source_plots`` method')
+        self.log.debug('completed the ``get_source_plots`` method')
         return None
 
     # use the tab-trigger below for new method
@@ -678,7 +678,7 @@ class plot_wave_matched_source_maps():
             - ``ra`` -- array of match NED source RAs
             - ``dec`` -- array of match NED source DECs
         """
-        self.log.info('starting the ``_get_matched_sources`` method')
+        self.log.debug('starting the ``_get_matched_sources`` method')
 
         # return self._sampled_area_only_points()
 
@@ -733,7 +733,7 @@ class plot_wave_matched_source_maps():
         ra = np.array(ra)
         dec = np.array(dec)
 
-        self.log.info('completed the ``_get_matched_sources`` method')
+        self.log.debug('completed the ``_get_matched_sources`` method')
         return ra, dec
 
     def _sampled_area_only_points(
@@ -741,7 +741,7 @@ class plot_wave_matched_source_maps():
         """
         *sampled area only points*
         """
-        self.log.info('starting the ``_sampled_area_only_points`` method')
+        self.log.debug('starting the ``_sampled_area_only_points`` method')
 
         coords1 = [
             (140.0, 6.0),
@@ -815,7 +815,7 @@ class plot_wave_matched_source_maps():
         ra = np.array(ra)
         dec = np.array(dec)
 
-        self.log.info('completed the ``_sampled_area_only_points`` method')
+        self.log.debug('completed the ``_sampled_area_only_points`` method')
         return ra, dec
 
     # use the tab-trigger below for new method

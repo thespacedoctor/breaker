@@ -108,7 +108,7 @@ class listen():
                 )
                 downloader.get_maps()
         """
-        self.log.info('starting the ``get_maps`` method')
+        self.log.debug('starting the ``get_maps`` method')
 
         # VARIABLES
         fileorder = ['LALInference_skymap.fits.gz', 'LALInference.fits.gz',
@@ -286,7 +286,7 @@ class listen():
                     scale='utc'
                 )
 
-        self.log.info('completed the ``get_maps`` method')
+        self.log.debug('completed the ``get_maps`` method')
         return None
 
     def _write_map_to_disk(
@@ -301,7 +301,7 @@ class listen():
             - ``mapName`` -- the map flavour.
             - ``waveId`` -- the graceDB id for the wave.
         """
-        self.log.info('starting the ``_write_map_to_disk`` method')
+        self.log.debug('starting the ``_write_map_to_disk`` method')
 
         outputDir = self.mapDirectory + "/" + waveId.upper()
         # RECURSIVELY CREATE MISSING DIRECTORIES
@@ -318,7 +318,7 @@ class listen():
         else:
             self.log.info("%(mapName)s has already been downloaded" % locals())
 
-        self.log.info('completed the ``_write_map_to_disk`` method')
+        self.log.debug('completed the ``_write_map_to_disk`` method')
         return None
 
     def _get_event_meta_data(
@@ -332,7 +332,7 @@ class listen():
         **Return:**
             - ``None`` or ``meta`` -- a dictionary of event metadata pulled from graceDB, or none if event doesn't match our requirements
         """
-        self.log.info('starting the ``_get_event_meta_data`` method')
+        self.log.debug('starting the ``_get_event_meta_data`` method')
 
         eventKeys = ['graceid', 'gpstime', 'group', 'links', 'created',
                      'far', 'instruments', 'labels', 'nevents', 'submitter', 'search', 'likelihood']
@@ -485,7 +485,7 @@ class listen():
             meta["Livingston MJD"] = float("%.10f" % (mjds[1],))
             meta["MJD Difference Seconds"] = float("%.10f" % (timediff,))
 
-        self.log.info('completed the ``_get_event_meta_data`` method')
+        self.log.debug('completed the ``_get_event_meta_data`` method')
         return meta
 
     def _is_the_a_new_event(
@@ -499,7 +499,7 @@ class listen():
         **Return:**
             - ``newEvent`` -- is this a new event (Boolean)
         """
-        self.log.info('starting the ``_is_the_a_new_event`` method')
+        self.log.debug('starting the ``_is_the_a_new_event`` method')
 
         newEvent = False
         outputDir = self.mapDirectory + "/" + waveId.upper()
@@ -508,7 +508,7 @@ class listen():
             newEvent = True
             os.makedirs(outputDir)
 
-        self.log.info('completed the ``_is_the_a_new_event`` method')
+        self.log.debug('completed the ``_is_the_a_new_event`` method')
         return newEvent
 
     # use the tab-trigger below for new method
