@@ -1,9 +1,9 @@
-breaker.stats.survey_footprint (*class*)
-========================================
+breaker._database.database (*class*)
+====================================
 
-.. currentmodule:: breaker.stats
+.. currentmodule:: breaker._database
 
-.. autoclass:: survey_footprint
+.. autoclass:: database
    :members:
    :private-members:
    :show-inheritance:
@@ -20,11 +20,11 @@ breaker.stats.survey_footprint (*class*)
         
    
         
-            ~survey_footprint.annotate_exposures
+            ~database.close
        
    
         
-            ~survey_footprint.get
+            ~database.get
        
    
    
@@ -35,7 +35,11 @@ breaker.stats.survey_footprint (*class*)
        
    
        
-            ~survey_footprint._create_healpixid_coordinate_grid
+            ~database._checkServer
+        
+   
+       
+            ~database._setup_database_connections
         
    
        

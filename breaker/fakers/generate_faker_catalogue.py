@@ -79,12 +79,12 @@ class generate_faker_catalogue():
         **Return:**
             - None
         """
-        self.log.info('starting the ``get`` method')
+        self.log.debug('starting the ``get`` method')
 
         self.generate_faker_locations_within_galaxies_found_in_survey_footprint()
         self.write_fakers_to_file()
 
-        self.log.info('completed the ``get`` method')
+        self.log.debug('completed the ``get`` method')
         return None
 
     def write_fakers_to_file(
@@ -108,7 +108,7 @@ class generate_faker_catalogue():
                     gwid="G211117"
                 ).write_fakers_to_file() 
         """
-        self.log.info('starting the ``write_fakers_to_file`` method')
+        self.log.debug('starting the ``write_fakers_to_file`` method')
 
         mesh16 = htm.HTM(16)
         theseArrays = []
@@ -272,7 +272,7 @@ class generate_faker_catalogue():
         writeFile.close()
         writeFile2.close()
 
-        self.log.info('completed the ``write_fakers_to_file`` method')
+        self.log.debug('completed the ``write_fakers_to_file`` method')
         return None
 
     def generate_faker_locations_within_galaxies_found_in_survey_footprint(
@@ -300,8 +300,8 @@ class generate_faker_catalogue():
                     gwid="G211117"
                 ).generate_faker_locations_within_galaxies_found_in_survey_footprint() 
         """
-        self.log.info(
-            'starting the ``generate_faker_locations_within_galaxies_found_in_survey_footprint`` method')
+        self.log.debug(
+            'completed the ````generate_faker_locations_within_galaxies_found_in_survey_footprint`` method')
 
         import math
         pi = (4 * math.atan(1.0))
@@ -385,6 +385,6 @@ class generate_faker_catalogue():
                     count = len(values)
                     print "Another %(count)s faker sources have been added to galaxies found within the PS1 footprint" % locals()
 
-        self.log.info(
+        self.log.debug(
             'completed the ``generate_faker_locations_within_galaxies_found_in_survey_footprint`` method')
         return None

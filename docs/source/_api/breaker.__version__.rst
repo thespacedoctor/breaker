@@ -1,7 +1,7 @@
-breaker.cl\_utils module
-========================
+breaker.\_\_version\_\_ module
+==============================
 
-.. automodule:: breaker.cl_utils
+.. automodule:: breaker.__version__
     :members:
     :private-members:
     :undoc-members:

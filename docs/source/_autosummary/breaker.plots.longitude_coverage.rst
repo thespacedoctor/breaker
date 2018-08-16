@@ -1,20 +1,37 @@
 breaker.plots.longitude_coverage (*class*)
-================================
+==========================================
 
 .. currentmodule:: breaker.plots
 
 .. autoclass:: longitude_coverage
+   :members:
+   :private-members:
+   :show-inheritance:
+   :inherited-members:
+   :member-order: bysource
 
-   
-   .. automethod:: __init__
+    
 
    
    .. rubric:: Methods
 
    .. autosummary::
    
-      ~longitude_coverage.__init__
-      ~longitude_coverage.plot
+        
+   
+        
+            ~longitude_coverage.plot
+       
+   
+   
+       
+   
+       
+   
+       
+   
+       
+   
    
    
 

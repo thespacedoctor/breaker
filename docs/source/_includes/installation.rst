@@ -1,11 +1,29 @@
 Installation
 ============
 
-The easiest way to install breaker is to use ``pip``:
+The easiest way to install breaker is via Anaconda. For some instructions for installing Anaconda `see here <http://astronotes.co.uk/blog/2017/10/04/An-Astronomer's-Guide-to-dotstar-Conda.html>`__.
+
+Once you have Anaconda installed, then create and activate a new conda environment:
+
+.. code:: bash
+
+    conda create -n breaker python=2.7 pip
+    source activate breaker
+
+Now do a conda install of healpy before installing breaker (the pip install of healpy seems very flaky):
+
+.. code:: bash
+
+    conda install -c conda-forge healpy
+
+Finally install breaker:
 
 .. code:: bash
 
     pip install breaker
+
+Installing a Development Version
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Or you can clone the `github repo <https://github.com/thespacedoctor/breaker>`__ and install from a local version of the code:
 

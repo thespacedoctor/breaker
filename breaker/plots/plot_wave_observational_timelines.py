@@ -24,6 +24,7 @@ from datetime import datetime
 import matplotlib
 import matplotlib.cm as cm
 import matplotlib.pyplot as plt
+from matplotlib.collections import PatchCollection
 # from shapely.geometry import Point
 # from shapely.ops import cascaded_union
 from matplotlib.path import Path
@@ -68,6 +69,7 @@ class plot_wave_observational_timelines():
         - ``allPlots`` -- plot all timeline plot (including the CPU intensive -21-0 days and all transients/footprints plots). Default *False*
         - ``telescope`` -- select an individual telescope. Default *False*. [ps1|atlas]
         - ``timestamp`` -- add a timestamp to the plot to show when it was created. Default *True*
+        - ``filters`` -- only plot certain filters. Default *False*
 
     **Usage:**
 
@@ -123,7 +125,8 @@ class plot_wave_observational_timelines():
             databaseConnRequired=True,
             allPlots=False,
             telescope=False,
-            timestamp=True
+            timestamp=True,
+            filters=False
     ):
         self.log = log
         log.debug("instantiating a new 'plot_wave_observational_timelines' object")
@@ -135,6 +138,7 @@ class plot_wave_observational_timelines():
         self.allPlots = allPlots
         self.telescope = telescope
         self.timestamp = timestamp
+        self.filters = filters
 
         # xt-self-arg-tmpx
 
@@ -160,21 +164,23 @@ class plot_wave_observational_timelines():
         """
         *Generate the plots*
         """
-        self.log.info('starting the ``get`` method')
+        self.log.debug('starting the ``get`` method')
 
         if self.plotType == "history":
             self.get_history_plots()
         elif self.plotType == "timeline":
             self.get_timeline_plots()
 
-        self.log.info('completed the ``get`` method')
+        self.log.debug('completed the ``get`` method')
         return None
 
     def get_gw_parameters_from_settings(
             self,
             gwid,
             inPastDays=False,
-            inFirstDays=False):
+            inFirstDays=False,
+            maxProbCoordinate=[0, 0],
+            stackOnly=False):
         """
         *Query the settings file and database for PS1 Pointings, PS1 discovered transients and plot parameters relatiing to the given gravitational wave (``gwid``)*
 
@@ -182,6 +188,7 @@ class plot_wave_observational_timelines():
             - ``gwid`` -- the unique ID of the gravitational wave to plot
             - ``inPastDays`` -- used for the `history` plots (looking back from today)
             - ``inFirstDays`` -- used in the `timeline` plots (looking forward from wave detection). A tuple (start day, end day).
+            - ``maxProbCoordinate`` -- the sky-coordiante of the pixel containing the highest likelihood (calculated from map).
 
         **Return:**
             - ``plotParameters`` -- the parameters used for the plots
@@ -255,32 +262,44 @@ class plot_wave_observational_timelines():
                     inFirstDays=(0,3)
                 )
         """
-        self.log.info(
-            'starting the ``get_gw_parameters_from_settings`` method')
+        self.log.debug(
+            'completed the ````get_gw_parameters_from_settings`` method')
 
         plotParameters = self.settings["gravitational waves"][gwid]["plot"]
+        if not plotParameters:
+            plotParameters = {}
+
+        if "centralCoordinate" not in plotParameters:
+            plotParameters["centralCoordinate"] = maxProbCoordinate
+
+        if "raRange" not in plotParameters:
+            plotParameters["centralCoordinate"] = list(
+                plotParameters["centralCoordinate"])
+            plotParameters["centralCoordinate"][1] = 0.
 
         # GRAB PS1 TRANSIENTS FROM THE DATABASE
-        ps1Transients, atlasTransients = self._get_ps1_transient_candidates(
+        ps1Transients, atlasTransients = self._get_ps1_atlas_transient_candidates(
             gwid=gwid,
             mjdStart=self.settings["gravitational waves"][
-                gwid]["time"]["mjdStart"],
+                gwid]["mjd"],
             mjdEnd=self.settings["gravitational waves"][
-                gwid]["time"]["mjdEnd"],
+                gwid]["mjd"] + 31.,
             plotParameters=plotParameters,
             inPastDays=inPastDays,
-            inFirstDays=inFirstDays
+            inFirstDays=inFirstDays,
+            maxProbCoordinate=maxProbCoordinate
         )
 
         self.log.debug(
             'finished getting the PS1 transients')
 
         # GRAB PS1 & ATLAS POINTINGS FROM THE DATABASE
-        ps1Pointings = self._get_ps1_pointings(gwid, inPastDays, inFirstDays)
+        ps1Pointings = self._get_ps1_pointings(
+            gwid, inPastDays, inFirstDays, stackOnly=stackOnly)
         atlasPointings = self._get_atlas_pointings(
             gwid, inPastDays, inFirstDays)
 
-        self.log.info(
+        self.log.debug(
             'completed the ``get_gw_parameters_from_settings`` method')
 
         if self.telescope == "ps1":
@@ -292,14 +311,15 @@ class plot_wave_observational_timelines():
 
         return plotParameters, ps1Transients, ps1Pointings, atlasPointings, atlasTransients
 
-    def _get_ps1_transient_candidates(
+    def _get_ps1_atlas_transient_candidates(
             self,
             gwid,
             mjdStart,
             mjdEnd,
             plotParameters,
             inPastDays,
-            inFirstDays):
+            inFirstDays,
+            maxProbCoordinate):
         """
         *get ps1 transient candidates*
 
@@ -314,17 +334,29 @@ class plot_wave_observational_timelines():
         **Return:**
             - ``ps1Transients`` -- the transients to add to the plot
         """
-        self.log.info('starting the ``_get_ps1_transient_candidates`` method')
+        self.log.debug(
+            'completed the ````_get_ps1_atlas_transient_candidates`` method')
 
         # UNPACK THE PLOT PARAMETERS
-        centralCoordinate = plotParameters["centralCoordinate"]
-        raRange = float(plotParameters["raRange"])
-        decRange = float(plotParameters["decRange"])
+        if "centralCoordinate" in plotParameters:
+            centralCoordinate = plotParameters["centralCoordinate"]
+        else:
+            centralCoordinate = maxProbCoordinate
 
-        raMax = centralCoordinate[0] + raRange / 2.
-        raMin = centralCoordinate[0] - raRange / 2.
-        decMax = centralCoordinate[1] + decRange / 2.
-        decMin = centralCoordinate[1] - decRange / 2.
+        if "raRange" not in plotParameters:
+            raRange = 360.
+            decRange = 180.
+            raMax = 360.
+            raMin = 0.
+            decMax = 90.
+            decMin = -90.
+        else:
+            raRange = plotParameters["raRange"]
+            decRange = plotParameters["decRange"]
+            raMax = centralCoordinate[0] + raRange / 2.
+            raMin = centralCoordinate[0] - raRange / 2.
+            decMax = centralCoordinate[1] + decRange / 2.
+            decMin = centralCoordinate[1] - decRange / 2.
 
         if inPastDays:
             nowMjd = now(
@@ -334,14 +366,14 @@ class plot_wave_observational_timelines():
             mjdEnd = 1000000000000000
 
         if inFirstDays:
-            mjdStart = self.settings["gravitational waves"][gwid]["time"][
-                "mjdStart"] + inFirstDays[0]
+            mjdStart = self.settings["gravitational waves"][
+                gwid]["mjd"] + inFirstDays[0]
             mjdEnd = self.settings["gravitational waves"][
-                gwid]["time"]["mjdStart"] + inFirstDays[1]
+                gwid]["mjd"] + inFirstDays[1]
             if inFirstDays[1] == 0 and inFirstDays[0] == 0:
                 mjdEnd = 10000000000
 
-        if raMin >= 0 and raMax < 360.:
+        if raMin >= 0 and raMax <= 360.:
             sqlQuery = u"""
                 SELECT ps1_designation, local_designation, ra_psf, dec_psf FROM tcs_transient_objects o, tcs_latest_object_stats s where o.detection_list_id in (1,2) and o.id=s.id and (s.earliest_mjd between %(mjdStart)s and %(mjdEnd)s) and (ra_psf between %(raMin)s and %(raMax)s) and (`dec_psf` between %(decMin)s and %(decMax)s) ;
             """ % locals()
@@ -362,7 +394,7 @@ class plot_wave_observational_timelines():
             dbConn=self.ps1gwDbConn
         )
 
-        if raMin > 0 and raMax < 360.:
+        if raMin >= 0 and raMax <= 360.:
             sqlQuery = u"""
                 SELECT atlas_designation, ra, `dec` FROM atlas_diff_objects o, tcs_latest_object_stats s where o.detection_list_id in (1,2) and o.id=s.id and (s.earliest_mjd between %(mjdStart)s and %(mjdEnd)s) and (ra between %(raMin)s and %(raMax)s) and (`dec` between %(decMin)s and %(decMax)s) ;
             """ % locals()
@@ -383,14 +415,16 @@ class plot_wave_observational_timelines():
             dbConn=self.atlasDbConn
         )
 
-        self.log.info('completed the ``_get_ps1_transient_candidates`` method')
+        self.log.debug(
+            'completed the ``_get_ps1_atlas_transient_candidates`` method')
         return ps1Transients, atlasTransients
 
     def _get_ps1_pointings(
             self,
             gwid,
             inPastDays,
-            inFirstDays):
+            inFirstDays,
+            stackOnly=False):
         """
         *get ps1 pointings to add to the plot*
 
@@ -402,7 +436,7 @@ class plot_wave_observational_timelines():
         **Return:**
             - ``ps1Pointings`` -- the pointings to place on the plot
         """
-        self.log.info('starting the ``_get_ps1_pointings`` method')
+        self.log.debug('starting the ``_get_ps1_pointings`` method')
 
         # DETERMINE THE TEMPORAL CONSTRAINTS FOR MYSQL QUERY
         if inPastDays != False or inPastDays == 0:
@@ -415,18 +449,17 @@ class plot_wave_observational_timelines():
                 mjdStart = 0.0
 
         if inFirstDays:
-            mjdStart = self.settings["gravitational waves"][gwid]["time"][
-                "mjdStart"] + inFirstDays[0]
+            mjdStart = self.settings["gravitational waves"][
+                gwid]["mjd"] + inFirstDays[0]
             mjdEnd = self.settings["gravitational waves"][
-                gwid]["time"]["mjdStart"] + inFirstDays[1]
+                gwid]["mjd"] + inFirstDays[1]
             if inFirstDays[1] == 0 and inFirstDays[0] == 0:
                 mjdEnd = 10000000000
 
         if inPastDays == False and inFirstDays == False:
-            mjdStart = self.settings["gravitational waves"][gwid]["time"][
-                "mjdStart"]
+            mjdStart = self.settings["gravitational waves"][gwid]["mjd"]
             mjdEnd = self.settings["gravitational waves"][
-                gwid]["time"]["mjdEnd"]
+                gwid]["mjd"] + 31.
 
         sqlQuery = u"""
             SELECT raDeg, decDeg, mjd, exp_time, filter, limiting_mag FROM ps1_pointings where gw_id like "%%%(gwid)s%%" and mjd between %(mjdStart)s and %(mjdEnd)s
@@ -436,17 +469,25 @@ class plot_wave_observational_timelines():
             SELECT raDeg, decDeg, mjd_registered as mjd, etime as exp_time, f as filter FROM ps1_nightlogs where gw_id like "%%%(gwid)s%%" and mjd_registered between %(mjdStart)s and %(mjdEnd)s
         """ % locals()
 
-#         sqlQuery = u"""
-#             SELECT * from (
-# SELECT raDeg, decDeg, mjd, exp_time, filter, p.skycell_id, limiting_mag as limiting_magnitude, "stack" as diff_type, filename as exp_id FROM ps1_stack_stack_diff_skycells p, panstarrs_rings_v3_skycell_map s where mjd between %(mjdStart)s and %(mjdEnd)s and p.skycell_id=s.skycell_id
-# UNION
-# SELECT raDeg, decDeg, mjd, exp_time, filter, p.skycell_id, limiting_mag as limiting_magnitude, "warp" as diff_type, filename as exp_id FROM ps1_warp_stack_diff_skycells p, panstarrs_rings_v3_skycell_map s where mjd between %(mjdStart)s and %(mjdEnd)s and p.skycell_id=s.skycell_id) p order by mjd;
-#         """ % locals()
+        if self.filters:
+            filters = ' and filter in ("' + ('", "').join(self.filters) + '")'
+        else:
+            filters = ""
 
-#         # STACK-STACK ONLY
-#         sqlQuery = u"""
-# SELECT raDeg, decDeg, mjd, exp_time, filter, p.skycell_id, limiting_mag as limiting_magnitude, "stack" as diff_type, filename as exp_id FROM ps1_stack_stack_diff_skycells p, panstarrs_rings_v3_skycell_map s where mjd between %(mjdStart)s and %(mjdEnd)s and p.skycell_id=s.skycell_id order by mjd;
-#         """ % locals()
+        if not stackOnly:
+
+            sqlQuery = u"""
+                SELECT distinct * from (
+    SELECT distinct raDeg, decDeg, mjd, filter, p.skycell_id as exp_id, exp_time, limiting_mag as limiting_magnitude FROM ps1_stack_stack_diff_skycells p, ps1_skycell_gravity_event_annotations s, ps1_skycell_map m where mjd between %(mjdStart)s and %(mjdEnd)s and p.skycell_id=s.skycell_id and p.skycell_id=m.skycell_id and gracedb_id = "%(gwid)s" %(filters)s and s.prob_coverage > 1e-6
+    UNION
+    SELECT distinct raDeg, decDeg, mjd, filter, p.skycell_id as exp_id, exp_time, limiting_mag as limiting_magnitude FROM ps1_warp_stack_diff_skycells p, ps1_skycell_gravity_event_annotations s, ps1_skycell_map m where mjd between %(mjdStart)s and %(mjdEnd)s and p.skycell_id=s.skycell_id and p.skycell_id=m.skycell_id and gracedb_id = "%(gwid)s" %(filters)s and s.prob_coverage > 1e-6) p order by mjd;
+            """ % locals()
+
+        else:
+
+            sqlQuery = u"""
+                SELECT distinct raDeg, decDeg, mjd, filter, p.skycell_id as exp_id, exp_time, limiting_mag as limiting_magnitude FROM ps1_stack_stack_diff_skycells p, ps1_skycell_gravity_event_annotations s, ps1_skycell_map m where mjd between %(mjdStart)s and %(mjdEnd)s and p.skycell_id=s.skycell_id and p.skycell_id=m.skycell_id and gracedb_id = "%(gwid)s" %(filters)s and s.prob_coverage > 1e-6
+            """ % locals()
 
         ps1Pointings = readquery(
             log=self.log,
@@ -454,7 +495,7 @@ class plot_wave_observational_timelines():
             dbConn=self.ligo_virgo_wavesDbConn
         )
 
-        self.log.info('completed the ``_get_ps1_pointings`` method')
+        self.log.debug('completed the ``_get_ps1_pointings`` method')
         return ps1Pointings
 
     def _get_atlas_pointings(
@@ -473,7 +514,7 @@ class plot_wave_observational_timelines():
         **Return:**
             - ``atlasPointings`` -- the pointings to place on the plot
         """
-        self.log.info('starting the ``_get_atlas_pointings`` method')
+        self.log.debug('starting the ``_get_atlas_pointings`` method')
 
         # DETERMINE THE TEMPORAL CONSTRAINTS FOR MYSQL QUERY
         if inPastDays != False or inPastDays == 0:
@@ -486,21 +527,20 @@ class plot_wave_observational_timelines():
                 mjdStart = 0.0
 
         if inFirstDays:
-            mjdStart = self.settings["gravitational waves"][gwid]["time"][
-                "mjdStart"] + inFirstDays[0]
+            mjdStart = self.settings["gravitational waves"][
+                gwid]["mjd"] + inFirstDays[0]
             mjdEnd = self.settings["gravitational waves"][
-                gwid]["time"]["mjdStart"] + inFirstDays[1]
+                gwid]["mjd"] + inFirstDays[1]
             if inFirstDays[1] == 0 and inFirstDays[0] == 0:
                 mjdEnd = 10000000000
 
         if inPastDays == False and inFirstDays == False:
-            mjdStart = self.settings["gravitational waves"][gwid]["time"][
-                "mjdStart"]
+            mjdStart = self.settings["gravitational waves"][gwid]["mjd"]
             mjdEnd = self.settings["gravitational waves"][
-                gwid]["time"]["mjdEnd"]
+                gwid]["mjd"] + 31.
 
         sqlQuery = u"""
-            SELECT atlas_object_id as exp_id, raDeg, decDeg, mjd, exp_time, filter, limiting_magnitude FROM atlas_pointings where gw_id like "%%%(gwid)s%%" and mjd between %(mjdStart)s and %(mjdEnd)s group by atlas_object_id;
+            SELECT p.atlas_object_id as exp_id, p.raDeg, p.decDeg, mjd, exp_time, filter, limiting_magnitude FROM atlas_pointings p, atlas_exposure_gravity_event_annotations a where a.prob_coverage > 1e-3 and a.gracedb_id = "%(gwid)s" and a.atlas_object_id=p.atlas_object_id and gw_id like "%%%(gwid)s%%" and mjd between %(mjdStart)s and %(mjdEnd)s order by mjd;
         """ % locals()
 
         atlasPointings = readquery(
@@ -509,7 +549,7 @@ class plot_wave_observational_timelines():
             dbConn=self.ligo_virgo_wavesDbConn
         )
 
-        self.log.info('completed the ``_get_atlas_pointings`` method')
+        self.log.debug('completed the ``_get_atlas_pointings`` method')
         return atlasPointings
 
     def generate_probability_plot(
@@ -533,7 +573,8 @@ class plot_wave_observational_timelines():
             outputDirectory=False,
             fitsImage=False,
             allSky=False,
-            center=0.):
+            center=False,
+            symLink=True):
         """
         *Generate a single probability map plot for a given gravitational wave and save it to file*
 
@@ -604,7 +645,7 @@ class plot_wave_observational_timelines():
                 )
 
         """
-        self.log.info('starting the ``generate_probability_plot`` method')
+        self.log.debug('starting the ``generate_probability_plot`` method')
 
         import matplotlib.pyplot as plt
         import healpy as hp
@@ -623,6 +664,26 @@ class plot_wave_observational_timelines():
         unit = "likelihood"
         cmap = "YlOrRd"
         colorBar = False
+
+        # DETERMINE PATH TO MAP AND IF IT IS THE PREFERRED MAP AT THIS TIME
+        bestMap = False
+        if pathToProbMap is None or not pathToProbMap:
+            pathToProbMap = self.settings[
+                "gravitational waves"][gwid]["mapPath"]
+
+        pathToProbMap = os.path.abspath(pathToProbMap)
+
+        if gwid in self.settings["gravitational waves"]:
+            bestMapPath = self.settings[
+                "gravitational waves"][gwid]["mapPath"]
+            bestMapPath = os.path.abspath(bestMapPath)
+            if pathToProbMap == bestMapPath:
+                bestMap = True
+
+        mapBasename = os.path.basename(pathToProbMap)
+        mapBasename = os.path.splitext(mapBasename)[0]
+        mapBasename = os.path.splitext(mapBasename)[0]
+        mapBasename = os.path.splitext(mapBasename)[0]
 
         # INITIALISE FIGURE
         fig = plt.figure()
@@ -644,6 +705,14 @@ class plot_wave_observational_timelines():
         # locals()
 
         # UNPACK THE PLOT PARAMETERS
+        # FIND THE COORDINATES OF THE CORE LIKEIHOOD
+        maxProbHealpix = aMap.argmax()
+        maxCoordinate = hp.pix2ang(nside, maxProbHealpix, lonlat=True)
+        print "The %(gwid)s %(mapBasename)s map's maximum likelihood is centered at %(maxCoordinate)s" % locals()
+
+        if center == False:
+            center = maxCoordinate[0]
+
         if plotParameters:
             centralCoordinate = plotParameters["centralCoordinate"]
         else:
@@ -659,7 +728,8 @@ class plot_wave_observational_timelines():
         projectionDict = {
             "mollweide": "MOL",
             "gnomonic": "MER",
-            "mercator": "MER"
+            "mercator": "MER",
+            "cartesian": "CAR"
         }
 
         if projection in ["mollweide"]:
@@ -709,9 +779,9 @@ class plot_wave_observational_timelines():
                 ::-1], latitude, probs, rasterized=True, cmap=cmap)
 
             # GRATICULE
-            ax.set_longitude_grid(60)
-            ax.set_latitude_grid(45)
-            ax.xaxis.set_major_formatter(ThetaFormatterShiftPi(60))
+            ax.set_longitude_grid(30)
+            ax.set_latitude_grid(15)
+            ax.xaxis.set_major_formatter(ThetaFormatterShiftPi(30))
             ax.set_longitude_grid_ends(90)
 
             # CONTOURS - NEED TO ADD THE CUMMULATIVE PROBABILITY
@@ -741,8 +811,8 @@ class plot_wave_observational_timelines():
                 # WORKAROUND FOR ISSUE WITH VIEWERS, SEE COLORBAR DOCSTRING
                 cb.solids.set_edgecolor("face")
 
-            ax.tick_params(axis='x', labelsize=16)
-            ax.tick_params(axis='y', labelsize=16)
+            ax.tick_params(axis='x', labelsize=12)
+            ax.tick_params(axis='y', labelsize=12)
             # lon.set_ticks_position('bt')
             # lon.set_ticklabel_position('b')
             # lon.set_ticklabel(size=20)
@@ -766,9 +836,11 @@ class plot_wave_observational_timelines():
 
             plt.grid(True)
 
-        elif projection in ["mercator"]:
+        elif projection in ["mercator", "cartesian"]:
 
-            if allSky:
+            if allSky or "raRange" not in plotParameters:
+                centralCoordinate = list(centralCoordinate)
+                centralCoordinate[1] = 0.
                 raRange = 360.
                 decRange = 180.
             else:
@@ -939,8 +1011,15 @@ class plot_wave_observational_timelines():
 
         elif projection == "gnomonic":
             # UNPACK THE PLOT PARAMETERS
-            raRange = plotParameters["raRange"]
-            decRange = plotParameters["decRange"]
+
+            if allSky and "raRange" not in plotParameters:
+                centralCoordinate = list(centralCoordinate)
+                centralCoordinate[1] = 0.
+                raRange = 360.
+                decRange = 180.
+            else:
+                raRange = plotParameters["raRange"]
+                decRange = plotParameters["decRange"]
 
             raMax = centralCoordinate[0] + raRange / 2.
             raMin = centralCoordinate[0] - raRange / 2.
@@ -1104,26 +1183,29 @@ class plot_wave_observational_timelines():
         now = datetime.now()
         now = now.strftime("%Y-%m-%d")
         timeRangeLabel = "NULL"
-        if plotType == "history":
-            plotTitle = "%(gwid)s Probability Map, Footprints & Transients\nDiscovered in Last %(timeLimitDay)02d Days" % locals()
-            timeRangeLabel = "Past %(timeLimitDay)02d days (updated %(now)s)" % locals(
-            )
-            if timeLimitDay == 0:
-                plotTitle = "%(gwid)s Probability Map, Footprints & Transients\nDiscovered Since MJD %(mjdStart)s" % locals(
-                )
-                timeRangeLabel = "MJD > %(mjdStart)s" % locals()
-        elif plotType == "timeline" and timeLimitDay:
+        if plotType == "timeline" and timeLimitDay:
             start = timeLimitDay[0]
             end = timeLimitDay[1]
-            plotTitle = "%(gwid)s Probability Map, Footprints & Transients\nDiscovered %(timeLimitLabel)s of Wave Detection" % locals()
+            if self.filters:
+                f = ("").join(self.filters)
+            else:
+                f = ""
+            if self.telescope:
+                t = self.telescope
+            else:
+                t = ""
+            plotTitle = "%(gwid)s %(timeLimitLabel)s %(projection)s %(t)s %(f)s" % locals(
+            )
             timeRangeLabel = timeLimitLabel.lower().replace(
                 "in", "").replace("between", "").strip()
             if timeLimitLabel == "no limit":
-                plotTitle = "%(gwid)s Probability Map, Footprints\n& All Transients Discovered" % locals(
+                plotTitle = "%(gwid)s" % locals(
                 )
                 timeRangeLabel = "all transients"
         elif plotType == "timeline":
-            plotTitle = "%(gwid)s Probability Map" % locals()
+
+            plotTitle = "%(gwid)s %(mapBasename)s skymap %(projection)s" % locals(
+            )
             timeRangeLabel = ""
 
         else:
@@ -1142,251 +1224,97 @@ class plot_wave_observational_timelines():
         from matplotlib.patches import Rectangle
 
         # ps1Pointings = []
-        for psp in ps1Pointings:
-            raDeg = psp["raDeg"]
-            decDeg = psp["decDeg"]
+        # PS1 POINTINGS (NOT SKYCELLS)
+        if len(ps1Pointings) and "skycell" not in ps1Pointings[0]["exp_id"]:
 
-            # REMOVE LOWER PROBABILITY FOOTPRINTS
-            phi = raDeg
-            if phi > 180.:
-                phi = phi - 360.
-            theta = -decDeg + 90.
-            healpixId = hp.ang2pix(
-                nside, theta * DEG_TO_RAD_FACTOR, phi * DEG_TO_RAD_FACTOR)
-            probs = aMap[healpixId]
-            probs = float("%0.*f" % (7, probs))
-            if probabilityCut and probs == 0.:
-                continue
+            for psp in ps1Pointings:
+                raDeg = psp["raDeg"]
+                decDeg = psp["decDeg"]
 
-            height = 2.8
-            width = height / math.cos(decDeg * DEG_TO_RAD_FACTOR)
-
-            # MULTIPLE CIRCLES
-            if projection in ["mercator", "gnomonic"]:
-                circ = Ellipse(
-                    (raDeg, decDeg), width=width, height=height, alpha=0.2, color='#859900', fill=True, transform=ax.get_transform('fk5'), zorder=3)
-            else:
-                if raDeg > 180.:
-                    raDeg = raDeg - 360.
-                circ = Ellipse(
-                    (-raDeg * DEG_TO_RAD_FACTOR, decDeg * DEG_TO_RAD_FACTOR), width=width * DEG_TO_RAD_FACTOR, height=height * DEG_TO_RAD_FACTOR, alpha=0.2, color='#859900', fill=True, zorder=3)
-
-            ax.add_patch(circ)
-
-        # LEGEND FOR PS1
-        if len(ps1Pointings) and 1 == -1:
-            raDeg = 90.
-            decDeg = 10.
-            height = 3.5
-
-            width = height / math.cos(decDeg * DEG_TO_RAD_FACTOR)
-            if projection in ["mercator", "gnomonic"]:
-                circ = Ellipse(
-                    (raDeg, decDeg), width=width, height=height, alpha=0.2, color='#859900', fill=True, transform=ax.get_transform('fk5'), zorder=3)
-                ax.text(
-                    raDeg - 3,
-                    decDeg - 1.,
-                    "PS1",
-                    fontsize=14,
-                    zorder=4,
-                    family='monospace',
-                    transform=ax.get_transform('fk5')
-                )
-            else:
-                height = 6.
-                width = height / math.cos(decDeg * DEG_TO_RAD_FACTOR)
-                raDeg = 285.
-                decDeg = 38.
-                if raDeg > 180.:
-                    raDeg = raDeg - 360.
-                circ = Ellipse(
-                    (-raDeg * DEG_TO_RAD_FACTOR, decDeg * DEG_TO_RAD_FACTOR), width=width * DEG_TO_RAD_FACTOR, height=height * DEG_TO_RAD_FACTOR, alpha=0.2, color='#859900', fill=True, zorder=3)
-                ax.text(
-                    (-raDeg + 8.) * DEG_TO_RAD_FACTOR,
-                    (decDeg - 3.) * DEG_TO_RAD_FACTOR,
-                    "PS1",
-                    fontsize=14,
-                    zorder=4,
-                    family='monospace'
-                )
-            ax.add_patch(circ)
-
-        # ADD ATLAS POINTINGS
-        atlasPointingSide = 5.46
-        # atlasPointings = []
-        for atp in atlasPointings:
-            # add a path patch
-            atlasExpId = atp["exp_id"]
-            raDeg = atp["raDeg"]
-            decDeg = atp["decDeg"]
-
-            # REMOVE LOWER PROBABILITY FOOTPRINTS
-            phi = raDeg
-            if phi > 180.:
-                phi = phi - 360.
-            theta = -decDeg + 90.
-            healpixId = hp.ang2pix(
-                nside, theta * DEG_TO_RAD_FACTOR, phi * DEG_TO_RAD_FACTOR)
-            probs = aMap[healpixId]
-            probs = float("%0.*f" % (7, probs))
-            if probabilityCut and probs == 0.:
-                continue
-            elif probabilityCut:
-                # print atp["mjd"], atlasExpId, raDeg, decDeg
-                pass
-
-            deltaDeg = atlasPointingSide / 2
-            if decDeg < 0:
-                deltaDeg = -deltaDeg
-
-            if projection in ["mercator", "gnomonic"]:
-                widthDegTop = atlasPointingSide / \
-                    math.cos((decDeg + deltaDeg) * DEG_TO_RAD_FACTOR)
-                widthDegBottom = atlasPointingSide / \
-                    math.cos((decDeg - deltaDeg) * DEG_TO_RAD_FACTOR)
-                heightDeg = atlasPointingSide
-                llx = (raDeg - widthDegBottom / 2)
-                lly = decDeg - (heightDeg / 2)
-                ulx = (raDeg - widthDegTop / 2)
-                uly = decDeg + (heightDeg / 2)
-                urx = (raDeg + widthDegTop / 2)
-                ury = uly
-                lrx = (raDeg + widthDegBottom / 2)
-                lry = lly
-
-                Path = mpath.Path
-                path_data = [
-                    (Path.MOVETO, [llx, lly]),
-                    (Path.LINETO, [ulx, uly]),
-                    (Path.LINETO, [urx, ury]),
-                    (Path.LINETO, [lrx, lry]),
-                    (Path.CLOSEPOLY, [llx, lly])
-                ]
-                codes, verts = zip(*path_data)
-                path = mpath.Path(verts, codes)
-
-                # EXCLUDE FOOTPRINTS THAT CROSS 360.
-                if lrx > 180. and llx < 180:
+                # REMOVE LOWER PROBABILITY FOOTPRINTS
+                phi = raDeg
+                if phi > 180.:
+                    phi = phi - 360.
+                theta = -decDeg + 90.
+                healpixId = hp.ang2pix(
+                    nside, theta * DEG_TO_RAD_FACTOR, phi * DEG_TO_RAD_FACTOR)
+                probs = aMap[healpixId]
+                probs = float("%0.*f" % (7, probs))
+                if probabilityCut and probs == 0.:
                     continue
 
-                patch = patches.PathPatch(path, alpha=0.2,
-                                          color='#6c71c4', fill=True, zorder=3, transform=ax.get_transform('fk5'))
+                # height = 2.8
+                height = 0.2
+                width = height / math.cos(decDeg * DEG_TO_RAD_FACTOR)
+
+                # MULTIPLE CIRCLES
+                if projection in ["mercator", "gnomonic", "cartesian"]:
+                    circ = Ellipse(
+                        (raDeg, decDeg), width=width, height=height, alpha=0.2, color='#859900', fill=True, transform=ax.get_transform('fk5'), zorder=3)
+                else:
+                    if raDeg > 180.:
+                        raDeg = raDeg - 360.
+                    circ = Ellipse(
+                        (-raDeg * DEG_TO_RAD_FACTOR, decDeg * DEG_TO_RAD_FACTOR), width=width * DEG_TO_RAD_FACTOR, height=height * DEG_TO_RAD_FACTOR, alpha=0.2, color='#859900', fill=True, zorder=3)
+
+                ax.add_patch(circ)
+        else:
+            plotted = []
+            patches = []
+            for psp in ps1Pointings:
+
+                if psp["exp_id"] in plotted:
+                    continue
+                else:
+                    plotted.append(psp["exp_id"])
+
+                patch = add_square_fov(
+                    log=self.log,
+                    raDeg=psp["raDeg"],
+                    decDeg=psp["decDeg"],
+                    nside=nside,
+                    aMap=aMap,
+                    fovSide=0.4,
+                    axes=ax,
+                    projection=projection)
+
+                if patch:
+                    patches.append(patch)
+
+            if projection in ["mercator", "gnomonic", "cartesian"]:
+                ax.add_collection(PatchCollection(patches, alpha=0.2,
+                                                  color='#859900', zorder=2, transform=ax.get_transform('fk5')))
             else:
-                if raDeg > 180.:
-                    raDeg = raDeg - 360.
+                ax.add_collection(PatchCollection(patches, alpha=0.2,
+                                                  color='#859900', zorder=2))
 
-                widthRadTop = atlasPointingSide * DEG_TO_RAD_FACTOR / \
-                    math.cos((decDeg + deltaDeg) * DEG_TO_RAD_FACTOR)
-                widthRadBottom = atlasPointingSide * DEG_TO_RAD_FACTOR / \
-                    math.cos((decDeg - deltaDeg) * DEG_TO_RAD_FACTOR)
-                heightRad = atlasPointingSide * DEG_TO_RAD_FACTOR
-                llx = -(raDeg * DEG_TO_RAD_FACTOR - widthRadBottom / 2)
-                lly = decDeg * DEG_TO_RAD_FACTOR - (heightRad / 2)
-                ulx = -(raDeg * DEG_TO_RAD_FACTOR - widthRadTop / 2)
-                uly = decDeg * DEG_TO_RAD_FACTOR + (heightRad / 2)
-                urx = -(raDeg * DEG_TO_RAD_FACTOR + widthRadTop / 2)
-                ury = uly
-                lrx = -(raDeg * DEG_TO_RAD_FACTOR + widthRadBottom / 2)
-                lry = lly
-                Path = mpath.Path
-                path_data = [
-                    (Path.MOVETO, [llx, lly]),
-                    (Path.LINETO, [ulx, uly]),
-                    (Path.LINETO, [urx, ury]),
-                    (Path.LINETO, [lrx, lry]),
-                    (Path.CLOSEPOLY, [llx, lly])
-                ]
-                codes, verts = zip(*path_data)
-                path = mpath.Path(verts, codes)
-                patch = patches.PathPatch(path, alpha=0.2,
-                                          color='#6c71c4', fill=True, zorder=3,)
+        patches = []
+        for atp in atlasPointings:
 
-            ax.add_patch(patch)
-
-        # LEGEND FOR ATLAS
-        if len(atlasPointings) and 1 == -1:
-            if projection in ["mercator", "gnomonic"]:
-                raDeg = 88.
-                decDeg = 4.
-                atlasPointingSide = 4.5
-
-                widthDegTop = atlasPointingSide / \
-                    math.cos((decDeg + deltaDeg) * DEG_TO_RAD_FACTOR)
-                widthDegBottom = atlasPointingSide / \
-                    math.cos((decDeg - deltaDeg) * DEG_TO_RAD_FACTOR)
-                heightDeg = atlasPointingSide
-                llx = (raDeg - widthDegBottom / 2)
-                lly = decDeg - (heightDeg / 2)
-                ulx = (raDeg - widthDegTop / 2)
-                uly = decDeg + (heightDeg / 2)
-                urx = (raDeg + widthDegTop / 2)
-                ury = uly
-                lrx = (raDeg + widthDegBottom / 2)
-                lry = lly
-                Path = mpath.Path
-                path_data = [
-                    (Path.MOVETO, [llx, lly]),
-                    (Path.LINETO, [ulx, uly]),
-                    (Path.LINETO, [urx, ury]),
-                    (Path.LINETO, [lrx, lry]),
-                    (Path.CLOSEPOLY, [llx, lly])
-                ]
-                codes, verts = zip(*path_data)
-                path = mpath.Path(verts, codes)
-                patch = patches.PathPatch(path, alpha=0.2,
-                                          color='#6c71c4', fill=True, zorder=3, transform=ax.get_transform('fk5'))
-                ax.text(
-                    raDeg - 4,
-                    decDeg - 1,
-                    "ATLAS",
-                    fontsize=14,
-                    zorder=4,
-                    family='monospace',
-                    transform=ax.get_transform('fk5')
-                )
+            if atp["exp_id"] in plotted:
+                continue
             else:
-                atlasPointingSide = 8.
-                raDeg = 285.
-                decDeg = 28.
+                plotted.append(atp["exp_id"])
 
-                if raDeg > 180.:
-                    raDeg = raDeg - 360.
+            patch = add_square_fov(
+                log=self.log,
+                raDeg=atp["raDeg"],
+                decDeg=atp["decDeg"],
+                nside=nside,
+                aMap=aMap,
+                fovSide=5.46,
+                axes=ax,
+                projection=projection)
 
-                widthRadTop = atlasPointingSide * DEG_TO_RAD_FACTOR / \
-                    math.cos((decDeg + deltaDeg) * DEG_TO_RAD_FACTOR)
-                widthRadBottom = atlasPointingSide * DEG_TO_RAD_FACTOR / \
-                    math.cos((decDeg - deltaDeg) * DEG_TO_RAD_FACTOR)
-                heightRad = atlasPointingSide * DEG_TO_RAD_FACTOR
-                llx = -(raDeg * DEG_TO_RAD_FACTOR - widthRadBottom / 2)
-                lly = decDeg * DEG_TO_RAD_FACTOR - (heightRad / 2)
-                ulx = -(raDeg * DEG_TO_RAD_FACTOR - widthRadTop / 2)
-                uly = decDeg * DEG_TO_RAD_FACTOR + (heightRad / 2)
-                urx = -(raDeg * DEG_TO_RAD_FACTOR + widthRadTop / 2)
-                ury = uly
-                lrx = -(raDeg * DEG_TO_RAD_FACTOR + widthRadBottom / 2)
-                lry = lly
-                Path = mpath.Path
-                path_data = [
-                    (Path.MOVETO, [llx, lly]),
-                    (Path.LINETO, [ulx, uly]),
-                    (Path.LINETO, [urx, ury]),
-                    (Path.LINETO, [lrx, lry]),
-                    (Path.CLOSEPOLY, [llx, lly])
-                ]
-                codes, verts = zip(*path_data)
-                path = mpath.Path(verts, codes)
-                patch = patches.PathPatch(path, alpha=0.2,
-                                          color='#6c71c4', fill=True, zorder=3,)
-                ax.text(
-                    (-raDeg + 8.) * DEG_TO_RAD_FACTOR,
-                    (decDeg - 3.) * DEG_TO_RAD_FACTOR,
-                    "ATLAS",
-                    fontsize=14,
-                    zorder=4,
-                    family='monospace'
-                )
+            if patch:
+                patches.append(patch)
 
-            ax.add_patch(patch)
+        if projection in ["mercator", "gnomonic", "cartesian"]:
+            ax.add_collection(PatchCollection(patches, alpha=0.2,
+                                              color="#6c71c4", zorder=2, transform=ax.get_transform('fk5')))
+        else:
+            ax.add_collection(PatchCollection(patches, alpha=0.2,
+                                              color="#6c71c4", zorder=2))
 
         # ADD DATA POINTS FOR TRANSIENTS
         names = []
@@ -1407,6 +1335,7 @@ class plot_wave_observational_timelines():
             names.append(name)
             raDeg = trans["ra_psf"]
             decDeg = trans["dec_psf"]
+            print name, raDeg, decDeg
             ra.append(raDeg)
             dec.append(decDeg)
             raRad.append(-raDeg * DEG_TO_RAD_FACTOR)
@@ -1414,7 +1343,7 @@ class plot_wave_observational_timelines():
 
         if len(ra) > 0:
             # MULTIPLE CIRCLES
-            if projection in ["mercator", "gnomonic"]:
+            if projection in ["mercator", "gnomonic", "cartesian"]:
                 ax.scatter(
                     x=np.array(ra),
                     y=np.array(dec),
@@ -1497,9 +1426,11 @@ class plot_wave_observational_timelines():
             raRad.append(-raDeg * DEG_TO_RAD_FACTOR)
             decRad.append(decDeg * DEG_TO_RAD_FACTOR)
 
+            print name, raDeg, decDeg
+
         if len(ra) > 0:
             # MULTIPLE CIRCLES
-            if projection in ["mercator", "gnomonic"]:
+            if projection in ["mercator", "gnomonic", "cartesian"]:
                 ax.scatter(
                     x=np.array(ra),
                     y=np.array(dec),
@@ -1565,7 +1496,7 @@ class plot_wave_observational_timelines():
         fig = plt.gcf()
         fWidth, fHeight = fig.get_size_inches()
 
-        if projection in ["mercator", "gnomonic"]:
+        if projection in ["mercator", "gnomonic", "cartesian"]:
             fig.set_size_inches(8.0, 8.0)
             ax.text(0.95, 0.95, timeRangeLabel,
                     horizontalalignment='right',
@@ -1606,24 +1537,37 @@ class plot_wave_observational_timelines():
         if not os.path.exists(plotDir):
             os.makedirs(plotDir)
 
-        plotTitle = plotTitle.replace(" ", "_").replace(
+        plotTitle = plotTitle.replace("  ", " ").replace("  ", " ").replace("  ", " ").replace(" ", "_").replace("-", "_").replace(
             "<", "lt").replace(">", "gt").replace(",", "").replace("\n", "_").replace("&", "and")
         figureName = """%(plotTitle)s""" % locals(
         )
         if timeLimitDay == 0:
             figureName = """%(plotTitle)s""" % locals(
             )
-        if allSky:
+        if allSky and plotDir == ".":
             figureName = figureName + "_" + projection.title()
-        if self.telescope:
-            figureName = figureName + "_" + self.telescope
         if plotDir != ".":
             for f in fileFormats:
                 if not os.path.exists("%(plotDir)s/%(folderName)s/%(f)s" % locals()):
                     os.makedirs("%(plotDir)s/%(folderName)s/%(f)s" % locals())
-                figurePath = "%(plotDir)s/%(folderName)s/%(f)s/%(figureName)s_%(projection)s.%(f)s" % locals()
+                figurePath = "%(plotDir)s/%(folderName)s/%(f)s/%(figureName)s.%(f)s" % locals()
+                figurePath = figurePath.replace("_.", ".")
+
+                if f == "pdf":
+                    matplotlib.use('PDF')
+                elif f == "png":
+                    matplotlib.use('TkAgg')
+
                 savefig(figurePath, bbox_inches='tight', dpi=300)
                 # savefig(figurePath, dpi=300)
+
+                if bestMap and allSky and symLink:
+                    linkName = "%(plotDir)s/%(folderName)s/%(f)s/%(gwid)s_preferred_skymap_%(projection)s.%(f)s" % locals()
+                    try:
+                        os.remove(linkName)
+                    except:
+                        pass
+                    os.symlink(figurePath, linkName)
 
             # if not os.path.exists("%(plotDir)s/%(folderName)s/fits" % locals()):
             #     os.makedirs("%(plotDir)s/%(folderName)s/fits" % locals())
@@ -1635,7 +1579,14 @@ class plot_wave_observational_timelines():
             # hdu.writeto(pathToExportFits)
         else:
             for f in fileFormats:
+
+                if f == "pdf":
+                    matplotlib.use('PDF')
+                elif f == "png":
+                    matplotlib.use('TkAgg')
+
                 figurePath = "%(plotDir)s/%(figureName)s.%(f)s" % locals()
+                figurePath = figurePath.replace("_.", ".")
                 savefig(figurePath, bbox_inches='tight', dpi=300)
                 # savefig(figurePath, dpi=300)
 
@@ -1652,10 +1603,11 @@ class plot_wave_observational_timelines():
                 pathToProbMap=pathToProbMap,
                 folderName=folderName,
                 outputDirectory=outputDirectory,
-                center=center
+                center=center,
+                bestMap=bestMap
             )
 
-        self.log.info('completed the ``generate_probability_plot`` method')
+        self.log.debug('completed the ``generate_probability_plot`` method')
         return None
 
     def get_history_plots(
@@ -1680,7 +1632,7 @@ class plot_wave_observational_timelines():
                 )
                 plotter.get()
         """
-        self.log.info('starting the ``get_history_plots`` method')
+        self.log.debug('starting the ``get_history_plots`` method')
 
         timeLimitLabels = ["day", "2 days", "3 days", "4 days", "5 days", "6 days",
                            "7 days", "2 weeks", "3 weeks", "1 month", "2 months", "3 months", "no limit"]
@@ -1708,7 +1660,7 @@ class plot_wave_observational_timelines():
                     raise IOError(message)
 
                 mjdStart = self.settings["gravitational waves"][
-                    gwid]["time"]["mjdStart"]
+                    gwid]["mjd"]
 
                 self.generate_probability_plot(
                     gwid=gwid,
@@ -1722,13 +1674,13 @@ class plot_wave_observational_timelines():
                     timeLimitLabel=tlabel,
                     timeLimitDay=tday,
                     raLimit=False,
-                    fileFormats=["png"],
+                    fileFormats=["png", "pdf"],
                     folderName="survey_history_plots",
                     plotType=self.plotType,
                     projection=self.projection,
                     probabilityCut=self.probabilityCut)
 
-        self.log.info('completed the ``get_history_plots`` method')
+        self.log.debug('completed the ``get_history_plots`` method')
         return None
 
     def get_timeline_plots(
@@ -1753,22 +1705,23 @@ class plot_wave_observational_timelines():
                 )
                 plotter.get()
         """
-        self.log.info('starting the ``get_timeline_plots`` method')
+        self.log.debug('starting the ``get_timeline_plots`` method')
 
         if self.allPlots:
-            timeLimitLabels = ["21 days pre-detection", "in First 6 Hrs", "in First 3 Days",
-                               "Between 3-10 Days", "Between 10-17 Days", "Between 17-24 Days", "Between 24-31 Days", "> 31 Days", "no limit"]
-            timeLimitDays = [(-21, 0), (0, 0.25), (0, 3), (3, 10), (10, 17),
-                             (17, 24), (24, 31), (31, 0), (0, 0)]
+            timeLimitLabels = ["21 days pre-detection", "<1d", "1-2d",
+                               "2-3d", "3-4d", "4-5d", "5-10d", "10-17d", "17-24d", "24-31d"]
+            timeLimitDays = [(-21, 0), (0, 1), (1, 2), (2, 3), (3, 4),
+                             (4, 5), (5, 10), (10, 17), (17, 24), (24, 31)]
         else:
-            timeLimitLabels = ["in First 3 Days", "in First 6 Hrs", "Between 3-10 Days",
-                               "Between 10-17 Days", "Between 17-24 Days", "Between 24-31 Days", "> 31 Days"]
-            timeLimitDays = [(0, 3), (0, 0.25), (3, 10), (10, 17),
-                             (17, 24), (24, 31), (31, 0)]
+            timeLimitLabels = ["0-1d", "1-2d", "2-3d", "3-4d",
+                               "4-5d", "5-10d", "10-17d", "17-24d", "24-31d"]
+            # timeLimitLabels = ["0-1d"]
+            timeLimitDays = [(0, 1), (1, 2), (2, 3), (3, 4),
+                             (4, 5), (5, 10), (10, 17), (17, 24), (24, 31)]
 
         raLimits = [134.25, 144.75, 152.25, 159.50, 167.0, 174.5]
         raLimits = [False, False, False, False,
-                    False, False, False, False, False]
+                    False, False, False, False, False, False, False, False]
 
         if self.gwid:
             theseIds = [self.gwid]
@@ -1778,13 +1731,28 @@ class plot_wave_observational_timelines():
         for gwid in theseIds:
             for tday, tlabel, raLimit in zip(timeLimitDays, timeLimitLabels, raLimits):
 
+                pathToProbMap = self.settings[
+                    "gravitational waves"][gwid]["mapPath"]
+                aMap, mapHeader = hp.read_map(
+                    pathToProbMap, 0, h=True, verbose=False)
+
+                mapBasename = os.path.basename(pathToProbMap)
+                mapBasename = os.path.splitext(mapBasename)[0]
+                mapBasename = os.path.splitext(mapBasename)[0]
+                mapBasename = os.path.splitext(mapBasename)[0]
+
+                # DETERMINE THE SIZE OF THE HEALPIXELS
+                nside = hp.npix2nside(len(aMap))
+                maxProbHealpix = aMap.argmax()
+                maxProbCoordinate = hp.pix2ang(
+                    nside, maxProbHealpix, lonlat=True)
+
                 plotParameters, ps1Transients, ps1Pointings, atlasPointings, atlasTransients = self.get_gw_parameters_from_settings(
                     gwid=gwid,
                     inPastDays=False,
-                    inFirstDays=tday)
+                    inFirstDays=tday,
+                    maxProbCoordinate=maxProbCoordinate)
 
-                pathToProbMap = self.settings[
-                    "gravitational waves"][gwid]["mapPath"]
                 if not os.path.exists(pathToProbMap):
                     message = "the path to the map %s does not exist on this machine" % (
                         pathToProbMap,)
@@ -1792,7 +1760,14 @@ class plot_wave_observational_timelines():
                     raise IOError(message)
 
                 mjdStart = self.settings["gravitational waves"][
-                    gwid]["time"]["mjdStart"]
+                    gwid]["mjd"]
+
+                if "raRange" not in plotParameters:
+                    allSky = True
+                    center = False
+                else:
+                    allSky = False
+                    center = maxProbCoordinate
 
                 self.generate_probability_plot(
                     gwid=gwid,
@@ -1810,9 +1785,12 @@ class plot_wave_observational_timelines():
                     folderName="survey_timeline_plots",
                     plotType=self.plotType,
                     projection=self.projection,
-                    probabilityCut=self.probabilityCut)
+                    probabilityCut=self.probabilityCut,
+                    allSky=allSky,
+                    center=center,
+                    symLink=False)
 
-        self.log.info('completed the ``get_timeline_plots`` method')
+        self.log.debug('completed the ``get_timeline_plots`` method')
         return None
 
     def generate_fits_image_map(
@@ -1822,7 +1800,8 @@ class plot_wave_observational_timelines():
             folderName="",
             outputDirectory=False,
             rebin=True,
-            center=0.):
+            center=False,
+            bestMap=False):
         """*generate fits image map from the LV-skymap (FITS binary table)*
 
         **Key Arguments:**
@@ -1831,7 +1810,8 @@ class plot_wave_observational_timelines():
             - ``gwid`` -- the unique ID of the gravitational wave to plot
             - ``folderName`` -- the name of the folder to add the plots to
             - ``rebin`` -- rebin the final image to reduce size
-            - ``center`` -- central longitude in degrees. Default *0*. 
+            - ``center`` -- central longitude in degrees. Default *0*.
+            - ``bestMap`` -- is this the prefered skymap. If so, add symlink to placeholder name for prefered map.
 
         **Return:**
             - None
@@ -1855,7 +1835,7 @@ class plot_wave_observational_timelines():
 
         The size of the final FITS image map is ~1.1GB so it's probably best to rebin the image (~80MB) unless you really need the resolution.
         """
-        self.log.info('starting the ``generate_fits_image_map`` method')
+        self.log.debug('starting the ``generate_fits_image_map`` method')
 
         import healpy as hp
         # HEALPY REQUIRES RA, DEC IN RADIANS AND AS TWO SEPERATE ARRAYS
@@ -1863,6 +1843,11 @@ class plot_wave_observational_timelines():
         pi = (4 * math.atan(1.0))
         DEG_TO_RAD_FACTOR = pi / 180.0
         RAD_TO_DEG_FACTOR = 180.0 / pi
+
+        mapBasename = os.path.basename(pathToProbMap)
+        mapBasename = os.path.splitext(mapBasename)[0]
+        mapBasename = os.path.splitext(mapBasename)[0]
+        mapBasename = os.path.splitext(mapBasename)[0]
 
         # X, Y PIXEL COORDINATE GRID
         xRange = 10000
@@ -1890,17 +1875,23 @@ class plot_wave_observational_timelines():
         # DEC FROM 180 to 0
         theta = np.linspace(np.pi - pixelSizeDeg / 2, +
                             pixelSizeDeg / 2, yRange)
-        print theta[0], theta[-1]
-        print theta.shape
+
         latitude = np.radians(np.linspace(-90 + pixelSizeDeg, 90, yRange))
+
+        # FIND THE COORDINATES OF THE CORE LIKEIHOOD
+        maxProbHealpix = aMap.argmax()
+        maxCoordinate = hp.pix2ang(nside, maxProbHealpix, lonlat=True)
+        print "The %(gwid)s %(mapBasename)s map's maximum likelihood is centered at %(maxCoordinate)s" % locals()
+
+        if center == False:
+            center = maxCoordinate[0]
 
         # RA FROM -180 to +180
         centralRa = center
         centralRaRad = centralRa * DEG_TO_RAD_FACTOR
         phi = np.linspace(-np.pi + centralRaRad + pixelSizeDeg / 2,
                           np.pi + centralRaRad - pixelSizeDeg / 2, xRange)
-        print phi[0], phi[-1]
-        print phi.shape
+
         longitude = np.radians(np.linspace(-180 + pixelSizeDeg, 180, xRange))
         X, Y = np.meshgrid(longitude, latitude)
 
@@ -1989,179 +1980,32 @@ class plot_wave_observational_timelines():
         if plotDir != ".":
             if not os.path.exists("%(plotDir)s/%(folderName)s/fits" % locals()):
                 os.makedirs("%(plotDir)s/%(folderName)s/fits" % locals())
-            pathToExportFits = "%(plotDir)s/%(folderName)s/fits/%(gwid)s_skymap.fits" % locals()
+            pathToExportFits = "%(plotDir)s/%(folderName)s/fits/%(gwid)s_%(mapBasename)s_breaker_skymap.fits" % locals()
             try:
                 os.remove(pathToExportFits)
             except:
                 pass
             hdu.writeto(pathToExportFits)
+
+            if bestMap and symLink:
+                linkName = "%(plotDir)s/%(folderName)s/fits/%(gwid)s_preferred_breaker_skymap.fits" % locals()
+                print "The %(gwid)s prefered likeihood map is symlinked at `%(linkName)s`" % locals()
+                try:
+                    os.remove(linkName)
+                except:
+                    pass
+                os.symlink(pathToExportFits, linkName)
         else:
-            pathToExportFits = "%(plotDir)s/%(gwid)s_skymap.fits" % locals()
+            pathToExportFits = "%(plotDir)s/%(gwid)s_%(mapBasename)s_breaker_skymap.fits" % locals()
             try:
                 os.remove(pathToExportFits)
             except:
                 pass
             hdu.writeto(pathToExportFits)
 
-        self.log.info('completed the ``generate_fits_image_map`` method')
-        return None
+        print "The %(gwid)s %(mapBasename)s likeihood map can be found here `%(pathToExportFits)s`" % locals()
 
-    def generate_fits_image_map_old(
-            self,
-            gwid,
-            pathToProbMap,
-            folderName="",
-            outputDirectory=False,
-            rebin=True):
-        """*generate fits image map from the LV-skymap (FITS binary table)*
-
-        **Key Arguments:**
-            - ``pathToProbMap`` -- path to the FITS file containing the probability map of the wave
-            - ``outputDirectory`` -- can be used to override the output destination in the settings file
-            - ``gwid`` -- the unique ID of the gravitational wave to plot
-            - ``folderName`` -- the name of the folder to add the plots to
-            - ``rebin`` -- rebin the final image to reduce size
-
-        **Return:**
-            - None
-
-        **Usage:**
-
-            To generate an all-sky image from the LV FITS binary table healpix map run the following code:
-
-                from breaker.plots import plot_wave_observational_timelines
-                plotter = plot_wave_observational_timelines(
-                    log=log,
-                    settings=settings,
-                    databaseConnRequired=False
-                )
-                plotter.generate_fits_image_map(
-                    gwid="G211117",
-                    pathToProbMap="/path/to/LV/healpix_map.fits",
-                    outputDirectory="/path/to/output",
-                    rebin=True
-                )
-
-        The size of the final FITS image map is ~1.1GB so it's probably best to rebin the image (~80MB) unless you really need the resolution.
-        """
-        self.log.info('starting the ``generate_fits_image_map`` method')
-
-        import healpy as hp
-        # HEALPY REQUIRES RA, DEC IN RADIANS AND AS TWO SEPERATE ARRAYS
-        import math
-        pi = (4 * math.atan(1.0))
-        DEG_TO_RAD_FACTOR = pi / 180.0
-        RAD_TO_DEG_FACTOR = 180.0 / pi
-
-        # X, Y PIXEL COORDINATE GRID
-        xRange = 10000
-        yRange = xRange * 1.7
-
-        # PIXELSIZE AS MAPPED TO THE FULL SKY
-        pixelSizeDeg = 360. / xRange
-
-        # READ HEALPIX MAPS FROM FITS FILE
-        # THIS FILE IS A ONE COLUMN FITS BINARY, WITH EACH CELL CONTAINING AN
-        # ARRAY OF PROBABILITIES (3,072 ROWS)
-        # READ IN THE HEALPIX FITS FILE
-        aMap, mapHeader = hp.read_map(pathToProbMap, 0, h=True, verbose=False)
-        # DETERMINE THE SIZE OF THE HEALPIXELS
-        nside = hp.npix2nside(len(aMap))
-        centralCoordinate = [0, 0]
-
-        # FROM THE PIXEL GRID (xRange, yRange), GENERATE A MAP TO LAT (pi to 0) AND LONG (-pi to pi) THAT CAN THEN MAPS TO HEALPIX SKYMAP
-        # RA FROM -pi to pi
-        phi = x2long(np.arange(xRange), xRange)
-        print phi[0], phi[-1]
-
-        # DEC FROM pi to 0
-        theta = y2lat(np.arange(yRange), xRange, yRange)
-        print theta[0], theta[-1]
-
-        # PROJECT THE MAP TO A RECTANGULAR MATRIX xRange X yRange
-        PHI, THETA = np.meshgrid(phi, theta)
-        healpixIds = hp.ang2pix(nside, THETA, PHI)
-        # GIVEN A HIGH ENOUGH RESOLUTION IN THE PIXEL GRID WE WILL HAVE
-        # DUPLICATES - LET COUNT THEM ADD DIVIDE PROBABILITY EQUALLY
-        unique, counts = np.unique(healpixIds, return_counts=True)
-        countDict = dict(zip(unique, counts))
-
-        probs = aMap[healpixIds]
-        weightedProb = np.array([[probs[i, j] / countDict[healpixIds[i, j]] for j in xrange(probs.shape[1])]
-                                 for i in xrange(probs.shape[0])])
-
-        if rebin == True:
-            rebinSize = 4
-            # resize by getting rid of extra columns/rows
-            xedge = np.shape(weightedProb)[0] % rebinSize
-            yedge = np.shape(weightedProb)[1] % rebinSize
-            weightedProb = weightedProb[xedge:, yedge:]
-
-            # put image array into arrays of rebinSize x rebinSize
-            weightedProb = np.reshape(weightedProb, (np.shape(weightedProb)[
-                                      0] / rebinSize, rebinSize, np.shape(weightedProb)[1] / rebinSize, rebinSize))
-
-            # average each rebinSize x rebinSize array
-            weightedProb = np.mean(weightedProb, axis=3)
-            weightedProb = np.mean(weightedProb, axis=1)
-
-            pixelSizeDeg = pixelSizeDeg * rebinSize
-            xRange = int(xRange / rebinSize)
-            yRange = int(yRange / rebinSize)
-
-        # CREATE A NEW WCS OBJECT
-        w = awcs.WCS(naxis=2)
-        # SET THE REQUIRED PIXEL SIZE
-        w.wcs.cdelt = np.array([pixelSizeDeg, pixelSizeDeg])
-        # WORLD COORDINATES AT REFERENCE PIXEL
-        w.wcs.crval = centralCoordinate
-
-        # SET THE REFERENCE PIXEL TO THE CENTRE PIXEL
-        w.wcs.crpix = [xRange / 2., yRange / 2.]
-
-        unweightedImageProb = np.sum(probs)
-        self.log.info(
-            "The total unweighted probability flux in the FITS images added to %(unweightedImageProb)s" % locals())
-
-        totalImageProb = np.sum(weightedProb)
-        self.log.info(
-            "The total probability flux in the FITS images added to %(totalImageProb)s" % locals())
-
-        # CTYPE FOR THE FITS HEADER
-        w.wcs.ctype = ["RA---MER" %
-                       locals(), "DEC--MER" % locals()]
-
-        header = w.to_header()
-        # CREATE THE FITS FILE
-        hdu = fits.PrimaryHDU(header=header, data=weightedProb)
-
-        # Recursively create missing directories
-        if self.settings and not outputDirectory:
-            plotDir = self.settings["output directory"] + "/" + gwid
-        elif outputDirectory:
-            plotDir = outputDirectory
-
-        if not os.path.exists(plotDir):
-            os.makedirs(plotDir)
-
-        if plotDir != ".":
-            if not os.path.exists("%(plotDir)s/%(folderName)s/fits" % locals()):
-                os.makedirs("%(plotDir)s/%(folderName)s/fits" % locals())
-            pathToExportFits = "%(plotDir)s/%(folderName)s/fits/%(gwid)s_skymap.fits" % locals()
-            try:
-                os.remove(pathToExportFits)
-            except:
-                pass
-            hdu.writeto(pathToExportFits)
-        else:
-            pathToExportFits = "%(plotDir)s/%(gwid)s_skymap.fits" % locals()
-            try:
-                os.remove(pathToExportFits)
-            except:
-                pass
-            hdu.writeto(pathToExportFits)
-
-        self.log.info('completed the ``generate_fits_image_map`` method')
+        self.log.debug('completed the ``generate_fits_image_map`` method')
         return None
 
 
@@ -2183,3 +2027,109 @@ def x2long(
     # R is the radius of the sphere at the scale of the map as drawn
     R = xRange / (2. * np.pi)
     return x / R - np.pi
+
+
+def add_square_fov(
+        log,
+        raDeg,
+        decDeg,
+        nside,
+        aMap,
+        fovSide,
+        axes,
+        projection):
+    """*summary of function*
+
+    **Key Arguments:**
+        - ``dbConn`` -- mysql database connection
+        - ``log`` -- logger
+
+    **Return:**
+        - None
+
+    **Usage:**
+        .. todo::
+
+            add usage info
+            create a sublime snippet for usage
+
+        .. code-block:: python 
+
+            usage code            
+    """
+    log.debug('starting the ``add_square_fov`` function')
+
+    import math
+    pi = (4 * math.atan(1.0))
+    DEG_TO_RAD_FACTOR = pi / 180.0
+    RAD_TO_DEG_FACTOR = 180.0 / pi
+
+    deltaDeg = fovSide / 2
+    if decDeg < 0:
+        deltaDeg = -deltaDeg
+
+    if projection in ["mercator", "gnomonic", "cartesian"]:
+        widthDegTop = fovSide / \
+            math.cos((decDeg + deltaDeg) * DEG_TO_RAD_FACTOR)
+        widthDegBottom = fovSide / \
+            math.cos((decDeg - deltaDeg) * DEG_TO_RAD_FACTOR)
+        heightDeg = fovSide
+        llx = (raDeg - widthDegBottom / 2)
+        lly = decDeg - (heightDeg / 2)
+        ulx = (raDeg - widthDegTop / 2)
+        uly = decDeg + (heightDeg / 2)
+        urx = (raDeg + widthDegTop / 2)
+        ury = uly
+        lrx = (raDeg + widthDegBottom / 2)
+        lry = lly
+
+        Path = mpath.Path
+        path_data = [
+            (Path.MOVETO, [llx, lly]),
+            (Path.LINETO, [ulx, uly]),
+            (Path.LINETO, [urx, ury]),
+            (Path.LINETO, [lrx, lry]),
+            (Path.CLOSEPOLY, [llx, lly])
+        ]
+        codes, verts = zip(*path_data)
+        path = mpath.Path(verts, codes)
+
+        # EXCLUDE FOOTPRINTS THAT CROSS 360.
+        if lrx > 180. and llx < 180:
+            return None
+
+        patch = patches.PathPatch(path)
+    else:
+        if raDeg > 180.:
+            raDeg = raDeg - 360.
+
+        widthRadTop = fovSide * DEG_TO_RAD_FACTOR / \
+            math.cos((decDeg + deltaDeg) * DEG_TO_RAD_FACTOR)
+        widthRadBottom = fovSide * DEG_TO_RAD_FACTOR / \
+            math.cos((decDeg - deltaDeg) * DEG_TO_RAD_FACTOR)
+        heightRad = fovSide * DEG_TO_RAD_FACTOR
+        llx = -(raDeg * DEG_TO_RAD_FACTOR - widthRadBottom / 2)
+        lly = decDeg * DEG_TO_RAD_FACTOR - (heightRad / 2)
+        ulx = -(raDeg * DEG_TO_RAD_FACTOR - widthRadTop / 2)
+        uly = decDeg * DEG_TO_RAD_FACTOR + (heightRad / 2)
+        urx = -(raDeg * DEG_TO_RAD_FACTOR + widthRadTop / 2)
+        ury = uly
+        lrx = -(raDeg * DEG_TO_RAD_FACTOR + widthRadBottom / 2)
+        lry = lly
+        Path = mpath.Path
+        path_data = [
+            (Path.MOVETO, [llx, lly]),
+            (Path.LINETO, [ulx, uly]),
+            (Path.LINETO, [urx, ury]),
+            (Path.LINETO, [lrx, lry]),
+            (Path.CLOSEPOLY, [llx, lly])
+        ]
+        codes, verts = zip(*path_data)
+        path = mpath.Path(verts, codes)
+        patch = patches.PathPatch(path)
+
+    log.debug('completed the ``add_square_fov`` function')
+    return patch
+
+# use the tab-trigger below for new function
+# xt-def-function

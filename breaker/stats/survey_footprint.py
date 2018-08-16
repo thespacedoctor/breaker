@@ -92,13 +92,14 @@ class survey_footprint():
         **Return:**
             - ``None``
         """
-        self.log.info('starting the ``get`` method')
+        self.log.debug('starting the ``get`` method')
 
         # GRAB METADATA FROM THE DATABASES
         this = plot_wave_observational_timelines(
             log=self.log, settings=self.settings)
         plotParameters, ps1Transients, ps1Pointings, altasPointings, atlasTransients = this.get_gw_parameters_from_settings(
-            gwid=self.gwid)
+            gwid=self.gwid,
+            stackOnly=False)
 
         if self.telescope == "atlas":
             pointings = altasPointings
@@ -120,6 +121,8 @@ class survey_footprint():
         dictList = []
         iindex = 0
         count = len(pointings)
+        cumArea = 0
+        cumProb = 0
         for pti, pt in enumerate(pointings):
             pti = pti + 1
 
@@ -131,6 +134,7 @@ class survey_footprint():
             print '%(pti)s/%(count)s (%(percent)1.1f%% done): summing total area and likelihood covered by %(telescope)s' % locals()
 
             thisDict = collections.OrderedDict(sorted({}.items()))
+
             pra = pt["raDeg"]
             pdec = pt["decDeg"]
             pmjd = pt["mjd"]
@@ -199,6 +203,18 @@ class survey_footprint():
             thisDict["CUM-LIKELIHOOD"] = "%(cumProb)05.2f" % locals()
             dictList.append(thisDict)
 
+        if not len(dictList):
+            thisDict = {}
+            thisDict["INDEX"] = "NULL"
+            thisDict["EXPID"] = "NULL"
+            thisDict["RA"] = "NULL"
+            thisDict["DEC"] = "NULL"
+            thisDict["MJD"] = "NULL"
+            thisDict["EXPTIME"] = "NULL"
+            thisDict["FILTER"] = "NULL"
+            thisDict["LIM-MAG"] = "NULL"
+            dictList.append(thisDict)
+
         print "AREA: %(cumArea)0.2f. PROB: %(cumProb)0.5f" % locals()
 
         printFile = self.settings["output directory"] + "/" + \
@@ -216,33 +232,14 @@ class survey_footprint():
 
         print "The coverage stats file was written to `%(printFile)s`" % locals()
 
-        self.log.info('completed the ``get`` method')
+        self.log.debug('completed the ``get`` method')
         return None
 
     def _create_healpixid_coordinate_grid(
             self):
-        """* create healpixid coordinate grid*
-
-        **Key Arguments:**
-            # -
-
-        **Return:**
-            - None
-
-        **Usage:**
-            ..  todo::
-
-                - add usage info
-                - create a sublime snippet for usage
-                - write a command-line tool for this method
-                - update package tutorial with command-line tool info if needed
-
-            .. code-block:: python
-
-                usage code
-
+        """*create healpixid coordinate grid*
         """
-        self.log.info('starting the ``_create_healpix_id_list`` method')
+        self.log.debug('starting the ``_create_healpix_id_list`` method')
 
         # GET THE PROBABILITY MAP FOR THE GIVEN GWID
         pathToProbMap = self.settings[
@@ -324,8 +321,80 @@ class survey_footprint():
         healpixIds = hp.ang2pix(nside, theta=nd * self.DEG_TO_RAD_FACTOR,
                                 phi=wr * self.DEG_TO_RAD_FACTOR)
 
-        self.log.info('completed the ``_create_healpix_id_list`` method')
+        self.log.debug('completed the ``_create_healpix_id_list`` method')
         return nside, hpixArea, aMap, healpixIds, wr, wd
+
+    def annotate_exposures(
+        self,
+        exposures,
+        pointingSide
+    ):
+        """
+        *generate a the likeihood coverage of an exposure*
+
+        **Key Arguments:**
+            - ``exposures`` -- a dictionary of exposures with the unique exposures IDs as keys and (ra, dec) as tuple value.
+            - ``squareSize`` -- the size of the FOV of the exposure/skycell
+
+        **Return:**
+            - ``exposureIDs`` -- a list of the exposureIDs  as they appear in the original input exposure dictionary
+            - ``pointingSide`` -- a list of total likeihood coverage of the exposures
+
+        **Usage:**
+
+            See class docstring
+        """
+        self.log.debug('starting the ``annotate`` method')
+
+        nside, hpixArea, aMap, healpixIds, wr, wd = self._create_healpixid_coordinate_grid()
+
+        exposureIDs = []
+        ra = []
+        dec = []
+
+        exposureIDs = []
+        exposureIDs[:] = [t for t in exposures.keys()]
+        ra = []
+        dec = []
+        ra[:] = [r[0] for r in exposures.values()]
+        dec[:] = [d[1] for d in exposures.values()]
+
+        probs = []
+        for e, pra, pdec in zip(exposureIDs, ra, dec):
+            # DETERMINE THE CORNERS FOR EACH ATLAS EXPOSURE AS MAPPED TO THE
+            # SKY
+            decCorners = (pdec - pointingSide / 2,
+                          pdec + pointingSide / 2)
+            corners = []
+            for d in decCorners:
+                if d > 90.:
+                    d = 180. - d
+                elif d < -90.:
+                    d = -180 - d
+                raCorners = (pra - (pointingSide / 2) / np.cos(d * self.DEG_TO_RAD_FACTOR),
+                             pra + (pointingSide / 2) / np.cos(d * self.DEG_TO_RAD_FACTOR))
+                for r in raCorners:
+                    if r > 360.:
+                        r = 720. - r
+                    elif r < 0.:
+                        r = 360. + r
+                    corners.append(hp.ang2vec(r, d, lonlat=True))
+
+            # FLIP CORNERS 3 & 4 SO HEALPY UNDERSTANDS POLYGON SHAPE
+            corners = [corners[0], corners[1],
+                       corners[3], corners[2]]
+
+            # RETURN HEALPIXELS IN EXPOSURE AREA
+            expPixels = hp.query_polygon(nside, np.array(
+                corners))
+
+            expProb = []
+            expProb[:] = [aMap[i] for i in expPixels]
+            expProb = sum(expProb)
+            probs.append(expProb)
+
+        self.log.debug('completed the ``annotate`` method')
+        return exposureIDs, probs
 
     # use the tab-trigger below for new method
     # xt-class-method
