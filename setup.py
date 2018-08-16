@@ -15,14 +15,16 @@ install_requires = [
     'requests',
     'numpy',
     'astropy',
-    'healpy<=1.10.3',
+    'healpy',
     'crowdedText',
     'qub-sherlock',
     'neddy',
     'docopt',
     'ligo-gracedb',
     'HMpTy',
-    'pymysql'
+    'pymysql',
+    'sphinx',
+    'sphinx_rtd_theme'
 ]
 
 # READ THE DOCS SERVERS

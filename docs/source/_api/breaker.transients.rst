@@ -1,7 +1,7 @@
-breaker.gracedb package
-=======================
+breaker.transients package
+==========================
 
-.. automodule:: breaker.gracedb
+.. automodule:: breaker.transients
     :members:
     :private-members:
     :undoc-members:
@@ -14,5 +14,5 @@ Submodules
 
 .. toctree::
 
-   breaker.gracedb.listen
+   breaker.transients.annotator
 

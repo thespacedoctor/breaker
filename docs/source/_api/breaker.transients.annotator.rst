@@ -1,7 +1,7 @@
-breaker.cl\_utils module
-========================
+breaker.transients.annotator module
+===================================
 
-.. automodule:: breaker.cl_utils
+.. automodule:: breaker.transients.annotator
     :members:
     :private-members:
     :undoc-members:
