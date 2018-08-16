@@ -53,11 +53,77 @@ class test_plot_wave_observational_timelines(unittest.TestCase):
             databaseConnRequired=False
         )
 
-        plotter.generate_fits_image_map(
-            pathToProbMap=pathToInputDir + "/GW151226-bayestar.fits",
-            gwid="G184098"
+        # plotter.generate_fits_image_map(
+        #     pathToProbMap=pathToInputDir + "/GW151226-bayestar.fits",
+        #     gwid="G184098"
+        # )
+
+    def test_generate_pdf_image_map(self):
+        plotter = plot_wave_observational_timelines(
+            log=log,
+            settings=settings,
+            databaseConnRequired=False
         )
+
+        plotter.generate_probability_plot(
+            gwid="G184098",
+            pathToProbMap=pathToInputDir + "/GW151226-bayestar.fits",
+            fileFormats=["pdf", "png"],
+            outputDirectory=pathToOutputDir,
+            projection="mollweide",
+            plotType="timeline",
+            fitsImage=False,
+            allSky=True,
+            center=False
+        )
+
+        plotter.generate_probability_plot(
+            gwid="G184098",
+            pathToProbMap=pathToInputDir + "/GW151226-bayestar.fits",
+            fileFormats=["pdf", "png"],
+            outputDirectory=pathToOutputDir,
+            projection="cartesian",
+            plotType="timeline",
+            fitsImage=False,
+            allSky=True,
+            center=False
+        )
+
+        plotter.generate_probability_plot(
+            gwid="G184098",
+            pathToProbMap=pathToInputDir + "/GW151226-bayestar.fits",
+            fileFormats=["pdf", "png"],
+            outputDirectory=pathToOutputDir,
+            projection="mercator",
+            plotType="timeline",
+            fitsImage=False,
+            allSky=True,
+            center=False
+        )
+
+        # plotter.generate_probability_plot(
+        #     gwid="G184098",
+        #     pathToProbMap=pathToInputDir + "/GW151226-bayestar.fits",
+        #     fileFormats=["pdf", "png"],
+        #     outputDirectory=pathToOutputDir,
+        #     projection="cartesian",
+        #     plotType="timeline",
+        #     fitsImage=False,
+        #     allSky=True,
+        #     center=False
+        # )
 
         # x-print-testpage-for-pessto-marshall-web-object
 
-    # x-class-to-test-named-worker-function
+    def test_generate_timeline_plot_maps(self):
+
+        p = plot_wave_observational_timelines(
+            log=log,
+            settings=settings,
+            gwid="G211117",
+            plotType="timeline",
+            allPlots=False,
+            telescope="ps1",
+            projection="mercator"
+        )
+        p.get()

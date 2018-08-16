@@ -12,9 +12,8 @@
 Usage:
     breaker init
     breaker update [-naP] [-s <pathToSettingsFile>]
-    breaker skymap <gwid> <pathToLVMap> [-c <centerDeg>]
-    breaker plot [-a] (timeline|history|sources) [-w <gwid>] [-t <telescope>] [-p <projection>] [-s <pathToSettingsFile>]
-    breaker plot comparison <gwid> <pathToMapDirectory> [-s <pathToSettingsFile>]
+    breaker skymap [-oe] <gwid> [<pathToLVMap>] [-c <centerDeg>]
+    breaker plot [-a] (timeline|history|sources) [-w <gwid>] [-t <telescope>] [-p <projection>] [-f <filters>] [-s <pathToSettingsFile>]
     breaker faker <ps1ExpId> [-s <pathToSettingsFile>]
     breaker stats <gwid> [<telescope>] [-s <pathToSettingsFile>]
     breaker listen <far> (<mjdStart> <mjdEnd> | <inLastNMins>) [-s <pathToSettingsFile>]
@@ -29,7 +28,6 @@ Usage:
     plot                  enter plotting mode
     timeline              plot from the epoch of the wave detection forward in time
     history               plot from now back in time over the last days, weeks and months
-    comparison            produce a multi-panel plot to compare wave maps
     stats                 generate some coverage stats for a given wave survey campaign
     sources               overplot map with NED sources found within the wave campaign footprint
     faker                 generate a catalogue of simulated transient sources in PS1 exposure ID footprint
@@ -53,6 +51,7 @@ Usage:
     sec                   time in seconds
     -t <telescope>        select an individual telescope (default is all telescopes) [ps1|atlas]
     -p <projection>       skymap projection. Default *mercator*. [mercator|gnomonic|mollweide]
+    -f <filters>          which exposure filters to show on plots
 
     FLAGS
     -----
@@ -62,6 +61,8 @@ Usage:
     -d, --daemon          listen in daemon mode
     -a, --all             plot all timeline plot (including the CPU intensive -21-0 days and all transients/footprints plots)
     -P, --no-pointings    do not update pointings 
+    -o, --default-output  output files to the default breaker output location (as set in settings file)
+    -e, --exposures       overlay atlas and ps1 exposures
 
 """
 ################# GLOBAL IMPORTS ####################
@@ -78,7 +79,6 @@ from breaker.plots.plot_wave_observational_timelines import plot_wave_observatio
 from breaker.plots.plot_wave_matched_source_maps import plot_wave_matched_source_maps
 from breaker.fakers.generate_faker_catalogue import generate_faker_catalogue
 from breaker.stats.survey_footprint import survey_footprint
-from breaker.plots.plot_multi_panel_alternate_map_comparison import plot_multi_panel_alternate_map_comparison
 from breaker.gracedb.listen import listen as mlisten
 from astrocalc.times import now as mjdNow
 from subprocess import Popen, PIPE, STDOUT
@@ -94,7 +94,7 @@ def main(arguments=None):
     su = tools(
         arguments=arguments,
         docString=__doc__,
-        logLevel="DEBUG",
+        logLevel="WARNING",
         options_first=False,
         projectName="breaker"
     )
@@ -172,6 +172,11 @@ def main(arguments=None):
         if not pFlag:
             pFlag = "mercator"
 
+        if fFlag:
+            filters = list(fFlag)
+        else:
+            filters = False
+
         p = plot_wave_observational_timelines(
             log=log,
             settings=settings,
@@ -179,7 +184,9 @@ def main(arguments=None):
             plotType="timeline",
             allPlots=allFlag,
             telescope=tFlag,
-            projection=pFlag
+            projection=pFlag,
+            filters=filters,
+            probabilityCut=True
         )
         p.get()
     if plot and sources:
@@ -189,14 +196,7 @@ def main(arguments=None):
             gwid=gwid
         )
         p.get()
-    if plot and comparison:
-        p = plot_multi_panel_alternate_map_comparison(
-            log=log,
-            settings=settings,
-            gwid=gwid,
-            pathToMapDirectory=pathToMapDirectory
-        )
-        p.get()
+
     if faker:
         f = generate_faker_catalogue(
             log=log,
@@ -222,7 +222,7 @@ def main(arguments=None):
             log=log,
             settings=settings,
             #label="EM_READY | EM_Selected | ADVOK",
-            label="ADVOK",
+            label="",
             farThreshold=far,
             startMJD=float(startMJD),
             endMJD=float(timeNowMjd) + 1.
@@ -233,7 +233,7 @@ def main(arguments=None):
             log=log,
             settings=settings,
             # label="EM_READY | EM_Selected | ADVOK",
-            label="ADVOK",
+            label="",
             farThreshold=far,
             startMJD=float(mjdStart),
             endMJD=float(mjdEnd)
@@ -248,31 +248,60 @@ def main(arguments=None):
             log=log,
             settings=settings,
             # label="EM_READY | EM_Selected | ADVOK",
-            label="ADVOK",
+            label="",
             farThreshold=far,
             daemon=daemon
         )
         this.get_maps()
 
     if skymap:
+        if exposuresFlag:
+            databaseConnRequired = True
+        else:
+            databaseConnRequired = False
+
         plotter = plot_wave_observational_timelines(
             log=log,
             settings=settings,
-            databaseConnRequired=False
+            databaseConnRequired=databaseConnRequired
         )
+
+        if exposuresFlag:
+            plotParameters, ps1Transients, ps1Pointings, atlasPointings, atlasTransients = plotter.get_gw_parameters_from_settings(
+                gwid=gwid,
+                inFirstDays=(0, 31)
+            )
+        else:
+            ps1Transients = []
+            atlasTransients = []
+            ps1Pointings = []
+            atlasPointings = []
+
+        ps1Transients = []
+        atlasTransients = []
 
         if not cFlag:
             cFlag = 0.
         else:
             cFlag = float(cFlag)
 
+        if defaultoutputFlag:
+            outputDirectory = False
+        else:
+            outputDirectory = "."
+
         plotter.generate_probability_plot(
             gwid=gwid,
+            ps1Transients=ps1Transients,
+            atlasTransients=atlasTransients,
+            ps1Pointings=ps1Pointings,
+            atlasPointings=atlasPointings,
             pathToProbMap=pathToLVMap,
             fileFormats=["pdf", "png"],
-            outputDirectory=".",
+            outputDirectory=outputDirectory,
             projection="mollweide",
             plotType="timeline",
+            folderName="all_sky_plots",
             fitsImage=False,
             allSky=True,
             center=cFlag
@@ -282,10 +311,11 @@ def main(arguments=None):
             gwid=gwid,
             pathToProbMap=pathToLVMap,
             fileFormats=["pdf", "png"],
-            outputDirectory=".",
-            projection="mercator",
+            outputDirectory=outputDirectory,
+            projection="cartesian",
             plotType="timeline",
-            fitsImage=True,
+            folderName="all_sky_plots",
+            fitsImage=False,
             allSky=True,
             center=cFlag
         )

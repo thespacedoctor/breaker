@@ -14,10 +14,9 @@ Command-Line Usage
     
     Usage:
         breaker init
-        breaker update [-na] [-s <pathToSettingsFile>]
-        breaker skymap <gwid> <pathToLVMap> [-c <centerDeg>]
-        breaker plot [-a] (timeline|history|sources) [-w <gwid>] [-t <telescope>] [-p <projection>] [-s <pathToSettingsFile>]
-        breaker plot comparison <gwid> <pathToMapDirectory> [-s <pathToSettingsFile>]
+        breaker update [-naP] [-s <pathToSettingsFile>]
+        breaker skymap [-oe] <gwid> [<pathToLVMap>] [-c <centerDeg>]
+        breaker plot [-a] (timeline|history|sources) [-w <gwid>] [-t <telescope>] [-p <projection>] [-f <filters>] [-s <pathToSettingsFile>]
         breaker faker <ps1ExpId> [-s <pathToSettingsFile>]
         breaker stats <gwid> [<telescope>] [-s <pathToSettingsFile>]
         breaker listen <far> (<mjdStart> <mjdEnd> | <inLastNMins>) [-s <pathToSettingsFile>]
@@ -32,7 +31,6 @@ Command-Line Usage
         plot                  enter plotting mode
         timeline              plot from the epoch of the wave detection forward in time
         history               plot from now back in time over the last days, weeks and months
-        comparison            produce a multi-panel plot to compare wave maps
         stats                 generate some coverage stats for a given wave survey campaign
         sources               overplot map with NED sources found within the wave campaign footprint
         faker                 generate a catalogue of simulated transient sources in PS1 exposure ID footprint
@@ -56,6 +54,7 @@ Command-Line Usage
         sec                   time in seconds
         -t <telescope>        select an individual telescope (default is all telescopes) [ps1|atlas]
         -p <projection>       skymap projection. Default *mercator*. [mercator|gnomonic|mollweide]
+        -f <filters>          which exposure filters to show on plots
     
         FLAGS
         -----
@@ -64,5 +63,8 @@ Command-Line Usage
         -n, --updateNed       update the NED database steam
         -d, --daemon          listen in daemon mode
         -a, --all             plot all timeline plot (including the CPU intensive -21-0 days and all transients/footprints plots)
+        -P, --no-pointings    do not update pointings 
+        -o, --default-output  output files to the default breaker output location (as set in settings file)
+        -e, --exposures       overlay atlas and ps1 exposures
     
     

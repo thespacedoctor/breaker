@@ -1,7 +1,7 @@
-breaker.cl\_utils module
-========================
+breaker.\_database module
+=========================
 
-.. automodule:: breaker.cl_utils
+.. automodule:: breaker._database
     :members:
     :private-members:
     :undoc-members:

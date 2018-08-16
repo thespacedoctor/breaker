@@ -43,6 +43,29 @@ class test_survey_footprint(unittest.TestCase):
         )
         stats.get()
 
+    def test_annotator_exposure_coverage(self):
+
+        exposures = {
+            "fred": (62.26, 41.70),
+            "bob": (61.26, -41.70),
+            "joe": (60.36, 31.70),
+            "sam": (60.45, 4.70),
+            "arthur": (6.26, 41.0),
+            "sarah": (10.26, 40.70),
+            "jane": (160.26, -5.70)
+        }
+
+        from breaker.stats import survey_footprint
+        stats = survey_footprint(
+            log=log,
+            settings=settings,
+            gwid="G211117"
+        )
+        exposureAreas = stats.annotate_exposures(
+            exposures=exposures,
+            pointingSide=5.46
+        )
+
         # x-print-testpage-for-pessto-marshall-web-object
 
     # x-class-to-test-named-worker-function

@@ -1,7 +1,7 @@
-breaker.cl\_utils module
-========================
+breaker.plots.longitude\_coverage module
+========================================
 
-.. automodule:: breaker.cl_utils
+.. automodule:: breaker.plots.longitude_coverage
     :members:
     :private-members:
     :undoc-members:

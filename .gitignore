@@ -13,7 +13,9 @@ cover/
 html_test_coverage_report/
 _ignore_*
 build
-
+*.gem
+*.gemspec
+Gemfile.lock
 # Compiled python modules.
 *.pyc
 
@@ -36,3 +38,8 @@ test_database.sql
 path_to_settings.yaml
 blog-post.md
 blog-post.rst
+/G298048_LALInference_v2_breaker_skymap.fits
+/G298048_LALInference_v2_skymap_Mercator.pdf
+/G298048_LALInference_v2_skymap_Mercator.png
+/G298048_LALInference_v2_skymap_Mollweide.pdf
+/G298048_LALInference_v2_skymap_Mollweide.png
