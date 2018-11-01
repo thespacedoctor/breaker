@@ -315,7 +315,7 @@ def main(arguments=None):
             projection="cartesian",
             plotType="timeline",
             folderName="all_sky_plots",
-            fitsImage=False,
+            fitsImage=True,
             allSky=True,
             center=cFlag
         )
