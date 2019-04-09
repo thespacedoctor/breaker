@@ -776,8 +776,7 @@ CREATE TABLE `ps1_nightlogs` (
                 urls.append("http://ipp0022.ifa.hawaii.edu/ps1sc/metrics/%(utDate)s/index.html" % locals(
                 ))
 
-            localUrls = multiobject_download(G
-                                             urlList=urls,
+            localUrls = multiobject_download(urlList=urls,
                                              downloadDirectory="/tmp",
                                              log=self.log,
                                              timeStamp=True,
