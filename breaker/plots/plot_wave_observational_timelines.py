@@ -1243,8 +1243,8 @@ class plot_wave_observational_timelines():
                 if probabilityCut and probs == 0.:
                     continue
 
-                # height = 2.8
-                height = 0.2
+                height = 2.8
+                #height = 0.2
                 width = height / math.cos(decDeg * DEG_TO_RAD_FACTOR)
 
                 # MULTIPLE CIRCLES

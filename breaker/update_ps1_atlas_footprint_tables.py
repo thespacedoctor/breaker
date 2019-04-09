@@ -129,7 +129,7 @@ class update_ps1_atlas_footprint_tables():
         if self.updatePointings:
             self.import_new_ps1_pointings()
             self.import_new_atlas_pointings()
-            self.parse_panstarrs_nightlogs(updateAll=self.updateAll)
+            # self.parse_panstarrs_nightlogs(updateAll=self.updateAll)
             self.label_pointings_with_gw_ids()
             self.populate_ps1_subdisk_table()
         if self.updateNed:
@@ -776,18 +776,19 @@ CREATE TABLE `ps1_nightlogs` (
                 urls.append("http://ipp0022.ifa.hawaii.edu/ps1sc/metrics/%(utDate)s/index.html" % locals(
                 ))
 
-            localUrls = multiobject_download(
-                urlList=urls,
-                downloadDirectory="/tmp",
-                log=self.log,
-                timeStamp=True,
-                timeout=180,
-                concurrentDownloads=2,
-                resetFilename=False,
-                credentials=False,  # { 'username' : "...", "password", "..." }
-                longTime=True,
-                indexFilenames=False
-            )
+            localUrls = multiobject_download(G
+                                             urlList=urls,
+                                             downloadDirectory="/tmp",
+                                             log=self.log,
+                                             timeStamp=True,
+                                             timeout=180,
+                                             concurrentDownloads=2,
+                                             resetFilename=False,
+                                             # { 'username' : "...", "password", "..." }
+                                             credentials=False,
+                                             longTime=True,
+                                             indexFilenames=False
+                                             )
 
             for url in localUrls:
                 if not url:
