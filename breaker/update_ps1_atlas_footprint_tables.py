@@ -773,7 +773,7 @@ CREATE TABLE `ps1_nightlogs` (
                     datetimeObject=True
                 )
                 utDate = utDate.strftime("%Y-%m-%d")
-                urls.append("http://ps1wiki.ifa.hawaii.edu/ps1sc/metrics/%(utDate)s/index.html" % locals(
+                urls.append("https://ps1wiki.ifa.hawaii.edu/data/metrics/%(utDate)s/index.html" % locals(
                 ))
 
             localUrls = multiobject_download(
@@ -902,6 +902,27 @@ CREATE TABLE `ps1_nightlogs` (
         # CREATE THE ANNOTATION HELPER TABLES IF THEY DON"T EXIST
         moduleDirectory = os.path.dirname(__file__)
         mysql_scripts = moduleDirectory + "/resources/mysql"
+        script = mysql_scripts + "/update_gravity_event_annotation_tables.sql"
+        for db in [self.atlasDbConn, self.ps1gwDbConn, self.ps13piDbConn]:
+            import codecs
+            pathToReadFile = script
+            try:
+                self.log.debug("attempting to open the file %s" %
+                               (pathToReadFile,))
+                readFile = codecs.open(
+                    pathToReadFile, encoding='utf-8', mode='r')
+                thisData = readFile.read()
+                readFile.close()
+            except IOError, e:
+                message = 'could not open the file %s' % (pathToReadFile,)
+                self.log.critical(message)
+                raise IOError(message)
+            readFile.close()
+            writequery(
+                log=self.log,
+                sqlQuery=thisData,
+                dbConn=db
+            )
         for db in ["ps1gw", "ps13pi", "atlas"]:
             directory_script_runner(
                 log=self.log,
