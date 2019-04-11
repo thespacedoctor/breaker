@@ -385,9 +385,12 @@ class survey_footprint():
                        corners[3], corners[2]]
 
             # RETURN HEALPIXELS IN EXPOSURE AREA
-            print corners
-            expPixels = hp.query_polygon(nside, np.array(
-                corners))
+            try:
+                expPixels = hp.query_polygon(nside, np.array(
+                    corners))
+            except Exception, e:
+                self.log.warning(e)
+                expPixels = []
 
             expProb = []
             expProb[:] = [aMap[i] for i in expPixels]
