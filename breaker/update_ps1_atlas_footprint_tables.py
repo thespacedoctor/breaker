@@ -127,11 +127,15 @@ class update_ps1_atlas_footprint_tables():
         self.log.debug('starting the ``get`` method')
 
         if self.updatePointings:
-            # self.import_new_ps1_pointings()
-            self.import_new_atlas_pointings()
-            # self.parse_panstarrs_nightlogs(updateAll=self.updateAll)
-            # self.label_pointings_with_gw_ids()
-            # self.populate_ps1_subdisk_table()
+            if self.updateAll:
+                recent = False
+            else:
+                recent = True
+            self.import_new_ps1_pointings(recent=recent)
+            self.import_new_atlas_pointings(recent=recent)
+            self.parse_panstarrs_nightlogs(updateAll=self.updateAll)
+            self.label_pointings_with_gw_ids()
+            self.populate_ps1_subdisk_table()
         if self.updateNed:
             self.update_ned_database_table()
         self.update_gravity_event_annotations()
@@ -141,12 +145,12 @@ class update_ps1_atlas_footprint_tables():
 
     def import_new_ps1_pointings(
             self,
-            recent=True):
+            recent=False):
         """
         *Import any new PS1 GW pointings from the ps1gw database into the ``ps1_pointings`` table of the Ligo-Virgo Waves database*
 
         **Key Arguments:**
-            - ``recent`` -- only sync the most recent 1 month of data (speeds things up)
+            - ``recent`` -- only sync the most recent 2 months of data (speeds things up)
 
         **Return:**
             - None
@@ -171,7 +175,7 @@ class update_ps1_atlas_footprint_tables():
             mjd = mjdnow(
                 log=self.log
             ).get_mjd()
-            recent = mjd - 31
+            recent = mjd - 62
             recent = " and mjd_obs > %(recent)s " % locals()
         else:
             recent = ""
