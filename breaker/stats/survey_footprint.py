@@ -385,6 +385,7 @@ class survey_footprint():
                        corners[3], corners[2]]
 
             # RETURN HEALPIXELS IN EXPOSURE AREA
+            print corners
             expPixels = hp.query_polygon(nside, np.array(
                 corners))
 
