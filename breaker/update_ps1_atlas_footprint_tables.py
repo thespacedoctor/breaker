@@ -300,6 +300,7 @@ class update_ps1_atlas_footprint_tables():
         # IN ATLAS4 DATABASE atlas_metadata MOVED TO atlas_metadataddc WITH A
         # DIFFERENT SCHEMA - COLLECT THESE ROWS INSTEAD IF atlas_metadata EMPTY
         if not len(rows):
+            recent = recent.replace("mjd_obs", "mjd")
             sqlQuery = u"""
             SELECT 
                 `dec` AS `decDeg`,
