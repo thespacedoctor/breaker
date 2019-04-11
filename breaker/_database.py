@@ -83,6 +83,8 @@ class database():
         if "ssh tunnels" in self.settings:
             tunnels = self.settings["ssh tunnels"]
             for tunnelName in tunnels:
+                if tunnelName not in tunnelDatabases.keys():
+                    continue
                 tunnel = self.settings["ssh tunnels"][tunnelName]
                 # TEST TUNNEL DOES NOT ALREADY EXIST
                 sshPort = tunnel["port"]

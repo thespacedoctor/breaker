@@ -127,11 +127,11 @@ class update_ps1_atlas_footprint_tables():
         self.log.debug('starting the ``get`` method')
 
         if self.updatePointings:
-            self.import_new_ps1_pointings()
+            # self.import_new_ps1_pointings()
             self.import_new_atlas_pointings()
-            self.parse_panstarrs_nightlogs(updateAll=self.updateAll)
-            self.label_pointings_with_gw_ids()
-            self.populate_ps1_subdisk_table()
+            # self.parse_panstarrs_nightlogs(updateAll=self.updateAll)
+            # self.label_pointings_with_gw_ids()
+            # self.populate_ps1_subdisk_table()
         if self.updateNed:
             self.update_ned_database_table()
         self.update_gravity_event_annotations()
@@ -275,7 +275,7 @@ class update_ps1_atlas_footprint_tables():
         else:
             recent = "1=1"
 
-        # SELECT ALL OF THE POINTING INFO REQUIRED FROM THE ps1gw DATABASE
+        # SELECT ALL OF THE POINTING INFO REQUIRED FROM THE ATLAS DATABASE
         sqlQuery = u"""
             SELECT
                 `dec` as `decDeg`,
@@ -292,6 +292,31 @@ class update_ps1_atlas_footprint_tables():
             dbConn=self.atlasDbConn,
             quiet=False
         )
+
+        # IN ATLAS4 DATABASE atlas_metadata MOVED TO atlas_metadataddc WITH A
+        # DIFFERENT SCHEMA - COLLECT THESE ROWS INSTEAD IF atlas_metadata EMPTY
+        if not len(rows):
+            sqlQuery = u"""
+            SELECT 
+                `dec` AS `decDeg`,
+                `texp` AS `exp_time`,
+                `filt` AS `filter`,
+                `mjd`,
+                `ra` AS `raDeg`,
+                mag5sig AS `limiting_magnitude`,
+                `obj` AS `atlas_object_id`
+            FROM
+                atlas_metadataddc
+            WHERE
+                1 = 1 AND obj LIKE 'TA%%'
+            ORDER BY mjd DESC
+            """ % locals()
+            rows = readquery(
+                log=self.log,
+                sqlQuery=sqlQuery,
+                dbConn=self.atlasDbConn,
+                quiet=False
+            )
 
         # TIDY RESULTS BEFORE IMPORT
         entries = list(rows)
@@ -895,7 +920,7 @@ CREATE TABLE `ps1_nightlogs` (
 
         """
         self.log.debug(
-            'completed the ````update_gravity_event_annotations`` method')
+            'completed the ``update_gravity_event_annotations`` method')
 
         from breaker.transients import annotator
 
@@ -903,26 +928,7 @@ CREATE TABLE `ps1_nightlogs` (
         moduleDirectory = os.path.dirname(__file__)
         mysql_scripts = moduleDirectory + "/resources/mysql"
         script = mysql_scripts + "/update_gravity_event_annotation_tables.sql"
-        for db in [self.atlasDbConn, self.ps1gwDbConn, self.ps13piDbConn]:
-            import codecs
-            pathToReadFile = script
-            try:
-                self.log.debug("attempting to open the file %s" %
-                               (pathToReadFile,))
-                readFile = codecs.open(
-                    pathToReadFile, encoding='utf-8', mode='r')
-                thisData = readFile.read()
-                readFile.close()
-            except IOError, e:
-                message = 'could not open the file %s' % (pathToReadFile,)
-                self.log.critical(message)
-                raise IOError(message)
-            readFile.close()
-            writequery(
-                log=self.log,
-                sqlQuery=thisData,
-                dbConn=db
-            )
+
         for db in ["ps1gw", "ps13pi", "atlas"]:
             directory_script_runner(
                 log=self.log,
