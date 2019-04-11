@@ -1206,7 +1206,7 @@ CREATE TABLE `ps1_nightlogs` (
                                 "gracedb_id": g,
                                 "map_name": mapName
                             })
-                            tableName = "tcs_gravity_event_annotations"
+                    tableName = "tcs_gravity_event_annotations"
 
                     dataSet = list_of_dictionaries(
                         log=self.log,
