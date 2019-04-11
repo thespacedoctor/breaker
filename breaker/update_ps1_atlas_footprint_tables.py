@@ -150,7 +150,7 @@ class update_ps1_atlas_footprint_tables():
         *Import any new PS1 GW pointings from the ps1gw database into the ``ps1_pointings`` table of the Ligo-Virgo Waves database*
 
         **Key Arguments:**
-            - ``recent`` -- only sync the most recent 2 months of data (speeds things up)
+            - ``recent`` -- only sync the most recent 1 month of data (speeds things up)
 
         **Return:**
             - None
@@ -175,7 +175,7 @@ class update_ps1_atlas_footprint_tables():
             mjd = mjdnow(
                 log=self.log
             ).get_mjd()
-            recent = mjd - 62
+            recent = mjd - 31
             recent = " and mjd_obs > %(recent)s " % locals()
         else:
             recent = ""
@@ -250,7 +250,7 @@ class update_ps1_atlas_footprint_tables():
         *Import any new ATLAS GW pointings from the atlas3 database into the ``atlas_pointings`` table of the Ligo-Virgo Waves database*
 
         **Key Arguments:**
-            - ``recent`` -- only sync the most recent 2 months of data (speeds things up)
+            - ``recent`` -- only sync the most recent 1 month of data (speeds things up)
 
         **Return:**
             - None
@@ -274,7 +274,7 @@ class update_ps1_atlas_footprint_tables():
             mjd = mjdnow(
                 log=self.log
             ).get_mjd()
-            recent = mjd - 62
+            recent = mjd - 31
             recent = " mjd_obs > %(recent)s " % locals()
         else:
             recent = "1=1"
@@ -312,7 +312,7 @@ class update_ps1_atlas_footprint_tables():
             FROM
                 atlas_metadataddc
             WHERE
-                1 = 1 AND obj LIKE 'TA%%'
+                %(recent)s AND obj LIKE 'TA%%'
             ORDER BY mjd DESC
             """ % locals()
             rows = readquery(
