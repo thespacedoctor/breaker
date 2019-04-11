@@ -38,6 +38,7 @@ from fundamentals import tools, times
 from fundamentals.mysql import readquery
 from crowdedText import adjust_text
 from astrocalc.times import now
+from breaker.transients import annotator
 
 
 class ThetaFormatterShiftPi(GeoAxes.ThetaFormatter):
@@ -394,6 +395,28 @@ class plot_wave_observational_timelines():
             dbConn=self.ps1gwDbConn
         )
 
+        # THE TRANSIENT ANNOTATOR
+        an = annotator(
+            log=self.log,
+            settings=self.settings,
+            gwid=gwid
+        )
+        # ANNOTATE ALL PS1 TRANSIENTS WITH PROB SCORE
+        theseTrans = {}
+        for t in ps1Transients:
+            theseTrans[t["ps1_designation"]] = (t["ra_psf"], t["dec_psf"])
+        transientNames, probs = an.annotate(theseTrans)
+        # FILTER OUT LOW SCORE TRANSIENTS
+        tmp = []
+        for t, p in zip(transientNames, probs):
+            if p < 91:
+                tmp.append(t)
+        ps1Transients2 = []
+        for p in ps1Transients:
+            if p["ps1_designation"] in tmp:
+                ps1Transients2.append(p)
+        ps1Transients = ps1Transients2
+
         if raMin >= 0 and raMax <= 360.:
             sqlQuery = u"""
                 SELECT atlas_designation, ra, `dec` FROM atlas_diff_objects o, tcs_latest_object_stats s where o.detection_list_id in (1,2) and o.id=s.id and (s.earliest_mjd between %(mjdStart)s and %(mjdEnd)s) and (ra between %(raMin)s and %(raMax)s) and (`dec` between %(decMin)s and %(decMax)s) ;
@@ -414,6 +437,23 @@ class plot_wave_observational_timelines():
             sqlQuery=sqlQuery,
             dbConn=self.atlasDbConn
         )
+
+        # ANNOTATE ALL ATLAS TRANSIENTS WITH PROB SCORE
+        theseTrans = {}
+        for t in atlasTransients:
+            theseTrans[t["atlas_designation"]] = (t["ra"], t["dec"])
+        transientNames, probs = an.annotate(theseTrans)
+        # FILTER OUT LOW SCORE TRANSIENTS
+        tmp = []
+        for t, p in zip(transientNames, probs):
+            if p < 91:
+                tmp.append(t)
+
+        atlasTransients2 = []
+        for p in atlasTransients:
+            if p["atlas_designation"] in tmp:
+                atlasTransients2.append(p)
+        atlasTransients = atlasTransients2
 
         self.log.debug(
             'completed the ``_get_ps1_atlas_transient_candidates`` method')
@@ -540,7 +580,7 @@ class plot_wave_observational_timelines():
                 gwid]["mjd"] + 31.
 
         sqlQuery = u"""
-            SELECT p.atlas_object_id as exp_id, p.raDeg, p.decDeg, mjd, exp_time, filter, limiting_magnitude FROM atlas_pointings p, atlas_exposure_gravity_event_annotations a where a.prob_coverage > 1e-3 and a.gracedb_id = "%(gwid)s" and a.atlas_object_id=p.atlas_object_id and gw_id like "%%%(gwid)s%%" and mjd between %(mjdStart)s and %(mjdEnd)s order by mjd;
+            SELECT p.atlas_object_id as exp_id, p.raDeg, p.decDeg, mjd, exp_time, filter, limiting_magnitude FROM atlas_pointings p, atlas_exposure_gravity_event_annotations a where a.prob_coverage > 1e-6 and a.gracedb_id = "%(gwid)s" and a.atlas_object_id=p.atlas_object_id and gw_id like "%%%(gwid)s%%" and mjd between %(mjdStart)s and %(mjdEnd)s order by mjd;
         """ % locals()
 
         atlasPointings = readquery(
@@ -1421,12 +1461,11 @@ class plot_wave_observational_timelines():
             names.append(name)
             raDeg = trans["ra"]
             decDeg = trans["dec"]
+            print name, raDeg, decDeg
             ra.append(raDeg)
             dec.append(decDeg)
             raRad.append(-raDeg * DEG_TO_RAD_FACTOR)
             decRad.append(decDeg * DEG_TO_RAD_FACTOR)
-
-            print name, raDeg, decDeg
 
         if len(ra) > 0:
             # MULTIPLE CIRCLES
@@ -1708,10 +1747,15 @@ class plot_wave_observational_timelines():
         self.log.debug('starting the ``get_timeline_plots`` method')
 
         if self.allPlots:
-            timeLimitLabels = ["21 days pre-detection", "<1d", "1-2d",
-                               "2-3d", "3-4d", "4-5d", "5-10d", "10-17d", "17-24d", "24-31d"]
-            timeLimitDays = [(-21, 0), (0, 1), (1, 2), (2, 3), (3, 4),
-                             (4, 5), (5, 10), (10, 17), (17, 24), (24, 31)]
+            # timeLimitLabels = ["10 days pre-detection", "-1-0d", "0-1d", "1-2d",
+            #                    "2-3d", "3-4d", "4-5d", "5-10d", "10-17d", "17-24d", "24-31d"]
+            # timeLimitDays = [(-10, -1), (-1, 0), (0, 1), (1, 2), (2, 3), (3, 4),
+            #                  (4, 5), (5, 10), (10, 17), (17, 24), (24, 31)]
+            timeLimitLabels = ["10 days pre-detection",
+                               "-1-0d", "0-1d", "1-21d"]
+            timeLimitDays = [(-10, -1), (-1, 0), (0, 1), (1, 21)]
+            timeLimitLabels = ["0-1d", "1-21d"]
+            timeLimitDays = [(0, 1), (1, 21)]
         else:
             timeLimitLabels = ["0-1d", "1-2d", "2-3d", "3-4d",
                                "4-5d", "5-10d", "10-17d", "17-24d", "24-31d"]

@@ -1199,13 +1199,14 @@ CREATE TABLE `ps1_nightlogs` (
                 if thisDbConn not in [self.ligo_virgo_wavesDbConn]:
                     dataList = []
                     for p, t in zip(probs, transientNames):
-                        dataList.append({
-                            "transient_object_id": t,
-                            "enclosing_contour": p,
-                            "gracedb_id": g,
-                            "map_name": mapName
-                        })
-                        tableName = "tcs_gravity_event_annotations"
+                        if p < 91:
+                            dataList.append({
+                                "transient_object_id": t,
+                                "enclosing_contour": p,
+                                "gracedb_id": g,
+                                "map_name": mapName
+                            })
+                            tableName = "tcs_gravity_event_annotations"
 
                     dataSet = list_of_dictionaries(
                         log=self.log,
