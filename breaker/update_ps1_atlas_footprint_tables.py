@@ -1151,45 +1151,47 @@ CREATE TABLE `ps1_nightlogs` (
                         quiet=False
                     )
 
-                    exposures = {}
-                    for r in rows:
-                        exposures[r["skycell_id"]] = (
-                            r["raDeg"], r["decDeg"])
+                    if len(rows):
+                        exposures = {}
+                        for r in rows:
+                            exposures[r["skycell_id"]] = (
+                                r["raDeg"], r["decDeg"])
 
-                    stats = survey_footprint(
-                        log=self.log,
-                        settings=self.settings,
-                        gwid=g
-                    )
-                    self.log.info(
-                        """annotating PS1 skycells from `%(db)s` database""" % locals())
-                    exposureIDs, probs = stats.annotate_exposures(
-                        exposures=exposures,
-                        pointingSide=0.4
-                    )
+                        stats = survey_footprint(
+                            log=self.log,
+                            settings=self.settings,
+                            gwid=g
+                        )
+                        self.log.info(
+                            """annotating PS1 skycells from `%(db)s` database""" % locals())
+                        exposureIDs, probs = stats.annotate_exposures(
+                            exposures=exposures,
+                            pointingSide=0.4
+                        )
 
-                    dataList = []
-                    for p, t in zip(probs, exposureIDs):
-                        dataList.append({
-                            "skycell_id": t,
-                            "prob_coverage": p,
-                            "gracedb_id": g,
-                            "map_name": mapName
-                        })
-                    tableName = "ps1_skycell_gravity_event_annotations"
+                        dataList = []
+                        for p, t in zip(probs, exposureIDs):
+                            dataList.append({
+                                "skycell_id": t,
+                                "prob_coverage": p,
+                                "gracedb_id": g,
+                                "map_name": mapName
+                            })
+                        tableName = "ps1_skycell_gravity_event_annotations"
 
-                    dataSet = list_of_dictionaries(
-                        log=self.log,
-                        listOfDictionaries=dataList,
-                        reDatetime=re.compile('^[0-9]{4}-[0-9]{2}-[0-9]{2}T')
-                    )
-                    # RECURSIVELY CREATE MISSING DIRECTORIES
-                    if not os.path.exists("/tmp/mysqlinsert/%(db)s" % locals()):
-                        os.makedirs("/tmp/mysqlinsert/%(db)s" % locals())
-                    now = datetime.now()
-                    now = now.strftime("%Y%m%dt%H%M%S%f")
-                    mysqlData = dataSet.mysql(
-                        tableName=tableName, filepath="/tmp/mysqlinsert/%(db)s/%(now)s.sql" % locals(), createStatement=False)
+                        dataSet = list_of_dictionaries(
+                            log=self.log,
+                            listOfDictionaries=dataList,
+                            reDatetime=re.compile(
+                                '^[0-9]{4}-[0-9]{2}-[0-9]{2}T')
+                        )
+                        # RECURSIVELY CREATE MISSING DIRECTORIES
+                        if not os.path.exists("/tmp/mysqlinsert/%(db)s" % locals()):
+                            os.makedirs("/tmp/mysqlinsert/%(db)s" % locals())
+                        now = datetime.now()
+                        now = now.strftime("%Y%m%dt%H%M%S%f")
+                        mysqlData = dataSet.mysql(
+                            tableName=tableName, filepath="/tmp/mysqlinsert/%(db)s/%(now)s.sql" % locals(), createStatement=False)
 
                     # ATLAS EXPOSURES
                     self.log.info(
@@ -1210,45 +1212,47 @@ CREATE TABLE `ps1_nightlogs` (
                         quiet=False
                     )
 
-                    exposures = {}
-                    for r in rows:
-                        exposures[r["atlas_object_id"]] = (
-                            r["raDeg"], r["decDeg"])
+                    if len(rows):
+                        exposures = {}
+                        for r in rows:
+                            exposures[r["atlas_object_id"]] = (
+                                r["raDeg"], r["decDeg"])
 
-                    stats = survey_footprint(
-                        log=self.log,
-                        settings=self.settings,
-                        gwid=g
-                    )
-                    self.log.info(
-                        """annotating atlas exposures from `%(db)s` database""" % locals())
-                    exposureIDs, probs = stats.annotate_exposures(
-                        exposures=exposures,
-                        pointingSide=5.46
-                    )
+                        stats = survey_footprint(
+                            log=self.log,
+                            settings=self.settings,
+                            gwid=g
+                        )
+                        self.log.info(
+                            """annotating atlas exposures from `%(db)s` database""" % locals())
+                        exposureIDs, probs = stats.annotate_exposures(
+                            exposures=exposures,
+                            pointingSide=5.46
+                        )
 
-                    dataList = []
-                    for p, t in zip(probs, exposureIDs):
-                        dataList.append({
-                            "atlas_object_id": t,
-                            "prob_coverage": p,
-                            "gracedb_id": g,
-                            "map_name": mapName
-                        })
-                    tableName = "atlas_exposure_gravity_event_annotations"
+                        dataList = []
+                        for p, t in zip(probs, exposureIDs):
+                            dataList.append({
+                                "atlas_object_id": t,
+                                "prob_coverage": p,
+                                "gracedb_id": g,
+                                "map_name": mapName
+                            })
+                        tableName = "atlas_exposure_gravity_event_annotations"
 
-                    dataSet = list_of_dictionaries(
-                        log=self.log,
-                        listOfDictionaries=dataList,
-                        reDatetime=re.compile('^[0-9]{4}-[0-9]{2}-[0-9]{2}T')
-                    )
-                    # RECURSIVELY CREATE MISSING DIRECTORIES
-                    if not os.path.exists("/tmp/mysqlinsert/%(db)s" % locals()):
-                        os.makedirs("/tmp/mysqlinsert/%(db)s" % locals())
-                    now = datetime.now()
-                    now = now.strftime("%Y%m%dt%H%M%S%f")
-                    mysqlData = dataSet.mysql(
-                        tableName=tableName, filepath="/tmp/mysqlinsert/%(db)s/%(now)s.sql" % locals(), createStatement=False)
+                        dataSet = list_of_dictionaries(
+                            log=self.log,
+                            listOfDictionaries=dataList,
+                            reDatetime=re.compile(
+                                '^[0-9]{4}-[0-9]{2}-[0-9]{2}T')
+                        )
+                        # RECURSIVELY CREATE MISSING DIRECTORIES
+                        if not os.path.exists("/tmp/mysqlinsert/%(db)s" % locals()):
+                            os.makedirs("/tmp/mysqlinsert/%(db)s" % locals())
+                        now = datetime.now()
+                        now = now.strftime("%Y%m%dt%H%M%S%f")
+                        mysqlData = dataSet.mysql(
+                            tableName=tableName, filepath="/tmp/mysqlinsert/%(db)s/%(now)s.sql" % locals(), createStatement=False)
 
                 if thisDbConn not in [self.ligo_virgo_wavesDbConn]:
                     dataList = []

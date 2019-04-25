@@ -580,7 +580,7 @@ class plot_wave_observational_timelines():
                 gwid]["mjd"] + 31.
 
         sqlQuery = u"""
-            SELECT p.atlas_object_id as exp_id, p.raDeg, p.decDeg, mjd, exp_time, filter, limiting_magnitude FROM atlas_pointings p, atlas_exposure_gravity_event_annotations a where a.prob_coverage > 1e-5 and a.gracedb_id = "%(gwid)s" and a.atlas_object_id=p.atlas_object_id and gw_id like "%%%(gwid)s%%" and mjd between %(mjdStart)s and %(mjdEnd)s order by mjd;
+            SELECT p.atlas_object_id as exp_id, p.raDeg, p.decDeg, mjd, exp_time, filter, limiting_magnitude FROM atlas_pointings p, atlas_exposure_gravity_event_annotations a where a.prob_coverage > 1e-7 and a.gracedb_id = "%(gwid)s" and a.atlas_object_id=p.atlas_object_id and gw_id like "%%%(gwid)s%%" and mjd between %(mjdStart)s and %(mjdEnd)s order by mjd;
         """ % locals()
 
         atlasPointings = readquery(
@@ -1342,6 +1342,8 @@ class plot_wave_observational_timelines():
             else:
                 plotted.append(atp["exp_id"])
 
+            if atp["decDeg"] > 88 or atp["decDeg"] < -88:
+                print "shit"
             patch = add_square_fov(
                 log=self.log,
                 raDeg=atp["raDeg"],
