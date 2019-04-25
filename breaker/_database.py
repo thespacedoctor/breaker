@@ -145,7 +145,7 @@ class database():
             charset='utf8',
             local_infile=1,
             client_flag=ms.constants.CLIENT.MULTI_STATEMENTS,
-            connect_timeout=36,
+            connect_timeout=100,
             max_allowed_packet=51200000
         )
         thisConn.autocommit(True)
@@ -175,7 +175,7 @@ class database():
             charset='utf8',
             local_infile=1,
             client_flag=ms.constants.CLIENT.MULTI_STATEMENTS,
-            connect_timeout=36,
+            connect_timeout=100,
             max_allowed_packet=51200000
         )
         thisConn.autocommit(True)
@@ -205,7 +205,7 @@ class database():
             charset='utf8',
             local_infile=1,
             client_flag=ms.constants.CLIENT.MULTI_STATEMENTS,
-            connect_timeout=36,
+            connect_timeout=100,
             max_allowed_packet=51200000
         )
         thisConn.autocommit(True)
@@ -235,7 +235,7 @@ class database():
             charset='utf8',
             local_infile=1,
             client_flag=ms.constants.CLIENT.MULTI_STATEMENTS,
-            connect_timeout=36,
+            connect_timeout=100,
             max_allowed_packet=51200000
         )
         thisConn.autocommit(True)
@@ -265,7 +265,7 @@ class database():
             charset='utf8',
             local_infile=1,
             client_flag=ms.constants.CLIENT.MULTI_STATEMENTS,
-            connect_timeout=36,
+            connect_timeout=100,
             max_allowed_packet=51200000
         )
         thisConn.autocommit(True)
