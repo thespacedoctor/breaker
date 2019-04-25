@@ -963,8 +963,8 @@ CREATE TABLE `ps1_nightlogs` (
                 databaseName=self.settings["database settings"][db]["db"],
                 loginPath=self.settings["database settings"][db]["loginPath"],
                 waitForResult=True,
-                successRule="delete",
-                failureRule="failed"
+                successRule=None,
+                failureRule=None
             )
         for db in ["ligo_virgo_waves"]:
             directory_script_runner(
@@ -973,8 +973,8 @@ CREATE TABLE `ps1_nightlogs` (
                 databaseName=self.settings["database settings"][db]["db"],
                 loginPath=self.settings["database settings"][db]["loginPath"],
                 waitForResult=True,
-                successRule="delete",
-                failureRule="failed"
+                successRule=None,
+                failureRule=None
             )
 
         # UPDATE THE TABLE WITH THE METADATA OF EACH GRAVITY EVENT
@@ -1008,8 +1008,8 @@ CREATE TABLE `ps1_nightlogs` (
                 databaseName=self.settings["database settings"][db]["db"],
                 loginPath=self.settings["database settings"][db]["loginPath"],
                 waitForResult=True,
-                successRule="delete",
-                failureRule="failed"
+                successRule=None,
+                failureRule=None
             )
         for db in ["ligo_virgo_waves"]:
             directory_script_runner(
@@ -1018,8 +1018,8 @@ CREATE TABLE `ps1_nightlogs` (
                 databaseName=self.settings["database settings"][db]["db"],
                 loginPath=self.settings["database settings"][db]["loginPath"],
                 waitForResult=True,
-                successRule="delete",
-                failureRule="failed"
+                successRule=None,
+                failureRule=None
             )
 
         dbDict = {
