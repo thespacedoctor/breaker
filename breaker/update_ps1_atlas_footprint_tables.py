@@ -1144,7 +1144,6 @@ CREATE TABLE `ps1_nightlogs` (
                                 AND (a.map_name != "%(mapName)s"  or a.map_name is null)
                                 AND a.gracedb_id="%(g)s"; 
                     """ % locals()
-                    print sqlQuery
                     rows = readquery(
                         log=self.log,
                         sqlQuery=sqlQuery,
@@ -1206,7 +1205,6 @@ CREATE TABLE `ps1_nightlogs` (
                                 (map_name != "%(mapName)s"  or map_name is null)
                                 AND gracedb_id="%(g)s"; 
                     """ % locals()
-                    print sqlQuery
                     rows = readquery(
                         log=self.log,
                         sqlQuery=sqlQuery,
