@@ -220,6 +220,11 @@ class plot_wave_matched_source_maps():
         aMap, mapHeader = hp.read_map(pathToProbMap, h=True)
         nside = hp.pixelfunc.get_nside(aMap)
 
+        if nside > 64:
+            # DOWNGRADE MAP RESOLUTION TO SAVE MEMORY
+            aMap = hp.ud_grade(aMap, 64, power=-2)
+            nside = hp.npix2nside(len(aMap))
+
         # import matplotlib.pyplot as plt
         # hp.mollview(aMap, title="mollview image RING", cmap="YlOrRd")
         # hp.graticule()

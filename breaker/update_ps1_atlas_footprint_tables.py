@@ -925,7 +925,7 @@ CREATE TABLE `ps1_nightlogs` (
 
         """
         self.log.debug(
-            'completed the ``update_gravity_event_annotations`` method')
+            'starting the ``update_gravity_event_annotations`` method')
 
         from breaker.transients import annotator
 

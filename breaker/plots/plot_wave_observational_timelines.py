@@ -580,7 +580,7 @@ class plot_wave_observational_timelines():
                 gwid]["mjd"] + 31.
 
         sqlQuery = u"""
-            SELECT p.atlas_object_id as exp_id, p.raDeg, p.decDeg, mjd, exp_time, filter, limiting_magnitude FROM atlas_pointings p, atlas_exposure_gravity_event_annotations a where a.prob_coverage > 1e-6 and a.gracedb_id = "%(gwid)s" and a.atlas_object_id=p.atlas_object_id and gw_id like "%%%(gwid)s%%" and mjd between %(mjdStart)s and %(mjdEnd)s order by mjd;
+            SELECT p.atlas_object_id as exp_id, p.raDeg, p.decDeg, mjd, exp_time, filter, limiting_magnitude FROM atlas_pointings p, atlas_exposure_gravity_event_annotations a where a.prob_coverage > 1e-5 and a.gracedb_id = "%(gwid)s" and a.atlas_object_id=p.atlas_object_id and gw_id like "%%%(gwid)s%%" and mjd between %(mjdStart)s and %(mjdEnd)s order by mjd;
         """ % locals()
 
         atlasPointings = readquery(
@@ -735,6 +735,11 @@ class plot_wave_observational_timelines():
         aMap, mapHeader = hp.read_map(pathToProbMap, 0, h=True, verbose=False)
         # DETERMINE THE SIZE OF THE HEALPIXELS
         nside = hp.npix2nside(len(aMap))
+
+        if nside > 64:
+            # DOWNGRADE MAP RESOLUTION TO SAVE MEMORY
+            aMap = hp.ud_grade(aMap, 64, power=-2)
+            nside = hp.npix2nside(len(aMap))
 
         # MIN-MAX PROB VALUES TO ADJUST MAP CONTRAST
         vmin = min(aMap)
@@ -941,6 +946,7 @@ class plot_wave_observational_timelines():
             uniqueHealpixIds = np.unique(healpixIds)
             probs = []
             probs[:] = [aMap[i] for i in healpixIds]
+            print np.sum(probs)
 
             uniProb = []
             uniProb[:] = [aMap[i] for i in uniqueHealpixIds]
@@ -1754,8 +1760,6 @@ class plot_wave_observational_timelines():
             timeLimitLabels = ["10 days pre-detection",
                                "-1-0d", "0-1d", "1-21d"]
             timeLimitDays = [(-10, -1), (-1, 0), (0, 1), (1, 21)]
-            timeLimitLabels = ["0-1d", "1-21d"]
-            timeLimitDays = [(0, 1), (1, 21)]
         else:
             timeLimitLabels = ["0-1d", "1-2d", "2-3d", "3-4d",
                                "4-5d", "5-10d", "10-17d", "17-24d", "24-31d"]
@@ -1779,6 +1783,11 @@ class plot_wave_observational_timelines():
                     "gravitational waves"][gwid]["mapPath"]
                 aMap, mapHeader = hp.read_map(
                     pathToProbMap, 0, h=True, verbose=False)
+
+                if nside > 64:
+                    # DOWNGRADE MAP RESOLUTION TO SAVE MEMORY
+                    aMap = hp.ud_grade(aMap, 64, power=-2)
+                    nside = hp.npix2nside(len(aMap))
 
                 mapBasename = os.path.basename(pathToProbMap)
                 mapBasename = os.path.splitext(mapBasename)[0]
@@ -1907,6 +1916,11 @@ class plot_wave_observational_timelines():
         aMap, mapHeader = hp.read_map(pathToProbMap, 0, h=True, verbose=False)
         # DETERMINE THE SIZE OF THE HEALPIXELS
         nside = hp.npix2nside(len(aMap))
+
+        if nside > 64:
+            # DOWNGRADE MAP RESOLUTION TO SAVE MEMORY
+            aMap = hp.ud_grade(aMap, 64, power=-2)
+            nside = hp.npix2nside(len(aMap))
 
         # FROM THE PIXEL GRID (xRange, yRange), GENERATE A MAP TO LAT (pi to 0) AND LONG (-pi to pi) THAT CAN THEN MAPS TO HEALPIX SKYMAP
         # RA FROM -pi to pi

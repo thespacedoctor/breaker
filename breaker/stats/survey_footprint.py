@@ -113,11 +113,12 @@ class survey_footprint():
         pointings = sorted(list(pointings),
                            key=itemgetter('mjd'), reverse=False)
 
-        nside, hpixArea, aMap, healpixIds, wr, wd = self._create_healpixid_coordinate_grid()
+        nside, hpixArea, aMap, healpixIds, wr, wd, probs = self._create_healpixid_coordinate_grid()
 
         print "EXPID, RA, DEC, MJD, EXPTIME, FILTER, LIM-MAG, EXP-AREA, EXP-LIKELIHOOD, CUM-AREA, CUM-LIKELIHOOD" % locals()
 
         allHealpixIds = np.array([])
+        clippedHealpixIds = np.array([])
         dictList = []
         iindex = 0
         count = len(pointings)
@@ -126,15 +127,16 @@ class survey_footprint():
         for pti, pt in enumerate(pointings):
             pti = pti + 1
 
+            # PRETTY PRINT OF PROGRESS TO TERMINAL
             if pti > 1:
                 # Cursor up one line and clear line
                 sys.stdout.write("\x1b[1A\x1b[2K")
-
             percent = (float(pti) / float(count)) * 100.
             print '%(pti)s/%(count)s (%(percent)1.1f%% done): summing total area and likelihood covered by %(telescope)s' % locals()
 
             thisDict = collections.OrderedDict(sorted({}.items()))
 
+            # INDIVIDUAL EXPOSURE METADATA
             pra = pt["raDeg"]
             pdec = pt["decDeg"]
             pmjd = pt["mjd"]
@@ -143,7 +145,7 @@ class survey_footprint():
             pfilter = pt["filter"]
             plim = pt["limiting_magnitude"]
 
-            # DETERMINE THE CORNERS FOR EACH ATLAS EXPOSURE AS MAPPED TO THE
+            # DETERMINE THE CORNERS INDIVIDUAL ATLAS EXPOSURE AS MAPPED TO THE
             # SKY
             decCorners = (pdec - pointingSide / 2,
                           pdec + pointingSide / 2)
@@ -166,26 +168,35 @@ class survey_footprint():
             corners = [corners[0], corners[1],
                        corners[3], corners[2]]
 
-            # RETURN HEALPIXELS IN EXPOSURE AREA
+            # RETURN ALL HEALPIXELS IN EXPOSURE AREA
             expPixels = hp.query_polygon(nside, np.array(
                 corners))
 
+            # CLIP PIXELS TO WITH 90% CONTOUR FOR AREA COVERAGE
+            expPixelsClipped = []
+            expPixelsClipped[:] = [i for i in expPixels if probs[i] <= 90.]
+
+            # CALCULATE EXPOSURE PROB AND (CLIPPED) AREA
             expProb = []
             expProb[:] = [aMap[i] for i in expPixels]
             expProb = sum(expProb)
-            expArea = len(expPixels) * hpixArea
-            if expProb / expArea < 2e-6:
-                continue
+            expArea = len(expPixelsClipped) * hpixArea
 
             pindex = "%(iindex)05d" % locals()
             iindex += 1
 
+            # ALL PIXELS FOR PROB
             allHealpixIds = np.append(allHealpixIds, expPixels)
             allHealpixIds = np.unique(allHealpixIds)
+            # CLIPPED PIXELS FOR AREA
+            clippedHealpixIds = np.append(clippedHealpixIds, expPixelsClipped)
+            clippedHealpixIds = np.unique(clippedHealpixIds)
+            # SUM PROB
             cumProb = []
             cumProb[:] = [aMap[int(i)] for i in allHealpixIds]
             cumProb = sum(cumProb)
-            cumArea = len(allHealpixIds) * hpixArea
+            # SUM AREA
+            cumArea = len(clippedHealpixIds) * hpixArea
             thisDict["INDEX"] = pindex
             thisDict["EXPID"] = pexpid
             thisDict["RA"] = "%(pra)5.5f" % locals()
@@ -298,8 +309,16 @@ class survey_footprint():
         # THIS FILE IS A ONE COLUMN FITS BINARY, WITH EACH CELL CONTAINING AN
         # ARRAY OF PROBABILITIES (3,072 ROWS)
 
-        aMap, mapHeader = hp.read_map(pathToProbMap, h=True)
+        aMap, mapHeader = hp.read_map(pathToProbMap, 0, h=True, verbose=True)
+        # DETERMINE THE SIZE OF THE HEALPIXELS
         nside = hp.pixelfunc.get_nside(aMap)
+
+        if nside > 64:
+            # DOWNGRADE MAP RESOLUTION TO SAVE MEMORY
+            aMap = hp.ud_grade(aMap, 64, power=-2)
+            nside = hp.npix2nside(len(aMap))
+
+        totalProb = sum(aMap)
         hpixArea = hp.nside2pixarea(nside, degrees=True)
 
         # import matplotlib.pyplot as plt
@@ -317,12 +336,19 @@ class survey_footprint():
         # CONVERT DEC TO THE REQUIRED HEALPIX FORMAT
         nd = -wd + 90.
 
+        # CONTOURS - NEED TO ADD THE CUMMULATIVE PROBABILITY
+        # GET THE INDEXES ORDERED BY PROB OF PIXELS; HIGHEST TO LOWEST
+        i = np.flipud(np.argsort(aMap))
+        cumsum = np.cumsum(aMap[i])
+        probs = np.empty_like(aMap)
+        probs[i] = cumsum * 100
+
         # CONVERT WORLD TO HEALPIX INDICES (NON-UNIQUE IDS!)
         healpixIds = hp.ang2pix(nside, theta=nd * self.DEG_TO_RAD_FACTOR,
                                 phi=wr * self.DEG_TO_RAD_FACTOR)
 
         self.log.debug('completed the ``_create_healpix_id_list`` method')
-        return nside, hpixArea, aMap, healpixIds, wr, wd
+        return nside, hpixArea, aMap, healpixIds, wr, wd, probs
 
     def annotate_exposures(
         self,
@@ -346,7 +372,7 @@ class survey_footprint():
         """
         self.log.debug('starting the ``annotate`` method')
 
-        nside, hpixArea, aMap, healpixIds, wr, wd = self._create_healpixid_coordinate_grid()
+        nside, hpixArea, aMap, healpixIds, wr, wd, probs = self._create_healpixid_coordinate_grid()
 
         exposureIDs = []
         ra = []

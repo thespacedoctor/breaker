@@ -142,7 +142,11 @@ class database():
             db=dbName,
             port=port,
             use_unicode=True,
-            charset='utf8'
+            charset='utf8',
+            local_infile=1,
+            client_flag=ms.constants.CLIENT.MULTI_STATEMENTS,
+            connect_timeout=36,
+            max_allowed_packet=51200000
         )
         thisConn.autocommit(True)
         self.log.debug('ps1gwDbConn: %s' % (thisConn,))
@@ -168,7 +172,11 @@ class database():
             db=dbName,
             port=port,
             use_unicode=True,
-            charset='utf8'
+            charset='utf8',
+            local_infile=1,
+            client_flag=ms.constants.CLIENT.MULTI_STATEMENTS,
+            connect_timeout=36,
+            max_allowed_packet=51200000
         )
         thisConn.autocommit(True)
         self.log.debug('ps13piDbConn: %s' % (thisConn,))
@@ -194,7 +202,11 @@ class database():
             db=dbName,
             port=port,
             use_unicode=True,
-            charset='utf8'
+            charset='utf8',
+            local_infile=1,
+            client_flag=ms.constants.CLIENT.MULTI_STATEMENTS,
+            connect_timeout=36,
+            max_allowed_packet=51200000
         )
         thisConn.autocommit(True)
         self.log.debug('altasDbConn: %s' % (thisConn,))
@@ -220,7 +232,11 @@ class database():
             db=dbName,
             port=port,
             use_unicode=True,
-            charset='utf8'
+            charset='utf8',
+            local_infile=1,
+            client_flag=ms.constants.CLIENT.MULTI_STATEMENTS,
+            connect_timeout=36,
+            max_allowed_packet=51200000
         )
         thisConn.autocommit(True)
         self.log.debug('ligo_virgo_wavesDbConn: %s' % (thisConn,))
@@ -246,7 +262,11 @@ class database():
             db=dbName,
             port=port,
             use_unicode=True,
-            charset='utf8'
+            charset='utf8',
+            local_infile=1,
+            client_flag=ms.constants.CLIENT.MULTI_STATEMENTS,
+            connect_timeout=36,
+            max_allowed_packet=51200000
         )
         thisConn.autocommit(True)
         self.log.debug('catalogues database connection: %s' % (thisConn,))

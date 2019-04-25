@@ -127,6 +127,12 @@ class annotator():
         aMap, mapHeader = hp.read_map(pathToProbMap, 0, h=True, verbose=False)
         # DETERMINE THE SIZE OF THE HEALPIXELS
         nside = hp.npix2nside(len(aMap))
+
+        if nside > 64:
+            # DOWNGRADE MAP RESOLUTION TO SAVE MEMORY
+            aMap = hp.ud_grade(aMap, 64, power=-2)
+            nside = hp.npix2nside(len(aMap))
+
         totalProb = sum(aMap)
 
         # CONTOURS - NEED TO ADD THE CUMMULATIVE PROBABILITY
