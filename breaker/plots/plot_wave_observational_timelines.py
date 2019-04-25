@@ -1757,15 +1757,15 @@ class plot_wave_observational_timelines():
             #                    "2-3d", "3-4d", "4-5d", "5-10d", "10-17d", "17-24d", "24-31d"]
             # timeLimitDays = [(-10, -1), (-1, 0), (0, 1), (1, 2), (2, 3), (3, 4),
             #                  (4, 5), (5, 10), (10, 17), (17, 24), (24, 31)]
-            timeLimitLabels = ["10 days pre-detection",
-                               "-1-0d", "0-1d", "1-21d"]
+            timeLimitLabels = ["10 days to 1 day pre-detection",
+                               "1 day pre-detection to t=0", "0-1d", "1-21d"]
             timeLimitDays = [(-10, -1), (-1, 0), (0, 1), (1, 21)]
         else:
             timeLimitLabels = ["0-1d", "1-2d", "2-3d", "3-4d",
-                               "4-5d", "5-10d", "10-17d", "17-24d", "24-31d"]
+                               "4-5d", "5-10d", "10-21d"]
             # timeLimitLabels = ["0-1d"]
             timeLimitDays = [(0, 1), (1, 2), (2, 3), (3, 4),
-                             (4, 5), (5, 10), (10, 17), (17, 24), (24, 31)]
+                             (4, 5), (5, 10), (10, 21)]
 
         raLimits = [134.25, 144.75, 152.25, 159.50, 167.0, 174.5]
         raLimits = [False, False, False, False,
@@ -1776,13 +1776,24 @@ class plot_wave_observational_timelines():
         else:
             theseIds = self.settings["gravitational waves"]
 
+        nowMjd = now(
+            log=self.log
+        ).get_mjd()
+
         for gwid in theseIds:
             for tday, tlabel, raLimit in zip(timeLimitDays, timeLimitLabels, raLimits):
+
+                waveMjd = self.settings["gravitational waves"][gwid]["mjd"]
+
+                # DON'T PRINT FUTURE PLOTS
+                if nowMjd < waveMjd + tday[1] - 1:
+                    continue
 
                 pathToProbMap = self.settings[
                     "gravitational waves"][gwid]["mapPath"]
                 aMap, mapHeader = hp.read_map(
                     pathToProbMap, 0, h=True, verbose=False)
+                nside = hp.npix2nside(len(aMap))
 
                 if nside > 64:
                     # DOWNGRADE MAP RESOLUTION TO SAVE MEMORY

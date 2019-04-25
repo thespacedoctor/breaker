@@ -217,7 +217,7 @@ class plot_wave_matched_source_maps():
         # THIS FILE IS A ONE COLUMN FITS BINARY, WITH EACH CELL CONTAINING AN
         # ARRAY OF PROBABILITIES (3,072 ROWS)
         import healpy as hp
-        aMap, mapHeader = hp.read_map(pathToProbMap, h=True)
+        aMap, mapHeader = hp.read_map(pathToProbMap, h=True, verbose=False)
         nside = hp.pixelfunc.get_nside(aMap)
 
         if nside > 64:

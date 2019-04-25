@@ -309,7 +309,7 @@ class survey_footprint():
         # THIS FILE IS A ONE COLUMN FITS BINARY, WITH EACH CELL CONTAINING AN
         # ARRAY OF PROBABILITIES (3,072 ROWS)
 
-        aMap, mapHeader = hp.read_map(pathToProbMap, 0, h=True, verbose=True)
+        aMap, mapHeader = hp.read_map(pathToProbMap, 0, h=True, verbose=False)
         # DETERMINE THE SIZE OF THE HEALPIXELS
         nside = hp.pixelfunc.get_nside(aMap)
 

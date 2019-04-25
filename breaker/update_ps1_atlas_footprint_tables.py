@@ -1003,9 +1003,20 @@ CREATE TABLE `ps1_nightlogs` (
             "ligo_virgo_waves": self.ligo_virgo_wavesDbConn
         }
 
+        mjd = mjdnow(
+            log=self.log
+        ).get_mjd()
+
         for db in dbDict.keys():
 
+            print "Adding annotations to %(db)s database" % locals()
+
             for g in self.settings["gravitational waves"]:
+
+                m = self.settings["gravitational waves"][g]["mjd"]
+                if m < mjd + 22:
+                    continue
+
                 h = self.settings["gravitational waves"][g]["human-name"]
                 print "Annotating new transients associated with gravity event %(h)s" % locals()
                 m = self.settings["gravitational waves"][g]["mjd"]
