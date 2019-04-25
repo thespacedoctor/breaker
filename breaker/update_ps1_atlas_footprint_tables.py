@@ -932,12 +932,11 @@ CREATE TABLE `ps1_nightlogs` (
         # CREATE THE ANNOTATION HELPER TABLES IF THEY DON"T EXIST
         moduleDirectory = os.path.dirname(__file__)
         mysql_scripts = moduleDirectory + "/resources/mysql"
-        script = mysql_scripts + "/update_gravity_event_annotation_tables.sql"
 
         for db in ["ps1gw", "ps13pi", "atlas"]:
             directory_script_runner(
                 log=self.log,
-                pathToScriptDirectory=mysql_scripts,
+                pathToScriptDirectory=mysql_scripts + "/create_tables",
                 databaseName=self.settings["database settings"][db]["db"],
                 loginPath=self.settings["database settings"][db]["loginPath"],
                 waitForResult=True,
@@ -947,7 +946,7 @@ CREATE TABLE `ps1_nightlogs` (
         for db in ["ligo_virgo_waves"]:
             directory_script_runner(
                 log=self.log,
-                pathToScriptDirectory=mysql_scripts + "/ps1_skycell_help_tables",
+                pathToScriptDirectory=mysql_scripts + "/ligo_virgo_waves/create_tables",
                 databaseName=self.settings["database settings"][db]["db"],
                 loginPath=self.settings["database settings"][db]["loginPath"],
                 waitForResult=True,
@@ -978,7 +977,7 @@ CREATE TABLE `ps1_nightlogs` (
         for db in ["ps1gw", "ps13pi", "atlas"]:
             directory_script_runner(
                 log=self.log,
-                pathToScriptDirectory=mysql_scripts,
+                pathToScriptDirectory=mysql_scripts + "/annotate",
                 databaseName=self.settings["database settings"][db]["db"],
                 loginPath=self.settings["database settings"][db]["loginPath"],
                 waitForResult=True,
@@ -988,7 +987,7 @@ CREATE TABLE `ps1_nightlogs` (
         for db in ["ligo_virgo_waves"]:
             directory_script_runner(
                 log=self.log,
-                pathToScriptDirectory=mysql_scripts + "/ps1_skycell_help_tables",
+                pathToScriptDirectory=mysql_scripts + "/ligo_virgo_waves/annotate",
                 databaseName=self.settings["database settings"][db]["db"],
                 loginPath=self.settings["database settings"][db]["loginPath"],
                 waitForResult=True,
@@ -1014,7 +1013,7 @@ CREATE TABLE `ps1_nightlogs` (
             for g in self.settings["gravitational waves"]:
 
                 m = self.settings["gravitational waves"][g]["mjd"]
-                if m < mjd + 22:
+                if m < mjd - 22:
                     continue
 
                 h = self.settings["gravitational waves"][g]["human-name"]
