@@ -226,7 +226,7 @@ class survey_footprint():
             thisDict["LIM-MAG"] = "NULL"
             dictList.append(thisDict)
 
-        print "AREA: %(cumArea)0.2f. PROB: %(cumProb)0.5f" % locals()
+        print "%(telescope)s covered %(cumArea)0.2f squ. degrees of the bayestar map 90%% credible region and covered a sky region totalling of %(cumProb)0.1f%% of the event's localisation likelihood." % locals()
 
         printFile = self.settings["output directory"] + "/" + \
             self.gwid + "/" + self.gwid + "-" + self.telescope + "-coverage-stats.csv"

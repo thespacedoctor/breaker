@@ -580,7 +580,7 @@ class plot_wave_observational_timelines():
                 gwid]["mjd"] + 31.
 
         sqlQuery = u"""
-            SELECT p.atlas_object_id as exp_id, p.raDeg, p.decDeg, mjd, exp_time, filter, limiting_magnitude FROM atlas_pointings p, atlas_exposure_gravity_event_annotations a where a.prob_coverage > 1e-7 and a.gracedb_id = "%(gwid)s" and a.atlas_object_id=p.atlas_object_id and gw_id like "%%%(gwid)s%%" and mjd between %(mjdStart)s and %(mjdEnd)s order by mjd;
+            SELECT p.atlas_object_id as exp_id, p.raDeg, p.decDeg, mjd, exp_time, filter, limiting_magnitude FROM atlas_pointings p, atlas_exposure_gravity_event_annotations a where a.prob_coverage > 1e-3 and a.gracedb_id = "%(gwid)s" and a.atlas_object_id=p.atlas_object_id and gw_id like "%%%(gwid)s%%" and mjd between %(mjdStart)s and %(mjdEnd)s order by mjd;
         """ % locals()
 
         atlasPointings = readquery(
@@ -1342,8 +1342,6 @@ class plot_wave_observational_timelines():
             else:
                 plotted.append(atp["exp_id"])
 
-            if atp["decDeg"] > 88 or atp["decDeg"] < -88:
-                print "shit"
             patch = add_square_fov(
                 log=self.log,
                 raDeg=atp["raDeg"],
@@ -1759,12 +1757,12 @@ class plot_wave_observational_timelines():
             #                    "2-3d", "3-4d", "4-5d", "5-10d", "10-17d", "17-24d", "24-31d"]
             # timeLimitDays = [(-10, -1), (-1, 0), (0, 1), (1, 2), (2, 3), (3, 4),
             #                  (4, 5), (5, 10), (10, 17), (17, 24), (24, 31)]
-            timeLimitLabels = ["10 days to 1 day pre-detection",
-                               "1 day pre-detection to t=0", "0-1d", "1-21d"]
+            timeLimitLabels = ["-10d < t < -1d",
+                               "-1d < t < 0", "0 < t < 1d", "1d < t < 21d"]
             timeLimitDays = [(-10, -1), (-1, 0), (0, 1), (1, 21)]
         else:
-            timeLimitLabels = ["0-1d", "1-2d", "2-3d", "3-4d",
-                               "4-5d", "5-10d", "10-21d"]
+            timeLimitLabels = ["0 < t < 1d", "1d < t < 2d", "2d < t < 3d",
+                               "3d < t < 4d", "4d < t < 5d", "5d < t < 10d", "10d < t < 21d"]
             # timeLimitLabels = ["0-1d"]
             timeLimitDays = [(0, 1), (1, 2), (2, 3), (3, 4),
                              (4, 5), (5, 10), (10, 21)]
@@ -2153,6 +2151,12 @@ def add_square_fov(
         ury = uly
         lrx = (raDeg + widthDegBottom / 2)
         lry = lly
+
+        if lly < -90.:
+            lly = -90.
+        if uly > 90.:
+            uly = 90.
+            ury = uly
 
         Path = mpath.Path
         path_data = [
