@@ -1328,10 +1328,10 @@ class plot_wave_observational_timelines():
                     patches.append(patch)
 
             if projection in ["mercator", "gnomonic", "cartesian"]:
-                ax.add_collection(PatchCollection(patches, alpha=0.7,
+                ax.add_collection(PatchCollection(patches, alpha=0.4,
                                                   color='#859900', zorder=2, transform=ax.get_transform('fk5')))
             else:
-                ax.add_collection(PatchCollection(patches, alpha=0.7,
+                ax.add_collection(PatchCollection(patches, alpha=0.4,
                                                   color='#859900', zorder=2))
 
         patches = []
