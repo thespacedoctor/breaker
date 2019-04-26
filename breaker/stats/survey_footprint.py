@@ -115,7 +115,8 @@ class survey_footprint():
 
         nside, hpixArea, aMap, healpixIds, wr, wd, probs = self._create_healpixid_coordinate_grid()
 
-        print "EXPID, RA, DEC, MJD, EXPTIME, FILTER, LIM-MAG, EXP-AREA, EXP-LIKELIHOOD, CUM-AREA, CUM-LIKELIHOOD" % locals()
+        # print "EXPID, RA, DEC, MJD, EXPTIME, FILTER, LIM-MAG, EXP-AREA,
+        # EXP-LIKELIHOOD, CUM-AREA, CUM-LIKELIHOOD" % locals()
 
         allHealpixIds = np.array([])
         clippedHealpixIds = np.array([])
@@ -226,6 +227,7 @@ class survey_footprint():
             thisDict["LIM-MAG"] = "NULL"
             dictList.append(thisDict)
 
+        cumProb = cumProb * 100.
         print "%(telescope)s covered %(cumArea)0.2f squ. degrees of the bayestar map 90%% credible region and covered a sky region totalling of %(cumProb)0.1f%% of the event's localisation likelihood." % locals()
 
         printFile = self.settings["output directory"] + "/" + \
