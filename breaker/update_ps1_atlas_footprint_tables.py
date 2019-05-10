@@ -1055,6 +1055,16 @@ CREATE TABLE `ps1_nightlogs` (
 
                     self.log.info(
                         """selecting transients from `%(db)s` database""" % locals())
+
+                    # DELETE STALE MAP ANNOTATIONS
+                    sqlQuery = u"""update tcs_gravity_event_annotations set map_name = null, enclosing_contour = null where gracedb_id = "%(g)s" and map_name != "%(mapName)s";""" % locals(
+                    )
+                    writequery(
+                        log=self.log,
+                        sqlQuery=sqlQuery,
+                        dbConn=thisDbConn,
+                    )
+
                     sqlQuery = u"""
                         SELECT
                             a.transient_object_id, a.gracedb_id, t.ra_psf, t.dec_psf
@@ -1091,6 +1101,15 @@ CREATE TABLE `ps1_nightlogs` (
                     transientNames, probs = an.annotate(transients)
 
                 if thisDbConn in [self.atlasDbConn]:
+                    # DELETE STALE MAP ANNOTATIONS
+                    sqlQuery = u"""update tcs_gravity_event_annotations set map_name = null, enclosing_contour = null where gracedb_id = "%(g)s" and map_name != "%(mapName)s";""" % locals(
+                    )
+                    writequery(
+                        log=self.log,
+                        sqlQuery=sqlQuery,
+                        dbConn=thisDbConn,
+                    )
+
                     self.log.info(
                         """selecting transients from `%(db)s` database""" % locals())
                     sqlQuery = u"""
@@ -1129,6 +1148,15 @@ CREATE TABLE `ps1_nightlogs` (
                     transientNames, probs = an.annotate(transients)
 
                 if thisDbConn in [self.ligo_virgo_wavesDbConn]:
+
+                    # DELETE STALE MAP ANNOTATIONS
+                    sqlQuery = u"""update ps1_skycell_gravity_event_annotations set prob_coverage = null, map_name = null where gracedb_id = "%(g)s" and map_name != "%(mapName)s";""" % locals(
+                    )
+                    writequery(
+                        log=self.log,
+                        sqlQuery=sqlQuery,
+                        dbConn=thisDbConn,
+                    )
 
                     # PANSTARRS SKYCELLS
                     self.log.info(
@@ -1192,6 +1220,15 @@ CREATE TABLE `ps1_nightlogs` (
                         now = now.strftime("%Y%m%dt%H%M%S%f")
                         mysqlData = dataSet.mysql(
                             tableName=tableName, filepath="/tmp/mysqlinsert/%(db)s/%(now)s.sql" % locals(), createStatement=False)
+
+                    # DELETE STALE MAP ANNOTATIONS
+                    sqlQuery = u"""update atlas_exposure_gravity_event_annotations set prob_coverage = null, map_name = null  where gracedb_id = "%(g)s" and map_name != "%(mapName)s";""" % locals(
+                    )
+                    writequery(
+                        log=self.log,
+                        sqlQuery=sqlQuery,
+                        dbConn=thisDbConn,
+                    )
 
                     # ATLAS EXPOSURES
                     self.log.info(
@@ -1281,18 +1318,17 @@ CREATE TABLE `ps1_nightlogs` (
                     mysqlData = dataSet.mysql(
                         tableName=tableName, filepath="/tmp/mysqlinsert/%(db)s/%(now)s.sql" % locals(), createStatement=False)
 
-        for db in dbDict.keys():
-            self.log.info(
-                """adding transient annotations to `%(db)s` database""" % locals())
-            directory_script_runner(
-                log=self.log,
-                pathToScriptDirectory="/tmp/mysqlinsert/%(db)s" % locals(),
-                databaseName=self.settings["database settings"][db]["db"],
-                loginPath=self.settings["database settings"][db]["loginPath"],
-                waitForResult=True,
-                successRule="delete",
-                failureRule="failed"
-            )
+                # IMPORT TO DATABASE
+                directory_script_runner(
+                    log=self.log,
+                    pathToScriptDirectory="/tmp/mysqlinsert/%(db)s" % locals(),
+                    databaseName=self.settings["database settings"][db]["db"],
+                    loginPath=self.settings[
+                        "database settings"][db]["loginPath"],
+                    waitForResult=True,
+                    successRule="delete",
+                    failureRule="failed"
+                )
 
         self.log.debug(
             'completed the ``update_gravity_event_annotations`` method')
