@@ -1318,17 +1318,22 @@ CREATE TABLE `ps1_nightlogs` (
                     mysqlData = dataSet.mysql(
                         tableName=tableName, filepath="/tmp/mysqlinsert/%(db)s/%(now)s.sql" % locals(), createStatement=False)
 
-                # IMPORT TO DATABASE
-                directory_script_runner(
-                    log=self.log,
-                    pathToScriptDirectory="/tmp/mysqlinsert/%(db)s" % locals(),
-                    databaseName=self.settings["database settings"][db]["db"],
-                    loginPath=self.settings[
-                        "database settings"][db]["loginPath"],
-                    waitForResult=True,
-                    successRule="delete",
-                    failureRule="failed"
-                )
+                exists = os.path.exists("/tmp/mysqlinsert/%(db)s" % locals())
+                if exists:
+
+                    # IMPORT TO DATABASE
+                    directory_script_runner(
+                        log=self.log,
+                        pathToScriptDirectory="/tmp/mysqlinsert/%(db)s" % locals(
+                        ),
+                        databaseName=self.settings[
+                            "database settings"][db]["db"],
+                        loginPath=self.settings[
+                            "database settings"][db]["loginPath"],
+                        waitForResult=True,
+                        successRule="delete",
+                        failureRule="failed"
+                    )
 
         self.log.debug(
             'completed the ``update_gravity_event_annotations`` method')
