@@ -227,8 +227,15 @@ class survey_footprint():
             thisDict["LIM-MAG"] = "NULL"
             dictList.append(thisDict)
 
+        # GET THE PROBABILITY MAP FOR THE GIVEN GWID
+        pathToProbMap = self.settings[
+            "gravitational waves"][self.gwid]["mapPath"]
+        mapName = pathToProbMap.split(
+            "/")[-1].replace(".fits", "").replace(".fits.gz", "")
+
         cumProb = cumProb * 100.
-        print "%(telescope)s covered %(cumArea)0.2f squ. degrees of the bayestar map 90%% credible region and covered a sky region totalling of %(cumProb)0.1f%% of the event's localisation likelihood." % locals()
+        message = "%(telescope)s covered %(cumArea)0.2f squ. degrees of the %(mapName)s map 90%% credible region and covered a sky region totalling of %(cumProb)0.1f%% of the event's localisation likelihood." % locals()
+        print message
 
         printFile = self.settings["output directory"] + "/" + \
             self.gwid + "/" + self.gwid + "-" + self.telescope + "-coverage-stats.csv"
@@ -243,13 +250,19 @@ class survey_footprint():
         )
         csvData = dataSet.csv(filepath=printFile)
 
+        with open(printFile, "r+") as f:
+            s = f.read()
+            f.seek(0)
+            f.write("%(message)s\n\n" % locals() + s)
+
         print "The coverage stats file was written to `%(printFile)s`" % locals()
 
         self.log.debug('completed the ``get`` method')
         return None
 
     def _create_healpixid_coordinate_grid(
-            self):
+            self,
+            downgrade=True):
         """*create healpixid coordinate grid*
         """
         self.log.debug('starting the ``_create_healpix_id_list`` method')
@@ -315,8 +328,8 @@ class survey_footprint():
         # DETERMINE THE SIZE OF THE HEALPIXELS
         nside = hp.pixelfunc.get_nside(aMap)
 
-        if nside > 64:
-            # DOWNGRADE MAP RESOLUTION TO SAVE MEMORY
+        if downgrade and nside > 64:
+                # DOWNGRADE MAP RESOLUTION TO SAVE MEMORY
             aMap = hp.ud_grade(aMap, 64, power=-2)
             nside = hp.npix2nside(len(aMap))
 
@@ -374,7 +387,8 @@ class survey_footprint():
         """
         self.log.debug('starting the ``annotate`` method')
 
-        nside, hpixArea, aMap, healpixIds, wr, wd, probs = self._create_healpixid_coordinate_grid()
+        nside, hpixArea, aMap, healpixIds, wr, wd, probs = self._create_healpixid_coordinate_grid(
+            downgrade=False)
 
         exposureIDs = []
         ra = []

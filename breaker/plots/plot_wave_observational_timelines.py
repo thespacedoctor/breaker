@@ -1753,10 +1753,8 @@ class plot_wave_observational_timelines():
         self.log.debug('starting the ``get_timeline_plots`` method')
 
         if self.allPlots:
-            # timeLimitLabels = ["10 days pre-detection", "-1-0d", "0-1d", "1-2d",
-            #                    "2-3d", "3-4d", "4-5d", "5-10d", "10-17d", "17-24d", "24-31d"]
-            # timeLimitDays = [(-10, -1), (-1, 0), (0, 1), (1, 2), (2, 3), (3, 4),
-            #                  (4, 5), (5, 10), (10, 17), (17, 24), (24, 31)]
+            # timeLimitLabels = ["0 < t < 1d"]
+            # timeLimitDays = [(0, 1)]
             timeLimitLabels = ["-10d < t < -1d",
                                "-1d < t < 0", "0 < t < 1d", "1d < t < 21d"]
             timeLimitDays = [(-10, -1), (-1, 0), (0, 1), (1, 21)]
