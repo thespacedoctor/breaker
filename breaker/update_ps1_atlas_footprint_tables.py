@@ -1244,7 +1244,7 @@ CREATE TABLE `ps1_nightlogs` (
                                 atlas_exposure_gravity_event_annotations
                             WHERE
                                 (map_name != "%(mapName)s"  or map_name is null)
-                                AND gracedb_id="%(g)s" limit 500; 
+                                AND gracedb_id="%(g)s"; 
                     """ % locals()
                     rows = readquery(
                         log=self.log,
@@ -1254,6 +1254,12 @@ CREATE TABLE `ps1_nightlogs` (
                     )
 
                     if len(rows):
+                        total = len(rows)
+                        if total > 500:
+                            print "%(total)s ATLAS exposures still need annotating, annotating the next 500" % locals()
+                            rows = rows[:500]
+                        else:
+                            print "%(total)s ATLAS exposures still need annotating, annotating these now" % locals()
                         exposures = {}
                         for r in rows:
                             exposures[r["atlas_object_id"]] = (
