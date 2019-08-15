@@ -278,7 +278,7 @@ class survey_footprint():
             raise IOError(message)
 
         # UNPACK THE PLOT PARAMETERS
-        pixelSizeDeg = 0.01
+        pixelSizeDeg = 0.06
         raRange = 360.
         decRange = 180.
 

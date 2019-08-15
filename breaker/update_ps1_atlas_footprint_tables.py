@@ -951,76 +951,76 @@ CREATE TABLE `ps1_nightlogs` (
         from breaker.transients import annotator
 
         # CREATE THE ANNOTATION HELPER TABLES IF THEY DON"T EXIST
-        # moduleDirectory = os.path.dirname(__file__)
-        # mysql_scripts = moduleDirectory + "/resources/mysql"
+        moduleDirectory = os.path.dirname(__file__)
+        mysql_scripts = moduleDirectory + "/resources/mysql"
 
-        # self.log.info(
-        #     'creating tables for transient and exposure annotations')
-        # for db in ["ps1gw", "ps13pi", "atlas"]:
-        #     directory_script_runner(
-        #         log=self.log,
-        #         pathToScriptDirectory=mysql_scripts + "/create_tables",
-        #         databaseName=self.settings["database settings"][db]["db"],
-        #         loginPath=self.settings["database settings"][db]["loginPath"],
-        #         waitForResult=True,
-        #         successRule=None,
-        #         failureRule=None
-        #     )
-        # for db in ["ligo_virgo_waves"]:
-        #     directory_script_runner(
-        #         log=self.log,
-        #         pathToScriptDirectory=mysql_scripts + "/ligo_virgo_waves/create_tables",
-        #         databaseName=self.settings["database settings"][db]["db"],
-        #         loginPath=self.settings["database settings"][db]["loginPath"],
-        #         waitForResult=True,
-        #         successRule=None,
-        #         failureRule=None
-        #     )
+        self.log.info(
+            'creating tables for transient and exposure annotations')
+        for db in ["ps1gw", "ps13pi", "atlas"]:
+            directory_script_runner(
+                log=self.log,
+                pathToScriptDirectory=mysql_scripts + "/create_tables",
+                databaseName=self.settings["database settings"][db]["db"],
+                loginPath=self.settings["database settings"][db]["loginPath"],
+                waitForResult=True,
+                successRule=None,
+                failureRule=None
+            )
+        for db in ["ligo_virgo_waves"]:
+            directory_script_runner(
+                log=self.log,
+                pathToScriptDirectory=mysql_scripts + "/ligo_virgo_waves/create_tables",
+                databaseName=self.settings["database settings"][db]["db"],
+                loginPath=self.settings["database settings"][db]["loginPath"],
+                waitForResult=True,
+                successRule=None,
+                failureRule=None
+            )
 
-        # # UPDATE THE TABLE WITH THE METADATA OF EACH GRAVITY EVENT
-        # self.log.info(
-        #     'updating GW metadata table')
-        # sqlQuery = ""
-        # for g in self.settings["gravitational waves"]:
-        #     h = self.settings["gravitational waves"][g]["human-name"]
-        #     m = self.settings["gravitational waves"][g]["mjd"]
-        #     cmd = """insert ignore into tcs_gravity_events (`gracedb_id`, `gravity_event_id`, `mjd`) VALUES ("%(g)s", "%(h)s", %(m)s) on duplicate key update mjd=%(m)s;\n""" % locals(
-        #     )
-        #     sqlQuery += cmd
-        # for db in [self.atlasDbConn, self.ps1gwDbConn, self.ps13piDbConn]:
-        #     writequery(
-        #         log=self.log,
-        #         sqlQuery=sqlQuery,
-        #         dbConn=db
-        #     )
-        # sqlQuery = sqlQuery.replace("tcs_gravity_events", "gravity_events")
-        # writequery(
-        #     log=self.log,
-        #     sqlQuery=sqlQuery,
-        #     dbConn=self.ligo_virgo_wavesDbConn,
-        # )
-        # self.log.info(
-        #     'populating transient tables with placeholders before transient annotations')
-        # for db in ["ps1gw", "ps13pi", "atlas"]:
-        #     directory_script_runner(
-        #         log=self.log,
-        #         pathToScriptDirectory=mysql_scripts + "/annotate",
-        #         databaseName=self.settings["database settings"][db]["db"],
-        #         loginPath=self.settings["database settings"][db]["loginPath"],
-        #         waitForResult=True,
-        #         successRule=None,
-        #         failureRule=None
-        #     )
-        # for db in ["ligo_virgo_waves"]:
-        #     directory_script_runner(
-        #         log=self.log,
-        #         pathToScriptDirectory=mysql_scripts + "/ligo_virgo_waves/annotate",
-        #         databaseName=self.settings["database settings"][db]["db"],
-        #         loginPath=self.settings["database settings"][db]["loginPath"],
-        #         waitForResult=True,
-        #         successRule=None,
-        #         failureRule=None
-        #     )
+        # UPDATE THE TABLE WITH THE METADATA OF EACH GRAVITY EVENT
+        self.log.info(
+            'updating GW metadata table')
+        sqlQuery = ""
+        for g in self.settings["gravitational waves"]:
+            h = self.settings["gravitational waves"][g]["human-name"]
+            m = self.settings["gravitational waves"][g]["mjd"]
+            cmd = """insert ignore into tcs_gravity_events (`gracedb_id`, `gravity_event_id`, `mjd`) VALUES ("%(g)s", "%(h)s", %(m)s) on duplicate key update mjd=%(m)s;\n""" % locals(
+            )
+            sqlQuery += cmd
+        for db in [self.atlasDbConn, self.ps1gwDbConn, self.ps13piDbConn]:
+            writequery(
+                log=self.log,
+                sqlQuery=sqlQuery,
+                dbConn=db
+            )
+        sqlQuery = sqlQuery.replace("tcs_gravity_events", "gravity_events")
+        writequery(
+            log=self.log,
+            sqlQuery=sqlQuery,
+            dbConn=self.ligo_virgo_wavesDbConn,
+        )
+        self.log.info(
+            'populating transient tables with placeholders before transient annotations')
+        for db in ["ps1gw", "ps13pi", "atlas"]:
+            directory_script_runner(
+                log=self.log,
+                pathToScriptDirectory=mysql_scripts + "/annotate",
+                databaseName=self.settings["database settings"][db]["db"],
+                loginPath=self.settings["database settings"][db]["loginPath"],
+                waitForResult=True,
+                successRule=None,
+                failureRule=None
+            )
+        for db in ["ligo_virgo_waves"]:
+            directory_script_runner(
+                log=self.log,
+                pathToScriptDirectory=mysql_scripts + "/ligo_virgo_waves/annotate",
+                databaseName=self.settings["database settings"][db]["db"],
+                loginPath=self.settings["database settings"][db]["loginPath"],
+                waitForResult=True,
+                successRule=None,
+                failureRule=None
+            )
 
         dbDict = {
             "ps1gw": self.ps1gwDbConn,
@@ -1051,7 +1051,7 @@ CREATE TABLE `ps1_nightlogs` (
 
                 thisDbConn = dbDict[db]
 
-                if thisDbConn in [self.ps1gwDbConn, self.ps13piDbConn] and 2 == 1:
+                if thisDbConn in [self.ps1gwDbConn, self.ps13piDbConn]:
 
                     self.log.info(
                         """selecting transients from `%(db)s` database""" % locals())
@@ -1100,7 +1100,7 @@ CREATE TABLE `ps1_nightlogs` (
                     )
                     transientNames, probs = an.annotate(transients)
 
-                if thisDbConn in [self.atlasDbConn] and 2 == 1:
+                if thisDbConn in [self.atlasDbConn]:
                     # DELETE STALE MAP ANNOTATIONS
                     sqlQuery = u"""update tcs_gravity_event_annotations set map_name = null, enclosing_contour = null where gracedb_id = "%(g)s" and map_name != "%(mapName)s";""" % locals(
                     )
@@ -1255,10 +1255,6 @@ CREATE TABLE `ps1_nightlogs` (
 
                     if len(rows):
                         total = len(rows)
-                        # if total > 500:
-                        #     print "%(total)s ATLAS exposures still need annotating, annotating the next 500" % locals()
-                        #     rows = rows[:500]
-                        # else:
                         print "%(total)s ATLAS exposures still need annotating, annotating these now" % locals()
                         exposures = {}
                         for r in rows:
@@ -1301,7 +1297,7 @@ CREATE TABLE `ps1_nightlogs` (
                         mysqlData = dataSet.mysql(
                             tableName=tableName, filepath="/tmp/mysqlinsert/%(db)s/%(now)s.sql" % locals(), createStatement=False)
 
-                if thisDbConn not in [self.ligo_virgo_wavesDbConn] and 2 == 1:
+                if thisDbConn not in [self.ligo_virgo_wavesDbConn]:
                     dataList = []
 
                     for p, t in zip(probs, transientNames):
