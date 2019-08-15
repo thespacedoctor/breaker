@@ -334,11 +334,6 @@ class survey_footprint():
             aMap = hp.ud_grade(aMap, 128, power=-2)
             nside = hp.npix2nside(len(aMap))
 
-        if not downgrade and nside > 256:
-            # DOWNGRADE MAP RESOLUTION A LITTLE TO SAVE MEMORY ANYWAY!
-            aMap = hp.ud_grade(aMap, 256, power=-2)
-            nside = hp.npix2nside(len(aMap))
-
         totalProb = sum(aMap)
         hpixArea = hp.nside2pixarea(nside, degrees=True)
 

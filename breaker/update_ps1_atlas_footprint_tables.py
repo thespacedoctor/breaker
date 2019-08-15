@@ -1244,7 +1244,7 @@ CREATE TABLE `ps1_nightlogs` (
                                 atlas_exposure_gravity_event_annotations
                             WHERE
                                 (map_name != "%(mapName)s"  or map_name is null)
-                                AND gracedb_id="%(g)s" limit 2000; 
+                                AND gracedb_id="%(g)s" limit 500; 
                     """ % locals()
                     rows = readquery(
                         log=self.log,
