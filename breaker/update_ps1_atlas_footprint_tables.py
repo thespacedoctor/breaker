@@ -1035,7 +1035,7 @@ CREATE TABLE `ps1_nightlogs` (
 
         for db in dbDict.keys():
 
-            print "Adding annotations to %(db)s database" % locals()
+            print "Adding transient/exposure annotations to %(db)s database" % locals()
 
             for g in self.settings["gravitational waves"]:
 
@@ -1044,7 +1044,7 @@ CREATE TABLE `ps1_nightlogs` (
                     continue
 
                 h = self.settings["gravitational waves"][g]["human-name"]
-                print "Annotating new transients associated with gravity event %(h)s" % locals()
+                print "Annotating new transient/exposure associated with gravity event %(h)s" % locals()
                 m = self.settings["gravitational waves"][g]["mjd"]
                 mapPath = self.settings["gravitational waves"][g]["mapPath"]
                 mapName = os.path.basename(mapPath)
@@ -1149,6 +1149,8 @@ CREATE TABLE `ps1_nightlogs` (
 
                 if thisDbConn in [self.ligo_virgo_wavesDbConn]:
 
+                    print "Annotating ps1 skycells associated with gravity event %(h)s" % locals()
+
                     # DELETE STALE MAP ANNOTATIONS
                     sqlQuery = u"""update ps1_skycell_gravity_event_annotations set prob_coverage = null, map_name = null where gracedb_id = "%(g)s" and map_name != "%(mapName)s";""" % locals(
                     )
@@ -1220,6 +1222,8 @@ CREATE TABLE `ps1_nightlogs` (
                         now = now.strftime("%Y%m%dt%H%M%S%f")
                         mysqlData = dataSet.mysql(
                             tableName=tableName, filepath="/tmp/mysqlinsert/%(db)s/%(now)s.sql" % locals(), createStatement=False)
+
+                    print "Annotating ATLAS exposures associated with gravity event %(h)s" % locals()
 
                     # DELETE STALE MAP ANNOTATIONS
                     sqlQuery = u"""update atlas_exposure_gravity_event_annotations set prob_coverage = null, map_name = null  where gracedb_id = "%(g)s" and map_name != "%(mapName)s";""" % locals(

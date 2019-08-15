@@ -278,7 +278,7 @@ class survey_footprint():
             raise IOError(message)
 
         # UNPACK THE PLOT PARAMETERS
-        pixelSizeDeg = 0.005
+        pixelSizeDeg = 0.01
         raRange = 360.
         decRange = 180.
 
@@ -309,6 +309,7 @@ class survey_footprint():
 
         # CREATE A PIXEL GRID - 2 ARRAYS OF X, Y
         columns = []
+        print xRange, yRange
         px = np.tile(np.arange(0, xRange), yRange)
         py = np.repeat(np.arange(0, yRange), xRange)
 
