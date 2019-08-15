@@ -1181,7 +1181,7 @@ CREATE TABLE `ps1_nightlogs` (
                         quiet=False
                     )
 
-                    if len(rows) and 2 == 1:
+                    if len(rows):
                         exposures = {}
                         for r in rows:
                             exposures[r["skycell_id"]] = (
