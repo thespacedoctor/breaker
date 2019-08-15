@@ -329,8 +329,13 @@ class survey_footprint():
         nside = hp.pixelfunc.get_nside(aMap)
 
         if downgrade and nside > 128:
-                # DOWNGRADE MAP RESOLUTION TO SAVE MEMORY
+            # DOWNGRADE MAP RESOLUTION TO SAVE MEMORY
             aMap = hp.ud_grade(aMap, 128, power=-2)
+            nside = hp.npix2nside(len(aMap))
+
+        if not downgrade and nside > 256:
+            # DOWNGRADE MAP RESOLUTION A LITTLE TO SAVE MEMORY ANYWAY!
+            aMap = hp.ud_grade(aMap, 256, power=-2)
             nside = hp.npix2nside(len(aMap))
 
         totalProb = sum(aMap)
