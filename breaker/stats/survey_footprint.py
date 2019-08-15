@@ -309,7 +309,6 @@ class survey_footprint():
 
         # CREATE A PIXEL GRID - 2 ARRAYS OF X, Y
         columns = []
-        print xRange, yRange
         px = np.tile(np.arange(0, xRange), yRange)
         py = np.repeat(np.arange(0, yRange), xRange)
 
