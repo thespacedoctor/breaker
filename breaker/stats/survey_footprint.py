@@ -278,7 +278,7 @@ class survey_footprint():
             raise IOError(message)
 
         # UNPACK THE PLOT PARAMETERS
-        pixelSizeDeg = 0.05
+        pixelSizeDeg = 0.005
         raRange = 360.
         decRange = 180.
 
@@ -328,9 +328,9 @@ class survey_footprint():
         # DETERMINE THE SIZE OF THE HEALPIXELS
         nside = hp.pixelfunc.get_nside(aMap)
 
-        if downgrade and nside > 64:
+        if downgrade and nside > 128:
                 # DOWNGRADE MAP RESOLUTION TO SAVE MEMORY
-            aMap = hp.ud_grade(aMap, 64, power=-2)
+            aMap = hp.ud_grade(aMap, 128, power=-2)
             nside = hp.npix2nside(len(aMap))
 
         totalProb = sum(aMap)

@@ -128,9 +128,9 @@ class annotator():
         # DETERMINE THE SIZE OF THE HEALPIXELS
         nside = hp.npix2nside(len(aMap))
 
-        if nside > 64:
+        if nside > 128:
             # DOWNGRADE MAP RESOLUTION TO SAVE MEMORY
-            aMap = hp.ud_grade(aMap, 64, power=-2)
+            aMap = hp.ud_grade(aMap, 128, power=-2)
             nside = hp.npix2nside(len(aMap))
 
         totalProb = sum(aMap)

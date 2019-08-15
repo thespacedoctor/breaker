@@ -736,9 +736,9 @@ class plot_wave_observational_timelines():
         # DETERMINE THE SIZE OF THE HEALPIXELS
         nside = hp.npix2nside(len(aMap))
 
-        if nside > 64:
+        if nside > 128:
             # DOWNGRADE MAP RESOLUTION TO SAVE MEMORY
-            aMap = hp.ud_grade(aMap, 64, power=-2)
+            aMap = hp.ud_grade(aMap, 128, power=-2)
             nside = hp.npix2nside(len(aMap))
 
         # MIN-MAX PROB VALUES TO ADJUST MAP CONTRAST
@@ -1793,9 +1793,9 @@ class plot_wave_observational_timelines():
                     pathToProbMap, 0, h=True, verbose=False)
                 nside = hp.npix2nside(len(aMap))
 
-                if nside > 64:
+                if nside > 128:
                     # DOWNGRADE MAP RESOLUTION TO SAVE MEMORY
-                    aMap = hp.ud_grade(aMap, 64, power=-2)
+                    aMap = hp.ud_grade(aMap, 128, power=-2)
                     nside = hp.npix2nside(len(aMap))
 
                 mapBasename = os.path.basename(pathToProbMap)
@@ -1926,9 +1926,9 @@ class plot_wave_observational_timelines():
         # DETERMINE THE SIZE OF THE HEALPIXELS
         nside = hp.npix2nside(len(aMap))
 
-        if nside > 64:
+        if nside > 128:
             # DOWNGRADE MAP RESOLUTION TO SAVE MEMORY
-            aMap = hp.ud_grade(aMap, 64, power=-2)
+            aMap = hp.ud_grade(aMap, 128, power=-2)
             nside = hp.npix2nside(len(aMap))
 
         # FROM THE PIXEL GRID (xRange, yRange), GENERATE A MAP TO LAT (pi to 0) AND LONG (-pi to pi) THAT CAN THEN MAPS TO HEALPIX SKYMAP
