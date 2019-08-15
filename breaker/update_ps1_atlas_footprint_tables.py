@@ -1301,7 +1301,7 @@ CREATE TABLE `ps1_nightlogs` (
                         mysqlData = dataSet.mysql(
                             tableName=tableName, filepath="/tmp/mysqlinsert/%(db)s/%(now)s.sql" % locals(), createStatement=False)
 
-                if thisDbConn not in [self.ligo_virgo_wavesDbConn]:
+                if thisDbConn not in [self.ligo_virgo_wavesDbConn] and 2 == 1:
                     dataList = []
 
                     for p, t in zip(probs, transientNames):
