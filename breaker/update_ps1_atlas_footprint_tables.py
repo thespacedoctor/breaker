@@ -295,7 +295,7 @@ class update_ps1_atlas_footprint_tables():
                 `mjd_obs` as `mjd`,
                 `ra` as `raDeg`,
                 if(mjd_obs<57855.0,mag5sig-0.75,mag5sig) as `limiting_magnitude`,
-                `object` as `atlas_object_id` from atlas_metadata where %(recent)s and object like "TA%%" order by mjd_obs desc;
+                `object` as `atlas_object_id` from atlas_metadata where %(recent)s order by mjd_obs desc;
         """ % locals()
         rows = readquery(
             log=self.log,
@@ -303,6 +303,8 @@ class update_ps1_atlas_footprint_tables():
             dbConn=self.atlasDbConn,
             quiet=False
         )
+
+        print sqlQuery
 
         # IN ATLAS4 DATABASE atlas_metadata MOVED TO atlas_metadataddc WITH A
         # DIFFERENT SCHEMA - COLLECT THESE ROWS INSTEAD IF atlas_metadata EMPTY
@@ -320,7 +322,7 @@ class update_ps1_atlas_footprint_tables():
             FROM
                 atlas_metadataddc
             WHERE
-                %(recent)s AND obj LIKE 'TA%%'
+                %(recent)s 
             ORDER BY mjd DESC
             """ % locals()
             rows = readquery(
@@ -329,6 +331,8 @@ class update_ps1_atlas_footprint_tables():
                 dbConn=self.atlasDbConn,
                 quiet=False
             )
+
+            print sqlQuery
 
         # TIDY RESULTS BEFORE IMPORT
         entries = list(rows)
@@ -1248,6 +1252,7 @@ CREATE TABLE `ps1_nightlogs` (
                         dbConn=thisDbConn,
                         quiet=False
                     )
+                    print sqlQuery
 
                     if len(rows):
                         exposures = {}
