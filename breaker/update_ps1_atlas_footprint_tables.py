@@ -1149,7 +1149,7 @@ CREATE TABLE `ps1_nightlogs` (
 
                 if thisDbConn in [self.ligo_virgo_wavesDbConn]:
 
-                    print "Annotating ps1 skycells associated with gravity event %(h)s" % locals()
+                    print "Annotating PS1 skycells associated with gravity event %(h)s" % locals()
 
                     # DELETE STALE MAP ANNOTATIONS
                     sqlQuery = u"""update ps1_skycell_gravity_event_annotations set prob_coverage = null, map_name = null where gracedb_id = "%(g)s" and map_name != "%(mapName)s";""" % locals(
@@ -1244,7 +1244,7 @@ CREATE TABLE `ps1_nightlogs` (
                                 atlas_exposure_gravity_event_annotations
                             WHERE
                                 (map_name != "%(mapName)s"  or map_name is null)
-                                AND gracedb_id="%(g)s"; 
+                                AND gracedb_id="%(g)s" limit 2000; 
                     """ % locals()
                     rows = readquery(
                         log=self.log,
