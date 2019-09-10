@@ -184,66 +184,69 @@ class update_ps1_atlas_footprint_tables():
         tables = ["ps1_warp_stack_diff_skycells",
                   "ps1_stack_stack_diff_skycells"]
         filenameMatch = ["ws", "ss"]
-        for t, f in zip(tables, filenameMatch):
+        for db in [self.ps1gwDbConn, self.ps13piDbConn]:
+            for t, f in zip(tables, filenameMatch):
 
-            sqlQuery = u"""
-                SELECT
-                    imageid,
-                    ppsub_input,
-                    filename,
-                    m.exptime exp_time,
-                    TRUNCATE(mjd_obs, 8) mjd,
-                    LEFT(fpa_filter, 1) AS filter,
-                    IF(deteff_counts < 200,
-                        m.zero_pt + m.deteff_magref+2.5*log(10,exptime),
-                        m.zero_pt + m.deteff_magref + m.deteff_calculated_offset+2.5*log(10,exptime)) AS limiting_mag
-                FROM
-                    tcs_cmf_metadata m
-                    where filename like "%%.%(f)s.%%" %(recent)s
-            """ % locals()
-            rows = readquery(
-                log=self.log,
-                sqlQuery=sqlQuery,
-                dbConn=self.ps1gwDbConn,
-                quiet=False
-            )
+                sqlQuery = u"""
+                    SELECT
+                        imageid,
+                        ppsub_input,
+                        filename,
+                        m.exptime exp_time,
+                        TRUNCATE(mjd_obs, 8) mjd,
+                        LEFT(fpa_filter, 1) AS filter,
+                        IF(deteff_counts < 200,
+                            m.zero_pt + m.deteff_magref+2.5*log(10,exptime),
+                            m.zero_pt + m.deteff_magref + m.deteff_calculated_offset+2.5*log(10,exptime)) AS limiting_mag
+                    FROM
+                        tcs_cmf_metadata m
+                        where filename like "%%.%(f)s.%%" %(recent)s
+                """ % locals()
 
-            # TIDY RESULTS BEFORE IMPORT
-            entries = []
+                rows = readquery(
+                    log=self.log,
+                    sqlQuery=sqlQuery,
+                    dbConn=db,
+                    quiet=False
+                )
 
-            converter = unit_conversion(
-                log=self.log
-            )
-            for row in rows:
-                e = {}
-                e["exp_time"] = row["exp_time"]
-                e["mjd"] = row["mjd"]
-                e["filter"] = row["filter"]
-                e["ps1_exp_id"] = row["imageid"]
-                e["limiting_mag"] = row["limiting_mag"]
-                e["filename"] = row["filename"]
-                e["skycell_id"] = (".").join(row["filename"].split(".")[0:5])
-                e["target_image"] = row["ppsub_input"]
-                entries.append(e)
+                # TIDY RESULTS BEFORE IMPORT
+                entries = []
 
-            extras = self.settings["ssh tunnels"][self.settings[
-                "database settings"]["ligo_virgo_waves"]["port"]]
-            self.settings[
-                "database settings"]["ligo_virgo_waves"]["tunnel"] = extras
+                converter = unit_conversion(
+                    log=self.log
+                )
+                for row in rows:
+                    e = {}
+                    e["exp_time"] = row["exp_time"]
+                    e["mjd"] = row["mjd"]
+                    e["filter"] = row["filter"]
+                    e["ps1_exp_id"] = row["imageid"]
+                    e["limiting_mag"] = row["limiting_mag"]
+                    e["filename"] = row["filename"]
+                    e["skycell_id"] = (".").join(
+                        row["filename"].split(".")[0:5])
+                    e["target_image"] = row["ppsub_input"]
+                    entries.append(e)
 
-            # ADD THE NEW RESULTS TO THE ps1_pointings TABLE
-            insert_list_of_dictionaries_into_database_tables(
-                dbConn=self.ligo_virgo_wavesDbConn,
-                log=self.log,
-                dictList=entries,
-                dbTableName=t,
-                uniqueKeyList=["filename"],
-                dateModified=False,
-                batchSize=2500,
-                replace=True,
-                dbSettings=self.settings[
-                    "database settings"]["ligo_virgo_waves"]
-            )
+                extras = self.settings["ssh tunnels"][self.settings[
+                    "database settings"]["ligo_virgo_waves"]["port"]]
+                self.settings[
+                    "database settings"]["ligo_virgo_waves"]["tunnel"] = extras
+
+                # ADD THE NEW RESULTS TO THE ps1_pointings TABLE
+                insert_list_of_dictionaries_into_database_tables(
+                    dbConn=self.ligo_virgo_wavesDbConn,
+                    log=self.log,
+                    dictList=entries,
+                    dbTableName=t,
+                    uniqueKeyList=["filename"],
+                    dateModified=False,
+                    batchSize=2500,
+                    replace=True,
+                    dbSettings=self.settings[
+                        "database settings"]["ligo_virgo_waves"]
+                )
 
         print "PS1 skycells synced between `tcs_cmf_metadata` and `%(t)s` database tables" % locals()
 
