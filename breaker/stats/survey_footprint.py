@@ -211,8 +211,8 @@ class survey_footprint():
                 thisDict["LIM-MAG"] = "NaN"
             # thisDict["EXP-AREA"] = expArea
             # thisDict["EXP-LIKELIHOOD"] = expProb
-            thisDict["CUM-AREA"] = "%(cumArea)05.2f" % locals()
-            thisDict["CUM-LIKELIHOOD"] = "%(cumProb)05.2f" % locals()
+            thisDict["CUM-AREA"] = "%(cumArea)05.3f" % locals()
+            thisDict["CUM-LIKELIHOOD"] = "%(cumProb)05.3f" % locals()
             dictList.append(thisDict)
 
         if not len(dictList):
