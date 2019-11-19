@@ -517,10 +517,10 @@ class plot_wave_observational_timelines():
         if not stackOnly:
 
             sqlQuery = u"""
-                SELECT distinct * from (
+                SELECT raDeg, decDeg, mjd, filter,exp_id, exp_time, max(limiting_magnitude) as limiting_magnitude from (
     SELECT distinct raDeg, decDeg, mjd, filter, p.skycell_id as exp_id, exp_time, limiting_mag as limiting_magnitude FROM ps1_stack_stack_diff_skycells p, ps1_skycell_gravity_event_annotations s, ps1_skycell_map m where mjd between %(mjdStart)s and %(mjdEnd)s and p.skycell_id=s.skycell_id and p.skycell_id=m.skycell_id and gracedb_id = "%(gwid)s" %(filters)s and s.prob_coverage > 1e-6
     UNION
-    SELECT distinct raDeg, decDeg, mjd, filter, p.skycell_id as exp_id, exp_time, limiting_mag as limiting_magnitude FROM ps1_warp_stack_diff_skycells p, ps1_skycell_gravity_event_annotations s, ps1_skycell_map m where mjd between %(mjdStart)s and %(mjdEnd)s and p.skycell_id=s.skycell_id and p.skycell_id=m.skycell_id and gracedb_id = "%(gwid)s" %(filters)s and s.prob_coverage > 1e-6) p order by mjd;
+    SELECT distinct raDeg, decDeg, mjd, filter, p.skycell_id as exp_id, exp_time, limiting_mag as limiting_magnitude FROM ps1_warp_stack_diff_skycells p, ps1_skycell_gravity_event_annotations s, ps1_skycell_map m where mjd between %(mjdStart)s and %(mjdEnd)s and p.skycell_id=s.skycell_id and p.skycell_id=m.skycell_id and gracedb_id = "%(gwid)s" %(filters)s and s.prob_coverage > 1e-6) p GROUP BY mjd, filter, exp_id ORDER BY mjd;
             """ % locals()
 
         else:
