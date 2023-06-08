@@ -3,7 +3,7 @@ breaker
 
 [![Documentation Status](https://readthedocs.org/projects/breaker/badge/)](http://breaker.readthedocs.io/en/latest/?badge)
 
-[![Coverage Status](https://cdn.rawgit.com/thespacedoctor/breaker/master/coverage.svg)](https://cdn.rawgit.com/thespacedoctor/breaker/master/htmlcov/index.html)
+[![Coverage Status](https://cdn.jsdelivr.net/gh/thespacedoctor/breaker@master/coverage.svg)](https://cdn.jsdelivr.net/gh/thespacedoctor/breaker@master/htmlcov/index.html)
 
 *A python package and command-line tools for the PanSTARRS & ATLAS
 LIGO-VIRGO (PSAT) group to aid surveys of the likely sky-locations of

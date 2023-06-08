@@ -11,6 +11,7 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
+from datetime import datetime, date, time
 import sys
 import os
 
@@ -33,6 +34,7 @@ class Mock(MagicMock):
     def __getattr__(cls, name):
         return Mock()
 
+
 MOCK_MODULES = ['numpy', 'scipy', 'matplotlib', 'matplotlib.colors',
                 'matplotlib.pyplot', 'matplotlib.cm', 'matplotlib.path', 'matplotlib.patches', 'matplotlib.projections', 'matplotlib.collections', 'matplotlib.projections.geo', 'healpy', 'astropy', 'astropy.io', 'pylibmc', 'HMpTy', 'HMpTy.mysql', 'ligo', 'ligo.gracedb', 'ligo.gracedb.rest', 'astropy', 'astropy.time', 'pandas']
 sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
@@ -47,7 +49,7 @@ exec(open(moduleDirectory + "/../../breaker/__version__.py").read())
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
 extensions = ['sphinx.ext.autodoc', 'sphinx.ext.doctest', 'sphinx.ext.todo',
-              'sphinx.ext.mathjax', 'sphinx.ext.viewcode', 'sphinx.ext.autosummary', 'sphinx.ext.graphviz']
+              'sphinx.ext.mathjax', 'sphinx.ext.viewcode', 'sphinx.ext.autosummary', 'sphinx.ext.graphviz', 'sphinx.ext.imgconverter']
 
 # Generate Summaries
 autosummary_generate = True
@@ -68,7 +70,6 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-from datetime import datetime, date, time
 now = datetime.now()
 now = now.strftime("%Y")
 project = u'breaker'
@@ -206,13 +207,13 @@ html_help_basename = 'breakerdoc'
 
 latex_elements = {
     # The paper size ('letterpaper' or 'a4paper').
-    #'papersize': 'letterpaper',
+    # 'papersize': 'letterpaper',
 
     # The font size ('10pt', '11pt' or '12pt').
-    #'pointsize': '10pt',
+    # 'pointsize': '10pt',
 
     # Additional stuff for the LaTeX preamble.
-    #'preamble': '',
+    # 'preamble': '',
 }
 
 # Grouping the document tree into LaTeX files. List of tuples
